@@ -1,7 +1,27 @@
+native('Rect', function() return {} end)
+native('RemoveRect', function() end)
 native('CreateGroup', function() return {} end)
 native('DestroyGroup', function() end)
 local Group = require('wrappers.group')
 local Unit = require('wrappers.unit')
+local Rect = require('wrappers.rect')
+local Player = require('wrappers.player')
+
+-- A native group double backed by an array; every enumeration native appends `initial`.
+local function nativeGroup(initial)
+    local members = {}
+    native('GroupClear', function() members = {} end)
+    native('BlzGroupGetSize', function() return #members end)
+    native('BlzGroupUnitAt', function(_, index) return members[index + 1] end)
+    native('GroupAddUnit', function(_, raw) members[#members + 1] = raw end)
+    native('GroupRemoveUnit', function(_, raw)
+        for i = #members, 1, -1 do if members[i] == raw then table.remove(members, i) end end
+    end)
+    local function enum() for _, raw in ipairs(initial) do members[#members + 1] = raw end end
+    for _, name in ipairs({'GroupEnumUnitsInRange', 'GroupEnumUnitsInRect', 'GroupEnumUnitsOfPlayer',
+        'GroupEnumUnitsSelected'}) do native(name, enum) end
+    return function() return members end
+end
 eq(totalCalls(), 0)
 
 test('group membership forwards native arguments without owning units', function()
@@ -54,4 +74,72 @@ test('snapshots are dense independent arrays preserving wrapper identity', funct
     g:clear(); eq(#first, 2)
     first[1]:remove(); eq(first[1]:isDisposed(), true); eq(second[1]:isDisposed(), true)
     first[2]:remove(); g:destroy()
+end)
+
+test('enumerations clear first and forward exact arguments', function()
+    local g, r, p = Group.create(), Rect.create(0, 0, 1, 1), Player.fromIndex(0)
+    nativeGroup({})
+    resetCalls(); g:enumInRect(r)
+    eq(callName(1), 'GroupClear'); expectCall('GroupEnumUnitsInRect', g.handle, r.handle, nil)
+    resetCalls(); g:enumOfPlayer(p)
+    eq(callName(1), 'GroupClear'); expectCall('GroupEnumUnitsOfPlayer', g.handle, PLAYER_RAW, nil)
+    resetCalls(); g:enumSelected(p)
+    eq(callName(1), 'GroupClear'); expectCall('GroupEnumUnitsSelected', g.handle, PLAYER_RAW, nil)
+    resetCalls()
+    fails(function() g:enumInRect(p) end, 'Group.enumInRect: expected Rect wrapper')
+    fails(function() g:enumOfPlayer(r) end, 'Group.enumOfPlayer: expected Player wrapper')
+    fails(function() g:enumInRange(0, 0, 10, 'filter') end, 'Group.enumInRange: expected a callback function')
+    fails(function() g:enumSelected(p, 5) end, 'Group.enumSelected: expected a callback function')
+    eq(totalCalls(), 0)
+    g:destroy(); r:destroy()
+end)
+
+test('filters run after native enumeration and remove rejected units', function()
+    local a, b, c = {}, {}, {}
+    local members = nativeGroup({a, b, c})
+    local g, seen = Group.create(), {}
+    resetCalls()
+    g:enumInRange(0, 0, 500, function(unit) seen[#seen + 1] = unit; return unit.handle ~= b end)
+    eq(callName(1), 'GroupClear'); eq(callName(2), 'GroupEnumUnitsInRange')
+    expectCall('GroupEnumUnitsInRange', g.handle, 0, 0, 500, nil)
+    eq(#seen, 3); eq(seen[1], Unit.fromHandle(a))
+    eq(#members(), 2); eq(members()[1], a); eq(members()[2], c)
+    expectCall('GroupRemoveUnit', g.handle, b)
+    g:enumInRange(0, 0, 500)
+    eq(#members(), 3)
+    g:destroy()
+end)
+
+test('a failing filter clears the group and re-raises', function()
+    local members = nativeGroup({{}, {}})
+    local g = Group.create()
+    fails(function() g:enumOfPlayer(Player.fromIndex(0), function() error('filter probe') end) end, 'filter probe')
+    eq(#members(), 0); eq(#PRINTED, 0)
+    g:destroy()
+end)
+
+test('filters that change the group see a stable snapshot', function()
+    nativeGroup({{}, {}})
+    local g, extra, count = Group.create(), Unit.fromHandle({}), 0
+    g:enumInRange(0, 0, 1, function() count = count + 1; g:add(extra); return true end)
+    eq(count, 2)
+    extra:remove(); g:destroy()
+end)
+
+test('forEach iterates a snapshot and first uses FirstOfGroup', function()
+    local a, b = {}, {}
+    nativeGroup({a, b})
+    local g, seen = Group.create(), {}
+    g:enumInRange(0, 0, 1)
+    g:forEach(function(unit) seen[#seen + 1] = unit; g:clear() end)
+    eq(#seen, 2); eq(seen[2], Unit.fromHandle(b))
+    fails(function() g:forEach(nil) end, 'Group.forEach: expected a callback function')
+    g:enumInRange(0, 0, 1)
+    fails(function() g:forEach(function() error('each probe') end) end, 'each probe')
+    native('FirstOfGroup', function() return a end)
+    eq(g:first(), Unit.fromHandle(a)); expectCall('FirstOfGroup', g.handle)
+    native('FirstOfGroup', function() return nil end)
+    eq(g:first(), nil)
+    g:destroy()
+    checkDisposed(g, {'enumInRect', 'enumOfPlayer', 'enumSelected', 'forEach', 'first'})
 end)
