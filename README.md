@@ -3,7 +3,7 @@
 An optional annotated Lua 5.3 library for Warcraft III maps built with Moonwell 0.5.0 or later. It provides Player,
 Unit, Timer, Trigger, Group and Effect wrappers, editor completion, stable handle identity and explicit cleanup.
 
-**Status:** implemented locally, unreleased. The in-game gate and first GitHub-tag consumption check remain pending.
+**Status:** implemented locally, unreleased. The in-game gate passed; first GitHub-tag consumption remains pending.
 Broader handle coverage and w3ts API compatibility are outside this first release.
 
 ## Use a local checkout
@@ -150,6 +150,7 @@ from replaced schedules or destroyed wrappers do nothing.
 
 Callbacks must be synchronous: do not yield or call TriggerSleepAction. Use timers for delayed work. A callback error is
 caught and printed with `[wrappers] Timer/Trigger callback failed:`; periodic ticks and future actions continue. Errors
-do not automatically destroy resources. Warcraft's F12 message log does not retain this print output.
+do not automatically destroy resources. During the 2026-09-28 gate on Warcraft 3.0.0.24268, F12 retained these errors
+and the subsequent tick and cleanup messages.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the in-game release gate.

@@ -32,5 +32,7 @@ Run every command in CONTRIBUTING before committing. `deno task test` covers War
 doubles; `check:lua` uses actual Lua 5.3.6 syntax; `test:integration` uses a fresh real Moonwell consumer and LuaLS.
 Test outputs remain in ignored `.test-work/`; downloaded verification tools remain in ignored `.tools/`.
 
-The in-game release gate and first GitHub-tag consumption check remain pending. The runnable gate is
-`examples/gate.yue`. Do not describe this library as released until those checks pass and the maintainer publishes it.
+The maintainer passed the in-game gate on 2026-09-28: normal gameplay/cleanup, intentional callback-error recovery,
+minified gameplay and World Editor opening (Warcraft 3.0.0.24268, World Editor 3.00). First GitHub-tag consumption
+remains pending. The runnable gate is `examples/gate.yue`. Do not describe this library as released until those checks
+pass and the maintainer publishes it.

@@ -71,10 +71,16 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
 3. Confirm timer and trigger tick messages. The death event prints at timer tick 3. At tick 5, owned resources are
    removed/destroyed; the timer destroys itself, no later ticks print, and double cleanup reports success.
 4. Set `probes = true` and run again. Both intentional errors print, and both callbacks continue on later ticks,
-   reaching cleanup. Restore `probes = false` afterwards. Print output is not retained in the F12 log.
+   reaching cleanup. Restore `probes = false` afterwards. F12 retained these messages in the 2026-09-28 gate.
 5. Build with `--minify` and play the packed map; repeat the observations. Open the packed map in World Editor.
 6. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
    this gate. Do not declare the release ready while this is pending.
+
+Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file version
+3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor opening
+all passed. The probe screenshot confirms both intentional errors followed by ticks, death and cleanup in F12. The
+disposable gate used three-second ticks, death at nine seconds and cleanup at fifteen seconds, with camera and selection
+adjustments for visibility. Library code was commit `3b923d5` throughout.
 
 ## First publication and tag gate (maintainer)
 
