@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased (0.2.0)
+
+- New wrappers: Item, Destructable, Rect, Region and Force.
+- Unit: hero, ability, inventory, mana, movement, presentation and by-id order methods, `isAlive()` and `damageTarget`.
+  `issueTargetOrder` accepts any widget (Unit, Item, Destructable).
+- Player: gold and lumber, alliances, tech, slot state, start location and `isLocal()`.
+- Trigger: any-player unit, player, chat, region, death, range, unit-state and game events; predicate conditions;
+  `addAction` returns a token; `removeAction`, `removeCondition`, `clearActions`, `clearConditions`, `evaluate`,
+  `execute`.
+- Group: `enumInRect`, `enumOfPlayer`, `enumSelected`, an optional Lua filter on every enumeration, `forEach`, `first`.
+- **Changed:** Unit, Item and Destructable wrappers use a weak cache. A wrapper nothing references may be collected, and
+  a later `fromHandle` returns a fresh one; identity is unchanged while any reference exists.
+- Trigger and Effect no longer import Unit or Player: wrapper arguments convert through the loaded classes.
+
+### Release gate
+
+Pending: automated checks, the in-game gate (including the weak cache probe and a two-player LAN run) and tag
+consumption.
+
 ## 0.1.0 (2026-09-28)
 
 - Annotated Lua wrappers for Player, Unit, Timer, Trigger, Group and Effect, consumed through Moonwell 0.5.0 libraries.

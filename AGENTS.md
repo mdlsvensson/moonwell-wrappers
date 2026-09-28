@@ -8,10 +8,12 @@ The approved design and implementation history live in the sibling Moonwell repo
 
 - `../moonwell/docs/superpowers/specs/2026-09-28-moonwell-wrappers-design.md`
 - `../moonwell/docs/superpowers/plans/2026-09-28-moonwell-wrappers.md`
+- `../moonwell/docs/superpowers/specs/2026-09-28-moonwell-wrappers-broad-design.md` and
+  `../moonwell/docs/superpowers/plans/2026-09-28-moonwell-wrappers-broad.md` (v0.2.0)
 
 README documents the complete public API. CONTRIBUTING documents tool versions, checks and the manual release gate.
-Broader wrapper coverage is deferred in Moonwell's backlog. Do not add gameplay systems, implicit cleanup or a w3ts
-compatibility layer without a new design.
+v0.2.0 adds broad gameplay coverage; UI and presentation types remain in Moonwell's backlog. Do not add gameplay
+systems, implicit cleanup or a w3ts compatibility layer without a new design.
 
 ## Rules
 
@@ -19,12 +21,15 @@ compatibility layer without a new design.
 - Test-first changes; review each task and the final change. Commit on main; the maintainer pushes.
 - Every public API carries LuaLS annotations. LuaLS 3.19.1 returns a conservative nullable type for fromHandle; use a
   check/assert, not a non-null cast that hides the real runtime contract.
-- Cache identity by raw native handle. Cleanup invalidates wrappers/callbacks before native destruction and is
-  idempotent. Never destroy game objects through garbage collection.
+- Cache identity by raw native handle. Unit, Item and Destructable caches are weak-valued; all others are strong.
+  Cleanup invalidates wrappers/callbacks before native destruction and is idempotent. Never destroy game objects through
+  garbage collection, and never iterate a table keyed by tables when the loop calls natives.
 - Warcraft lacks normal filesystem/package/debug Lua libraries. Modules must use literal requires and perform no
   game-object creation when imported. Native calls run only when a user invokes a method.
-- Existing two line-local nil-filter diagnostic exceptions compensate for generated JASS type limitations. Do not add
-  broad diagnostic suppression.
+- Line-local nil-filter diagnostic exceptions, each with the standard comment, compensate for generated JASS type
+  limitations. Do not add broad diagnostic suppression.
+- A module imports another public module only to return its wrappers. Convert wrapper arguments with `Handle.unwrap` or
+  `Handle.unwrapWidget`.
 
 ## Verification
 

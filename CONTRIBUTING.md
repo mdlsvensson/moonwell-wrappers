@@ -56,9 +56,9 @@ Tests use real wrappers and stand-ins for unavailable Warcraft natives, checking
 lifecycle. Integration checks both Lua and compiled Yue with LuaLS, requires intentional negative diagnostics at exact
 locations, builds normal/minified maps, excludes unused modules and executes a real bundle with native stand-ins.
 
-The two line-local LuaLS suppressions for null boolexpr filters document a mismatch in Moonwell's generated JASS
-signatures. Do not suppress diagnostics broadly. fromHandle is conservatively nullable in LuaLS 3.19.1; narrow it or
-assert it. Factories validate and return a non-null wrapper.
+The line-local LuaLS suppressions on native calls that pass a null boolexpr filter document a mismatch in Moonwell's
+generated JASS signatures; each carries the same comment. Do not suppress diagnostics broadly. fromHandle is
+conservatively nullable in LuaLS 3.19.1; narrow it or assert it. Factories validate and return a non-null wrapper.
 
 ## In-game release gate (maintainer)
 
@@ -66,32 +66,48 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
 
 1. Create a disposable Moonwell map and configure this checkout with the local path example in README. Copy
    `examples/gate.yue` to its `src/main.yue`; run check and test.
-2. Confirm the unit appears, moves, changes life and color (disable ally color mode with Alt+A if needed), and the
-   attached effect appears. The group contains the unit; identity and group assertions must not report errors.
-3. Confirm timer and trigger tick messages. The death event prints at timer tick 3. At tick 5, owned resources are
-   removed/destroyed; the timer destroys itself, no later ticks print, and double cleanup reports success.
-4. Set `probes = true` and run again. Both intentional errors print, and both callbacks continue on later ticks,
-   reaching cleanup. Restore `probes = false` afterwards. F12 retained these messages in the 2026-09-28 gate.
-5. Build with `--minify` and play the packed map; repeat the observations. Open the packed map in World Editor.
-6. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
-   this gate. Do not declare the release ready while this is pending.
+2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
+   needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
+   second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
+   foundation ticks print.
+3. Broad: at start, `Wrapper hero level` (above 1), `Wrapper ability level 2` with a cooldown near 30,
+   `Wrapper item <item name> charges 3`, `Wrapper force players <count>` and `Wrapper filtered heroes 1` print.
+   `Wrapper region entered` prints when the footman walks into the rect. After about 2 seconds the hero walks to the
+   item and `Wrapper item picked up true` prints; at 4 seconds the tree dies and `Wrapper tree death event` prints; at 6
+   seconds `Wrapper tree restored` prints with its life, and the tree stands again.
+4. Type `-gate` in chat twice within the first ~30 seconds, while the hero is alive. `Wrapper chat once` prints only
+   after the first `-gate`; `Wrapper chat accepted` prints both times; `ERROR removed action ran` never prints. At 30
+   seconds `Wrapper broad cleanup passed` prints and the hero, item and tree disappear.
+5. Then `Wrapper weak cache probe passed` prints and the probe's footmen disappear. No assertion error prints.
+6. Set `probes = true` and run again. The intentional timer and trigger errors print
+   (`[wrappers] Timer callback failed: ... intentional timer probe` and
+   `[wrappers] Trigger callback failed: ... intentional trigger probe`) and both callbacks continue;
+   `[wrappers] Trigger condition failed: ... intentional condition probe` prints and
+   `ERROR condition probe action
+   ran` never prints. Restore `probes = false`.
+7. Build with `--minify` and play the packed map; repeat steps 2–5. Open the packed map in World Editor.
+8. Host a two-player LAN game of the minified map and play until the weak cache probe passes on both machines. No
+   desync. If a LAN game is not possible, record that and decide with the maintainer before tagging.
+9. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
+   this gate. Do not declare the release ready while this is pending. If the weak cache probe fails, stop: the spec's
+   fallback is strong widget caches plus `forget()`.
 
-Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file version
-3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor opening
-all passed. The probe screenshot confirms both intentional errors followed by ticks, death and cleanup in F12. The
-disposable gate used three-second ticks, death at nine seconds and cleanup at fifteen seconds, with camera and selection
-adjustments for visibility. Library code was commit `3b923d5` throughout.
+v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
+version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor
+opening all passed. The probe screenshot confirms both intentional errors followed by ticks, death and cleanup in F12.
+The disposable gate used three-second ticks, death at nine seconds and cleanup at fifteen seconds, with camera and
+selection adjustments for visibility. Library code was commit `3b923d5` throughout.
 
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, create/push `mdlsvensson/moonwell-wrappers`, then publish an
-immutable `v0.1.0` tag on the verified commit. This library is not a JSR or Pkl package. Change the Unreleased changelog
+immutable `vX.Y.Z` tag on the verified commit. This library is not a JSR or Pkl package. Change the Unreleased changelog
 heading to the released version/date and record the gate evidence before tagging.
 
 In a fresh Moonwell map, use the README GitHub configuration, run check/build, and inspect/commit moonwell.lock. Confirm
 it records the tagged commit. Remove only that disposable map's `.moonwell/` cache and repeat check; the lock must stay
 unchanged. Record the result and only then mark first-tag consumption verified. Do not retag a moved release.
 
-Passed 2026-09-28 for `v0.1.0` with Moonwell 0.5.0: check, normal and minified builds; `moonwell.lock` recorded commit
-`c1209f5fb3141d91df2234e765e66c43bb01fc02`, the fetched files matched the tag's `src/`, and the lock stayed unchanged
-after removing the map's `.moonwell/` and checking again.
+v0.1.0: Passed 2026-09-28 for `v0.1.0` with Moonwell 0.5.0: check, normal and minified builds; `moonwell.lock` recorded
+commit `c1209f5fb3141d91df2234e765e66c43bb01fc02`, the fetched files matched the tag's `src/`, and the lock stayed
+unchanged after removing the map's `.moonwell/` and checking again.
