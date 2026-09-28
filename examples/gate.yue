@@ -1,0 +1,60 @@
+-- Copy to src/main.yue in a disposable Moonwell map configured with this library.
+-- Run once normally, then set probes = true to verify callback errors remain visible and recover.
+import "moonwell" as mw
+import "moonwell.macros" as {:$FourCC}
+import "wrappers.player" as Player
+import "wrappers.unit" as Unit
+import "wrappers.timer" as Timer
+import "wrappers.trigger" as Trigger
+import "wrappers.group" as Group
+import "wrappers.effect" as Effect
+
+probes = false
+
+mw.on_main ->
+  owner = Player.fromIndex 0
+  unit = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
+  assert Unit.fromHandle(unit\getHandle!) == unit
+  unit\setPosition 100, 0
+  unit\setColor PLAYER_COLOR_RED
+  unit\setLife 200
+  unit\issuePointOrder "move", 300, 0
+  group = Group.create!
+  group\enumInRange 100, 0, 600
+  assert group\contains unit
+  print "Wrapper group size", group\getSize!
+  effect = Effect.attach "Abilities\\Spells\\Human\\HolyBolt\\HolyBoltSpecialArt.mdl", unit, "origin"
+  death = Trigger.create!
+  death\registerUnitEvent unit, EVENT_UNIT_DEATH
+  death\addAction -> print "Wrapper unit death event"
+  periodic = Trigger.create!
+  periodic\registerTimerEvent 1, true
+  events = 0
+  periodic\addAction ->
+    events += 1
+    if probes and events == 1
+      error "intentional trigger probe"
+    print "Wrapper trigger tick", events
+  timer = Timer.create!
+  ticks = 0
+  timer\start 1, true, (self) ->
+    ticks += 1
+    if probes and ticks == 1
+      error "intentional timer probe"
+    print "Wrapper timer tick", ticks
+    if ticks == 3
+      unit\kill!
+    if ticks == 5
+      effect\destroy!
+      group\destroy!
+      death\destroy!
+      periodic\destroy!
+      unit\remove!
+      self\destroy!
+      effect\destroy!
+      group\destroy!
+      death\destroy!
+      periodic\destroy!
+      unit\remove!
+      self\destroy!
+      print "Wrapper gate cleanup passed"

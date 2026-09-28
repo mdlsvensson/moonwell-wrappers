@@ -1,0 +1,16 @@
+import "moonwell" as mw
+import "wrappers.unit" as Unit
+import "wrappers.player" as Player
+import "wrappers.timer" as Timer
+import "wrappers.group" as Group
+
+mw.on_main ->
+  unit = Unit.create Player.fromIndex(0), 1751543663, 0, 0, 270
+  unit\setLife 250
+  group = Group.create!
+  group\add unit
+  timer = Timer.create!
+  timer\start 1, false, (self) ->
+    group\destroy!
+    unit\remove!
+    self\destroy!
