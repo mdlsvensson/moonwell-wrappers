@@ -16,8 +16,12 @@
 
 ### Release gate
 
-Pending: automated checks, the in-game gate (including the weak cache probe and a two-player LAN run) and tag
-consumption.
+Automated checks passed 2026-09-28 on Windows: 66 behavior tests in 13 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (30 files); Moonwell normal/minified builds, unused-module exclusion, a Trigger-only bundle and bundled
+execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eight expected negative diagnostics; the gate example builds with
+clean editor diagnostics.
+
+Pending: the in-game gate (including the weak cache probe and a two-player LAN run) and tag consumption.
 
 ## 0.1.0 (2026-09-28)
 

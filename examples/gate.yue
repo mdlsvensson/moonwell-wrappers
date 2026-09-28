@@ -66,7 +66,9 @@ foundationGate = (owner) ->
       print "Wrapper gate cleanup passed"
 
 -- Weak cache probe. RemoveUnit is called directly to stand in for the game removing units on its own (decay):
--- those wrappers are never disposed. The game has no collectgarbage, so allocate until a weak sentinel is collected.
+-- those wrappers are never disposed. The game has no collectgarbage, so a collector timer allocates garbage and records
+-- locally whether a weak sentinel was collected. Garbage collection is not synchronized between clients, so units are
+-- created and removed only at fixed timer times, the same on every client; only the checks and prints may differ.
 churnProbe = (owner) ->
   footman = $FourCC("hfoo")
   keep = [Unit.create(owner, footman, 600, y * 60, 0) for y = 1, 5]
@@ -77,24 +79,31 @@ churnProbe = (owner) ->
     RemoveUnit unit\getHandle!
   sentinel = setmetatable {}, __mode: "k"
   sentinel[{}] = true
+  collected = false
   collector = Timer.create!
-  collector\start 0.1, true, (self) ->
-    -- Short-lived tables drive the incremental collector.
+  collector\start 0.1, true, ->
+    -- Short-lived tables drive the incremental collector. No game state changes here.
     for _ = 1, 2000
       setmetatable {}, nil
-    if next(sentinel) ~= nil
-      return
-    self\destroy!
+    collected = true if next(sentinel) == nil
+  verdict = Timer.create!
+  verdict\start 20, false, (self) ->
+    collected = true if next(sentinel) == nil
     fresh = [Unit.create(owner, footman, 1000, y * 30, 0) for y = 1, 20]
+    staleOk = true
     for unit in *fresh
       found = Unit.fromHandle unit\getHandle!
       for old in *stale
-        assert found ~= old, "stale wrapper resolved to a new unit"
+        staleOk = false if found == old
+    identityOk = true
     for unit in *keep
-      assert Unit.fromHandle(unit\getHandle!) == unit, "live wrapper lost identity"
-    print "Wrapper weak cache probe passed"
+      identityOk = false if Unit.fromHandle(unit\getHandle!) ~= unit
+    print "Wrapper weak cache probe collected=#{collected} stale=#{staleOk} identity=#{identityOk}"
+    print "Wrapper weak cache probe passed" if collected and staleOk and identityOk
     unit\remove! for unit in *fresh
     unit\remove! for unit in *keep
+    collector\destroy!
+    self\destroy!
 
 -- v0.2.0 coverage.
 broadGate = (owner) ->

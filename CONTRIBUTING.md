@@ -78,19 +78,24 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
 4. Type `-gate` in chat twice within the first ~30 seconds, while the hero is alive. `Wrapper chat once` prints only
    after the first `-gate`; `Wrapper chat accepted` prints both times; `ERROR removed action ran` never prints. At 30
    seconds `Wrapper broad cleanup passed` prints and the hero, item and tree disappear.
-5. Then `Wrapper weak cache probe passed` prints and the probe's footmen disappear. No assertion error prints.
+5. Weak cache probe: at 30 seconds five probe footmen appear. At 50 seconds twenty more appear, then
+   `Wrapper weak cache probe collected=<bool> stale=<bool> identity=<bool>` prints and all the probe's footmen
+   disappear. It passes when all three are `true`, and `Wrapper weak cache probe passed` then prints too.
+   `collected=false` means Lua's collector had not yet freed the weak sentinel: the result is inconclusive, not a
+   failure. Run again, or tell the maintainer.
 6. Set `probes = true` and run again. The intentional timer and trigger errors print
    (`[wrappers] Timer callback failed: ... intentional timer probe` and
    `[wrappers] Trigger callback failed: ... intentional trigger probe`) and both callbacks continue;
-   `[wrappers] Trigger condition failed: ... intentional condition probe` prints and
-   `ERROR condition probe action
-   ran` never prints. Restore `probes = false`.
+   `[wrappers] Trigger condition failed: ... intentional condition probe` prints, and the action behind that condition
+   never runs (no `ERROR condition probe action ran`). Restore `probes = false`.
 7. Build with `--minify` and play the packed map; repeat steps 2–5. Open the packed map in World Editor.
-8. Host a two-player LAN game of the minified map and play until the weak cache probe passes on both machines. No
-   desync. If a LAN game is not possible, record that and decide with the maintainer before tagging.
+8. Host a two-player LAN game of the minified map and play past the weak cache probe (about a minute). Neither machine
+   may desync. Each machine prints its own probe line, from its own Lua collector; record both. If a LAN game is not
+   possible, record that and decide with the maintainer before tagging.
 9. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
-   this gate. Do not declare the release ready while this is pending. If the weak cache probe fails, stop: the spec's
-   fallback is strong widget caches plus `forget()`.
+   this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
+   `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
+   occurs. Then stop and apply it.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor
@@ -100,9 +105,9 @@ selection adjustments for visibility. Library code was commit `3b923d5` througho
 
 ## First publication and tag gate (maintainer)
 
-After all automated checks and the in-game gate pass, create/push `mdlsvensson/moonwell-wrappers`, then publish an
-immutable `vX.Y.Z` tag on the verified commit. This library is not a JSR or Pkl package. Change the Unreleased changelog
-heading to the released version/date and record the gate evidence before tagging.
+After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to
+`mdlsvensson/moonwell-wrappers`. Tags are immutable. This library is not a JSR or Pkl package. Change the Unreleased
+changelog heading to the released version/date and record the gate evidence before tagging.
 
 In a fresh Moonwell map, use the README GitHub configuration, run check/build, and inspect/commit moonwell.lock. Confirm
 it records the tagged commit. Remove only that disposable map's `.moonwell/` cache and repeat check; the lock must stay

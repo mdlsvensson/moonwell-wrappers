@@ -37,7 +37,7 @@ Run every command in CONTRIBUTING before committing. `deno task test` covers War
 doubles; `check:lua` uses actual Lua 5.3.6 syntax; `test:integration` uses a fresh real Moonwell consumer and LuaLS.
 Test outputs remain in ignored `.test-work/`; downloaded verification tools remain in ignored `.tools/`.
 
-The maintainer passed the in-game gate on 2026-09-28: normal gameplay/cleanup, intentional callback-error recovery,
-minified gameplay and World Editor opening (Warcraft 3.0.0.24268, World Editor 3.00). First GitHub-tag consumption
-passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`. Later releases
-repeat the automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
+v0.1.0: the maintainer passed the in-game gate on 2026-09-28: normal gameplay/cleanup, intentional callback-error
+recovery, minified gameplay and World Editor opening (Warcraft 3.0.0.24268, World Editor 3.00). First GitHub-tag
+consumption passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`.
+Later releases repeat the automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
