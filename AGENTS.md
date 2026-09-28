@@ -2,7 +2,7 @@
 
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
-intended remote is `mdlsvensson/moonwell-wrappers`; it has not been created/published by this implementation.
+remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5` and must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -34,5 +34,5 @@ Test outputs remain in ignored `.test-work/`; downloaded verification tools rema
 
 The maintainer passed the in-game gate on 2026-09-28: normal gameplay/cleanup, intentional callback-error recovery,
 minified gameplay and World Editor opening (Warcraft 3.0.0.24268, World Editor 3.00). First GitHub-tag consumption
-remains pending. The runnable gate is `examples/gate.yue`. Do not describe this library as released until those checks
-pass and the maintainer publishes it.
+passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`. Later releases
+repeat the automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.

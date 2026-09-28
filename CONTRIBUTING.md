@@ -91,3 +91,7 @@ heading to the released version/date and record the gate evidence before tagging
 In a fresh Moonwell map, use the README GitHub configuration, run check/build, and inspect/commit moonwell.lock. Confirm
 it records the tagged commit. Remove only that disposable map's `.moonwell/` cache and repeat check; the lock must stay
 unchanged. Record the result and only then mark first-tag consumption verified. Do not retag a moved release.
+
+Passed 2026-09-28 for `v0.1.0` with Moonwell 0.5.0: check, normal and minified builds; `moonwell.lock` recorded commit
+`c1209f5fb3141d91df2234e765e66c43bb01fc02`, the fetched files matched the tag's `src/`, and the lock stayed unchanged
+after removing the map's `.moonwell/` and checking again.

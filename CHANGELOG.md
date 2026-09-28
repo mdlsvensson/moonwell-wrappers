@@ -14,7 +14,11 @@ Editor 3.00 (file version 3.0.0.24268): normal gameplay and cleanup, intentional
 continued ticks and cleanup, minified packed-map gameplay, and opening the packed map in World Editor. The probe
 screenshot shows both intentional errors, later ticks, the death event and successful cleanup retained in F12.
 
-First GitHub-tag consumption is **pending**. No v0.1.0 release has been published by this work.
+First GitHub-tag consumption **passed 2026-09-28** with Moonwell 0.5.0: a fresh map configured with the README GitHub
+settings ran check, build and `build --minify`; `moonwell.lock` recorded tag `v0.1.0` at commit
+`c1209f5fb3141d91df2234e765e66c43bb01fc02`, and the fetched files matched the tag's `src/`. After removing only that
+map's `.moonwell/`, check downloaded the tag again and left the lock unchanged. (The tagged commit's copy of this
+section still said this check was pending; the tag was not moved.)
 
 Automated checks passed 2026-09-28 on Windows: 23 behavior tests with YueScript 0.34.2; Lua 5.3.6 syntax checks;
 Moonwell 0.5.0 normal/minified builds and bundled execution; LuaLS 3.19.1 positive Lua/Yue fixtures and four expected
