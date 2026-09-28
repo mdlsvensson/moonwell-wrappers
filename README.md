@@ -1,6 +1,6 @@
 # Moonwell Wrappers
 
-An optional annotated Lua 5.3 library for Warcraft III maps built with Moonwell 0.5.0 or later. It provides Player,
+Annotated Lua 5.3 library for Warcraft III. It provides Player, 
 Unit, Timer, Trigger, Group and Effect wrappers, editor completion, stable handle identity and explicit cleanup.
 
 **Status:** released as `v0.1.0` (2026-09-28). The in-game gate and first GitHub-tag consumption passed. Broader handle
