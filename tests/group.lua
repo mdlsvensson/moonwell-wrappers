@@ -143,3 +143,30 @@ test('forEach iterates a snapshot and first uses FirstOfGroup', function()
     g:destroy()
     checkDisposed(g, {'enumInRect', 'enumOfPlayer', 'enumSelected', 'forEach', 'first'})
 end)
+
+test('forEach keeps the snapshot wrapper when a callback removes a later unit', function()
+    local a, b = {}, {}
+    nativeGroup({a, b})
+    local g, removed, second = Group.create(), nil, nil
+    g:enumInRange(0, 0, 1)
+    g:forEach(function(unit)
+        if removed == nil then removed = assert(Unit.fromHandle(b)); removed:remove() else second = unit end
+    end)
+    eq(second, removed); eq(second:isDisposed(), true)
+    g:destroy()
+end)
+
+test('filters keep the snapshot wrapper when a filter removes a later unit', function()
+    local a, b = {}, {}
+    local members = nativeGroup({a, b})
+    local g, removed, second = Group.create(), nil, nil
+    g:enumInRange(0, 0, 1, function(unit)
+        if removed == nil then removed = assert(Unit.fromHandle(b)); removed:remove(); return true end
+        second = unit
+        return false
+    end)
+    eq(second, removed); eq(second:isDisposed(), true)
+    expectCall('GroupRemoveUnit', g.handle, b)
+    eq(#members(), 1); eq(members()[1], a)
+    g:destroy()
+end)
