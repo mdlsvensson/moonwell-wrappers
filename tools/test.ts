@@ -2,7 +2,10 @@
 const yue = Deno.env.get("MOONWELL_YUE") ?? "yue";
 const version = await new Deno.Command(yue, { args: ["-v"], stdout: "piped" }).output();
 if (!new TextDecoder().decode(version.stdout).includes("0.34.2")) throw new Error("YueScript 0.34.2 is required");
-const suites = Deno.args.length ? Deno.args : ["unit", "timer", "trigger", "group", "effect"];
+const suites = Deno.args.length ? Deno.args : [...Deno.readDirSync("tests")]
+  .map((entry) => entry.name.match(/^([a-z]+)\.lua$/)?.[1])
+  .filter((name): name is string => name !== undefined && name !== "support")
+  .sort();
 await Deno.mkdir(".test-work", { recursive: true });
 let failures = 0;
 for (const suite of suites) {

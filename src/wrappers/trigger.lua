@@ -1,7 +1,5 @@
 local Handle = require('wrappers.internal.handle')
 local Callback = require('wrappers.internal.callback')
-local Unit = require('wrappers.unit')
-local PlayerWrapper = require('wrappers.player')
 
 ---@class MoonwellWrappers.Trigger
 ---@field handle trigger? Read-only by convention; nil after destruction.
@@ -30,7 +28,7 @@ function Trigger:isEnabled() return IsTriggerEnabled(registry.require(self, 'Tri
 ---@param event unitevent
 function Trigger:registerUnitEvent(unit, event)
     local raw = registry.require(self, 'Trigger.registerUnitEvent')
-    TriggerRegisterUnitEvent(raw, Unit.getHandle(unit), event)
+    TriggerRegisterUnitEvent(raw, Handle.unwrap(unit, 'Unit', 'Trigger.registerUnitEvent'), event)
 end
 ---@param player MoonwellWrappers.Player
 ---@param event playerunitevent
@@ -38,7 +36,7 @@ function Trigger:registerPlayerUnitEvent(player, event)
     local raw = registry.require(self, 'Trigger.registerPlayerUnitEvent')
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
-    TriggerRegisterPlayerUnitEvent(raw, PlayerWrapper.getHandle(player), event, nil)
+    TriggerRegisterPlayerUnitEvent(raw, Handle.unwrap(player, 'Player', 'Trigger.registerPlayerUnitEvent'), event, nil)
 end
 ---@param timeout number
 ---@param periodic boolean

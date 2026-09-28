@@ -21,18 +21,18 @@ function Group:isDisposed() return registry.isDisposed(self, 'Group.isDisposed')
 ---@param unit MoonwellWrappers.Unit
 function Group:add(unit)
     local raw = registry.require(self, 'Group.add')
-    GroupAddUnit(raw, Unit.getHandle(unit))
+    GroupAddUnit(raw, Handle.unwrap(unit, 'Unit', 'Group.add'))
 end
 ---@param unit MoonwellWrappers.Unit
 function Group:remove(unit)
     local raw = registry.require(self, 'Group.remove')
-    GroupRemoveUnit(raw, Unit.getHandle(unit))
+    GroupRemoveUnit(raw, Handle.unwrap(unit, 'Unit', 'Group.remove'))
 end
 ---@param unit MoonwellWrappers.Unit
 ---@return boolean
 function Group:contains(unit)
     local raw = registry.require(self, 'Group.contains')
-    return IsUnitInGroup(Unit.getHandle(unit), raw)
+    return IsUnitInGroup(Handle.unwrap(unit, 'Unit', 'Group.contains'), raw)
 end
 function Group:clear() GroupClear(registry.require(self, 'Group.clear')) end
 ---@param x number

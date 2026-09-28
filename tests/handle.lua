@@ -1,0 +1,70 @@
+native('CreateTimer', function() return {} end)
+local Handle = require('wrappers.internal.handle')
+local Widget = require('wrappers.internal.widget')
+local Unit = require('wrappers.unit')
+local Timer = require('wrappers.timer')
+eq(totalCalls(), 0)
+
+test('unwrap converts loaded classes and names the operation', function()
+    local u = Unit.fromHandle({})
+    eq(Handle.unwrap(u, 'Unit', 'Test.op'), u.handle)
+    fails(function() Handle.unwrap({}, 'Unit', 'Test.op') end, '[wrappers] Test.op: expected Unit wrapper')
+    fails(function() Handle.unwrap(u, 'Nope', 'Test.op') end, '[wrappers] Test.op: expected Nope wrapper')
+    u:remove()
+    fails(function() Handle.unwrap(u, 'Unit', 'Test.op') end, '[wrappers] Test.op: Unit is disposed')
+end)
+
+test('unwrapWidget accepts every widget class and rejects others', function()
+    local Fake = {}
+    local fakes = Handle.new(Fake, 'FakeWidget', {widget = true})
+    local u, f = Unit.fromHandle({}), fakes.wrap({})
+    eq(Handle.unwrapWidget(u, 'Test.op'), u.handle)
+    eq(Handle.unwrapWidget(f, 'Test.op'), f.handle)
+    fails(function() Handle.unwrapWidget(Timer.create(), 'Test.op') end, '[wrappers] Test.op: expected Widget wrapper')
+    fails(function() Handle.unwrapWidget({}, 'Test.op') end, 'expected Widget wrapper')
+    u:remove()
+    fails(function() Handle.unwrapWidget(u, 'Test.op') end, '[wrappers] Test.op: Unit is disposed')
+end)
+
+test('duplicate registry names are rejected', function()
+    fails(function() Handle.new({}, 'Unit') end, 'duplicate registry: Unit')
+end)
+
+test('widget install copies shared methods without replacing class methods', function()
+    local Fake = {}
+    function Fake:getX() return 'own' end
+    local fakes = Handle.new(Fake, 'FakeInstall', {widget = true})
+    Widget.install(Fake, fakes)
+    local f = fakes.wrap({})
+    eq(f:getX(), 'own')
+    native('GetWidgetY', function() return 9 end)
+    eq(f:getY(), 9); expectCall('GetWidgetY', f.handle)
+    native('GetWidgetLife', function() return 5 end)
+    eq(f:getLife(), 5); expectCall('GetWidgetLife', f.handle)
+    native('SetWidgetLife', function() end)
+    f:setLife(3); expectCall('SetWidgetLife', f.handle, 3)
+    fakes.dispose(f, 'Test.dispose')
+    fails(function() f:getY() end, '[wrappers] FakeInstall.getY: FakeInstall is disposed')
+end)
+
+-- Wrap inside a helper so no register of the test body keeps the wrapper alive.
+local function wrapAndMark(fromHandle, raw, probe, kind)
+    probe[fromHandle(raw)] = kind
+end
+
+test('weak caches release unreferenced wrappers; strong caches keep them', function()
+    local rawUnit, rawTimer = {}, {}
+    local held = Unit.fromHandle({})
+    collectgarbage(); collectgarbage()
+    eq(Unit.fromHandle(held.handle), held)
+    local probe = setmetatable({}, {__mode = 'k'})
+    wrapAndMark(Unit.fromHandle, rawUnit, probe, 'unit')
+    wrapAndMark(Timer.fromHandle, rawTimer, probe, 'timer')
+    collectgarbage(); collectgarbage()
+    local left = {}
+    for _, kind in pairs(probe) do left[kind] = true end
+    eq(left.unit, nil); eq(left.timer, true)
+    local fresh = Unit.fromHandle(rawUnit)
+    eq(fresh:isDisposed(), false); eq(fresh.handle, rawUnit)
+    fresh:remove(); held:remove()
+end)

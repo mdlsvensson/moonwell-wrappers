@@ -1,11 +1,12 @@
 local Handle = require('wrappers.internal.handle')
+local Widget = require('wrappers.internal.widget')
 local PlayerWrapper = require('wrappers.player')
 
----@class MoonwellWrappers.Unit
+---@class MoonwellWrappers.Unit: MoonwellWrappers.Widget
 ---@field handle unit? Read-only by convention; nil after removal.
 local Unit = {}
 ---@type MoonwellWrappers.Registry<MoonwellWrappers.Unit, unit>
-local registry = Handle.new(Unit, 'Unit')
+local registry = Handle.new(Unit, 'Unit', {weak = true, widget = true})
 
 ---@param raw unit?
 ---@return MoonwellWrappers.Unit?
@@ -19,7 +20,7 @@ function Unit.fromHandle(raw) return registry.wrap(raw) end
 ---@param facing number
 ---@return MoonwellWrappers.Unit
 function Unit.create(owner, typeId, x, y, facing)
-    local rawOwner = PlayerWrapper.getHandle(owner)
+    local rawOwner = Handle.unwrap(owner, 'Player', 'Unit.create')
     return Handle.created(Unit.fromHandle(CreateUnit(rawOwner, typeId, x, y, facing)), 'Unit.create')
 end
 ---@return unit
@@ -36,7 +37,7 @@ end
 ---@param changeColor boolean
 function Unit:setOwner(owner, changeColor)
     local raw = registry.require(self, 'Unit.setOwner')
-    SetUnitOwner(raw, PlayerWrapper.getHandle(owner), changeColor)
+    SetUnitOwner(raw, Handle.unwrap(owner, 'Player', 'Unit.setOwner'), changeColor)
 end
 ---@return number
 function Unit:getX() return GetUnitX(registry.require(self, 'Unit.getX')) end
@@ -79,5 +80,8 @@ function Unit:issueTargetOrder(order, target)
     local raw = registry.require(self, 'Unit.issueTargetOrder')
     return IssueTargetOrder(raw, order, registry.require(target, 'Unit.issueTargetOrder'))
 end
+
+-- Unit defines all four shared methods itself (GetUnitX/GetUnitY keep v0.1.0's mapping); install is a no-op here.
+Widget.install(Unit, registry)
 
 return Unit

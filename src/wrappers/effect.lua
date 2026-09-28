@@ -1,5 +1,4 @@
 local Handle = require('wrappers.internal.handle')
-local Unit = require('wrappers.unit')
 
 ---@class MoonwellWrappers.Effect
 ---@field handle effect? Read-only by convention; nil after destruction.
@@ -23,7 +22,7 @@ end
 ---@param attachmentPoint string
 ---@return MoonwellWrappers.Effect
 function Effect.attach(model, target, attachmentPoint)
-    local raw = Unit.getHandle(target)
+    local raw = Handle.unwrap(target, 'Unit', 'Effect.attach')
     return Handle.created(Effect.fromHandle(AddSpecialEffectTarget(model, raw, attachmentPoint)), 'Effect.attach')
 end
 ---@return effect
