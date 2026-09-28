@@ -58,3 +58,26 @@ native('Player', function() return PLAYER_RAW end)
 native('CreateUnit', function() return {} end)
 native('RemoveUnit', function() end)
 native('KillUnit', function() end)
+
+-- Rows: {nativeName, methodName, returnValue, methodArgs...}; the native receives the handle then the same args.
+function checkGetters(wrapper, rows)
+    for _, row in ipairs(rows) do
+        local value = row[3]
+        native(row[1], function() return value end)
+        eq(wrapper[row[2]](wrapper, table.unpack(row, 4)), value)
+        expectCall(row[1], wrapper.handle, table.unpack(row, 4))
+    end
+end
+-- Rows: {nativeName, methodName, methodArgs...}.
+function checkSetters(wrapper, rows)
+    for _, row in ipairs(rows) do
+        native(row[1], function() end)
+        wrapper[row[2]](wrapper, table.unpack(row, 3))
+        expectCall(row[1], wrapper.handle, table.unpack(row, 3))
+    end
+end
+function checkDisposed(wrapper, methods)
+    local before = totalCalls()
+    for _, name in ipairs(methods) do fails(function() wrapper[name](wrapper) end, 'disposed') end
+    eq(totalCalls(), before)
+end
