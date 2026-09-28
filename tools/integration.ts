@@ -69,7 +69,7 @@ await Deno.writeTextFile(
 );
 await moonwell(["build"]);
 const bundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
-for (const unused of ["effect", "trigger", "group", "timer"]) {
+for (const unused of ["effect", "trigger", "group", "timer", "destructable", "rect", "region", "force"]) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
 }
 // Run the actual bundled script with the Warcraft globals it uses during module loading.
@@ -87,6 +87,19 @@ const runtime = await run(yue, ["-e", probe]);
 if (!runtime.output.includes("BUNDLE PASSED")) throw new Error(runtime.output);
 console.log("Moonwell: normal/minified builds, unused-module exclusion and bundled runtime passed");
 
+// Trigger takes wrapper arguments only, so a Trigger-only map must bundle no other public module.
+await Deno.writeTextFile(
+  join(consumer, "src/main.yue"),
+  'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n',
+);
+await moonwell(["build"]);
+const triggerBundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
+const publicModules = ["unit", "player", "item", "destructable", "rect", "region", "force", "group", "timer", "effect"];
+for (const unused of publicModules) {
+  if (triggerBundle.includes(`wrappers.${unused}`)) throw new Error(`Trigger-only bundle includes wrappers.${unused}`);
+}
+console.log("Moonwell: a Trigger-only map bundles no other public module");
+
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));
 await moonwell(["check"]);
 await moonwell(["build", "--minify"]);
@@ -95,4 +108,4 @@ const gate = await diagnose(consumer, "gate");
 if (Object.values(gate).some((entries) => entries.length)) {
   throw new Error(`Gate example diagnostics: ${JSON.stringify(gate)}`);
 }
-console.log("Gate example: all six modules build and editor diagnostics are clean; game execution remains manual");
+console.log("Gate example: every module builds and editor diagnostics are clean; game execution remains manual");

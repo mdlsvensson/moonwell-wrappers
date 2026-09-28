@@ -1,9 +1,15 @@
 -- Copy to src/main.yue in a disposable Moonwell map configured with this library.
 -- Run once normally, then set probes = true to verify callback errors remain visible and recover.
+-- Type -gate in chat twice while the hero is alive. CONTRIBUTING lists every expected message.
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
 import "wrappers.unit" as Unit
+import "wrappers.item" as Item
+import "wrappers.destructable" as Destructable
+import "wrappers.rect" as Rect
+import "wrappers.region" as Region
+import "wrappers.force" as Force
 import "wrappers.timer" as Timer
 import "wrappers.trigger" as Trigger
 import "wrappers.group" as Group
@@ -11,8 +17,8 @@ import "wrappers.effect" as Effect
 
 probes = false
 
-mw.on_main ->
-  owner = Player.fromIndex 0
+-- v0.1.0 foundation: same observations as the first release.
+foundationGate = (owner) ->
   unit = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
   assert Unit.fromHandle(unit\getHandle!) == unit
   unit\setPosition 100, 0
@@ -58,3 +64,116 @@ mw.on_main ->
       unit\remove!
       self\destroy!
       print "Wrapper gate cleanup passed"
+
+-- Weak cache probe. RemoveUnit is called directly to stand in for the game removing units on its own (decay):
+-- those wrappers are never disposed. The game has no collectgarbage, so allocate until a weak sentinel is collected.
+churnProbe = (owner) ->
+  footman = $FourCC("hfoo")
+  keep = [Unit.create(owner, footman, 600, y * 60, 0) for y = 1, 5]
+  stale = {}
+  for i = 1, 20
+    unit = Unit.create owner, footman, 800, i * 30, 0
+    stale[] = unit if i <= 5
+    RemoveUnit unit\getHandle!
+  sentinel = setmetatable {}, __mode: "k"
+  sentinel[{}] = true
+  collector = Timer.create!
+  collector\start 0.1, true, (self) ->
+    -- Short-lived tables drive the incremental collector.
+    for _ = 1, 2000
+      setmetatable {}, nil
+    if next(sentinel) ~= nil
+      return
+    self\destroy!
+    fresh = [Unit.create(owner, footman, 1000, y * 30, 0) for y = 1, 20]
+    for unit in *fresh
+      found = Unit.fromHandle unit\getHandle!
+      for old in *stale
+        assert found ~= old, "stale wrapper resolved to a new unit"
+    for unit in *keep
+      assert Unit.fromHandle(unit\getHandle!) == unit, "live wrapper lost identity"
+    print "Wrapper weak cache probe passed"
+    unit\remove! for unit in *fresh
+    unit\remove! for unit in *keep
+
+-- v0.2.0 coverage.
+broadGate = (owner) ->
+  hero = Unit.create owner, $FourCC("Hpal"), -300, 0, 0
+  assert hero\isHero!
+  hero\addXP 1000, true
+  print "Wrapper hero level", hero\getLevel!, "strength", hero\getStr(true)
+  slow = $FourCC("Aslo")
+  assert hero\addAbility(slow)
+  hero\setAbilityLevel slow, 2
+  hero\startCooldown slow, 30
+  print "Wrapper ability level", hero\getAbilityLevel(slow), "cooldown", hero\getCooldownRemaining(slow)
+  claws = assert hero\addItemById($FourCC("ratc")), "no item added"
+  assert hero\getItemInSlot(0) == claws
+  assert hero\dropItemAt(claws, -200, 0)
+  claws\setCharges 3
+  print "Wrapper item", claws\getName!, "charges", claws\getCharges!
+  pickups = Trigger.create!
+  pickups\registerAnyUnitEvent EVENT_PLAYER_UNIT_PICKUP_ITEM
+  pickups\addCondition -> Unit.fromHandle(GetTriggerUnit!) == hero
+  pickups\addAction -> print "Wrapper item picked up", Item.fromHandle(GetManipulatedItem!) == claws
+  tree = Destructable.create $FourCC("LTlt"), 300, 300, 270, 1, 0
+  deaths = Trigger.create!
+  deaths\registerDeathEvent tree
+  deaths\addAction -> print "Wrapper tree death event"
+  area = Rect.create 200, -100, 400, 100
+  zone = Region.create!
+  zone\addRect area
+  entries = Trigger.create!
+  entries\registerEnterRegion zone
+  entries\addAction -> print "Wrapper region entered"
+  team = Force.create!
+  team\enumAllies owner
+  print "Wrapper force players", #team\getPlayers!
+  chat = Trigger.create!
+  chat\registerChatEvent owner, "-gate", true
+  chat\addCondition -> hero\isAlive!
+  removed = chat\addAction -> print "ERROR removed action ran"
+  local once
+  once = chat\addAction (self) ->
+    print "Wrapper chat once"
+    self\removeAction once
+  chat\addAction -> print "Wrapper chat accepted"
+  chat\removeAction removed
+  probe = Trigger.create!
+  if probes
+    probe\registerTimerEvent 1, false
+    probe\addCondition -> error "intentional condition probe"
+    probe\addAction -> print "ERROR condition probe action ran"
+  heroes = Group.create!
+  heroes\enumInRange(-300, 0, 800, (unit) -> unit\isHero!)
+  print "Wrapper filtered heroes", heroes\getSize!
+  steps = Timer.create!
+  step = 0
+  steps\start 2, true, (self) ->
+    step += 1
+    if step == 1
+      hero\issueTargetOrder "smart", claws
+    elseif step == 2
+      tree\kill!
+    elseif step == 3
+      tree\restore tree\getMaxLife!, true
+      print "Wrapper tree restored", tree\getLife!
+    elseif step == 15
+      assert hero\hasItem(claws), "hero did not pick up the item"
+      hero\removeItem claws
+      claws\remove!
+      heroes\destroy!
+      team\destroy!
+      trigger\destroy! for trigger in *{pickups, deaths, entries, chat, probe}
+      zone\destroy!
+      area\destroy!
+      tree\remove!
+      hero\remove!
+      self\destroy!
+      print "Wrapper broad cleanup passed"
+      churnProbe owner
+
+mw.on_main ->
+  owner = Player.fromIndex 0
+  foundationGate owner
+  broadGate owner

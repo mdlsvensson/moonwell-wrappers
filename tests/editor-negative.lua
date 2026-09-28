@@ -2,6 +2,8 @@ local Unit = require('wrappers.unit')
 local PlayerWrapper = require('wrappers.player')
 local Timer = require('wrappers.timer')
 local Group = require('wrappers.group')
+local Item = require('wrappers.item')
+local Trigger = require('wrappers.trigger')
 local unit = Unit.create(PlayerWrapper.fromIndex(0), 1751543663, 0, 0, 0)
 Group.create():add(Timer.create()) -- EXPECT param-type-mismatch
 unit:nonexistentMethod() -- EXPECT undefined-field
@@ -16,4 +18,11 @@ if maybe then
     local wrong = maybe -- EXPECT assign-type-mismatch
     wrong:destroy()
 end
+local trigger = Trigger.create()
+trigger:registerDeathEvent(Timer.create()) -- EXPECT param-type-mismatch
+trigger:removeAction(trigger:addCondition(function() return true end)) -- EXPECT param-type-mismatch
+Item.create(1, 0, 0):nonexistentMethod() -- EXPECT undefined-field
+-- LuaLS 3.19.1 reports need-check-nil on a nullable local, not on a chained call result.
+local slotItem = unit:getItemInSlot(0)
+slotItem:setCharges(1) -- EXPECT need-check-nil
 return true
