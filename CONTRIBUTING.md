@@ -97,13 +97,13 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    centre. At start `Wrapper presentation started; sound duration <n>` prints (record `n`; 0 can mean the file was not
    loaded yet), then `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2`. Visible at once: a yellow
    `Wrapper text tag` upper left; a chain lightning bolt below the footman; the area-of-effect circle centred under the
-   footman; a building-base splat upper right; a red, half-transparent, slowed Footman model turned sideways, raised and
-   attacking to the left, and a blue (player 2 colour) Footman model beside it; the talk-to-me mark on the claws item.
-   The minimap shows a revealed circle towards the top right and a revealed square towards the bottom left.
-   `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound plays
-   (`Wrapper sound play`). At 4 s it stops, `Wrapper playOnce first call` prints and the quest sound plays. If it is
-   silent then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the
-   fix is decided with the maintainer before release. At 8 s the footman voice plays from the centre
+   footman; a building-base splat upper right; a red, half-transparent, slowed Footman model turned 90 degrees (yaw π/2)
+   from the blue one, raised and attacking, and a blue (player 2 colour) Footman model beside it; the talk-to-me mark on
+   the claws item. The minimap shows a revealed circle towards the top right and a revealed square towards the bottom
+   left. `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound
+   plays (`Wrapper sound play`). At 4 s it stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it
+   is silent then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop:
+   the fix is decided with the maintainer before release. At 8 s the footman voice plays from the centre
    (`Wrapper 3D sound`). At 10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce
    for another player plays at volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman
    and reads `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up,
@@ -131,8 +131,9 @@ selection adjustments for visibility. Library code was commit `3b923d5` througho
 
 v0.2.0: Passed 2026-09-29, confirmed by the maintainer's message-log screenshots on Warcraft III Reforged 3.0.0.24268
 and World Editor 3.00 (file version 3.0.0.24268). Steps 2, 3, 5 (`collected=true stale=true identity=true`), 6 and 7
-passed with library `5417ce6`. Gate copies added one camera line. Step 4: the first `-gate` printed `Wrapper chat once`
-and `Wrapper chat accepted` on `830cf31` (same library code); the second `-gate` was not observed. Step 8 is deferred.
+(the minified run, now step 8) passed with library `5417ce6`. Gate copies added one camera line. Step 4: the first
+`-gate` printed `Wrapper chat once` and `Wrapper chat accepted` on `830cf31` (same library code); the second `-gate` was
+not observed. Step 8 (the two-player run, now step 9) is deferred.
 
 ## First publication and tag gate (maintainer)
 

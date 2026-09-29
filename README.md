@@ -125,8 +125,8 @@ stale:
   `heightOffset` (0), `color` (`{r, g, b, a?}`, white), `speed` (64) and `angle` (degrees, 90), `lifespan` (2),
   `fadepoint` (1) and `player` (show to one player only). It does nothing when the game has no free text tag.
 - `Sound.playOnce(path, options?)`: plays a sound once and releases it. Options: `volume` (0–127, 127); `x`, `y` and `z`
-  (given `x` and `y`, the sound is 3D at that point; `z` defaults to 0); `player` (hear it on one player's machine only;
-  the others play it at volume 0).
+  (given `x` and `y`, the sound is 3D at that point; giving only one of them raises an error; `z` defaults to 0);
+  `player` (hear it on one player's machine only; the others play it at volume 0).
 - `Effect.flash(model, x, y)` and `Effect.flashOn(model, Widget, attachmentPoint)`: create and destroy an effect at
   once, which plays its death animation.
 

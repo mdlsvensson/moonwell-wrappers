@@ -253,10 +253,10 @@ presentationGate = (owner) ->
       print "Wrapper sound play"
     elseif step == 2
       bell\stop!
-      Sound.playOnce "Sound\\Interface\\QuestNew.flac"
+      Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
       print "Wrapper playOnce first call"
     elseif step == 3
-      Sound.playOnce "Sound\\Interface\\QuestNew.flac"
+      Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
       print "Wrapper playOnce second call"
     elseif step == 4
       voice\setPosition 0, 0, 0

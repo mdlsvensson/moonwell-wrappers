@@ -9,7 +9,7 @@
   on `TextTag.float` and `Sound.playOnce`.
 - Effect: `setColor`, `setAlpha`, `setPlayerColor`, `setTimeScale`, `setOrientation`, `setHeight`, `setZ`,
   `playAnimation`.
-- `Item.enumInRect(rect, filter?)` and `Destructable.enumInRect(rect, filter?)` return snapshots.
+- `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return snapshots.
 - **Changed:** `Effect.attach` accepts any widget (Unit, Item, Destructable). A wrong argument now reports
   `[wrappers] Effect.attach: expected Widget wrapper` (formerly `expected Unit wrapper`).
 
