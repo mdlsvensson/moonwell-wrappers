@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- New wrappers: TextTag, Sound, Lightning, Image, Ubersplat and FogModifier. They exist only for objects the map owns
+  and destroys: `TextTag.create` makes a permanent tag, and a Sound wrapper is never released when done.
+- Fire-and-forget helpers that return nothing: `TextTag.float`, `Sound.playOnce`, `Effect.flash`, `Effect.flashOn`.
+- Local visibility: `setVisibleFor(Player)` on TextTag, Image and Ubersplat; `sound:playFor(Player)`; a `player` option
+  on `TextTag.float` and `Sound.playOnce`.
+- Effect: `setColor`, `setAlpha`, `setPlayerColor`, `setTimeScale`, `setOrientation`, `setHeight`, `setZ`,
+  `playAnimation`.
+- `Item.enumInRect(rect, filter?)` and `Destructable.enumInRect(rect, filter?)` return snapshots.
+- **Changed:** `Effect.attach` accepts any widget (Unit, Item, Destructable). A wrong argument now reports
+  `[wrappers] Effect.attach: expected Widget wrapper` (formerly `expected Unit wrapper`).
+
 ## 0.2.0 (2026-09-29)
 
 - New wrappers: Item, Destructable, Rect, Region and Force.

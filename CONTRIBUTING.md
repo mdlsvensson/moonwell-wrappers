@@ -93,15 +93,35 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    `[wrappers] Trigger callback failed: ... intentional trigger probe`) and both callbacks continue;
    `[wrappers] Trigger condition failed: ... intentional condition probe` prints, and the action behind that condition
    never runs (no `ERROR condition probe action ran`). Restore `probes = false`.
-7. Build with `--minify` and play the packed map; repeat steps 2–5. Open the packed map in World Editor.
-8. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
+7. Presentation (v0.3.0): set `presentation = true` and run again; only the presentation gate runs, around the map
+   centre. At start `Wrapper presentation started; sound duration <n>` prints (record `n`; 0 can mean the file was not
+   loaded yet), then `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2`. Visible at once: a yellow
+   `Wrapper text tag` upper left; a chain lightning bolt below the footman; the area-of-effect circle centred under the
+   footman; a building-base splat upper right; a red, half-transparent, slowed Footman model turned sideways, raised and
+   attacking to the left, and a blue (player 2 colour) Footman model beside it; the talk-to-me mark on the claws item.
+   The minimap shows a revealed circle towards the top right and a revealed square towards the bottom left.
+   `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound plays
+   (`Wrapper sound play`). At 4 s it stops, `Wrapper playOnce first call` prints and the quest sound plays. If it is
+   silent then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the
+   fix is decided with the maintainer before release. At 8 s the footman voice plays from the centre
+   (`Wrapper 3D sound`). At 10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce
+   for another player plays at volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman
+   and reads `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up,
+   the splat fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle
+   disappears and a thunder clap flashes on the footman (`Wrapper image hidden`). At 20 s everything disappears and
+   `Wrapper presentation cleanup passed` prints. If a sound, model or splat never appears or plays in any run, its path
+   or name may not exist in this game version: substitute one from World Editor and record it. Restore
+   `presentation = false`.
+8. Build with `--minify` and play the packed map; repeat steps 2–5 and 7. Open the packed map in World Editor.
+9. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
    step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and play
    past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line, from
-   its own Lua collector; record both.
-9. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
-   this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
-   `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
-   occurs. Then stop and apply it.
+   its own Lua collector; record both. The same online check covers v0.3.0's local visibility: setVisibleFor, playFor
+   and the player options of TextTag.float and Sound.playOnce show or play only for that player, with no desync.
+10. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
+    this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
+    `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
+    occurs. Then stop and apply it.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor

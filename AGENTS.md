@@ -11,10 +11,13 @@ The approved design and implementation history live in the sibling Moonwell repo
 - `../moonwell/docs/superpowers/plans/2026-09-28-moonwell-wrappers.md`
 - `../moonwell/docs/superpowers/specs/2026-09-28-moonwell-wrappers-broad-design.md` and
   `../moonwell/docs/superpowers/plans/2026-09-28-moonwell-wrappers-broad.md` (v0.2.0)
+- `../moonwell/docs/superpowers/specs/2026-09-29-moonwell-wrappers-presentation-design.md` and
+  `../moonwell/docs/superpowers/plans/2026-09-29-moonwell-wrappers-presentation.md` (v0.3.0)
 
 README documents the complete public API. CONTRIBUTING documents tool versions, checks and the manual release gate.
-v0.2.0 adds broad gameplay coverage; UI and presentation types remain in Moonwell's backlog. Do not add gameplay
-systems, implicit cleanup or a w3ts compatibility layer without a new design.
+v0.2.0 adds broad gameplay coverage; v0.3.0 adds presentation (text tags, sounds, lightning, images, ubersplats, fog
+modifiers), deeper effects and item/destructable enumeration. Classic UI and frames remain in Moonwell's backlog. Do not
+add gameplay systems, implicit cleanup or a w3ts compatibility layer without a new design.
 
 ## Rules
 
@@ -31,6 +34,10 @@ systems, implicit cleanup or a w3ts compatibility layer without a new design.
   limitations. Do not add broad diagnostic suppression.
 - A module imports another public module only to return its wrappers. Convert wrapper arguments with `Handle.unwrap` or
   `Handle.unwrapWidget`.
+- Presentation wrappers exist only for objects the map owns and destroys. Anything the game can end on its own (text
+  tags with a lifespan, sounds released when done) goes through a helper that returns nothing. Local visibility helpers
+  pass a machine-local boolean to the same native on every machine. No getters for machine-local values.
+- Options tables go through `internal/options.lua`: unknown keys and wrong types fail before any native.
 
 ## Verification
 
