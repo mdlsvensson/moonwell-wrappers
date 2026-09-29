@@ -173,9 +173,10 @@ errors propagate.
 ## Classic UI
 
 Dialog, Multiboard, Leaderboard, Quest, DefeatCondition and TimerDialog wrap objects the map owns and destroys, like the
-presentation classes. Create and show them from a timer or trigger once the map has started, as the gate does with a
-zero-second timer. w3ts reports that dialogs and multiboards cannot be shown during map initialization, and that
-creating quests, leaderboards and multiboards there can crash the game (not yet measured by our probe).
+presentation classes. Show them from a timer or trigger once the map has started, as the gate does with a zero-second
+timer: in a probe on 3.0.0.24268, a dialog and a multiboard shown directly in `on_main` never appeared. Creating a
+quest, leaderboard or multiboard in `on_main` worked, and each showed correctly later. (w3ts reports that creating them
+while the map script loads can crash the game; create game objects inside Moonwell's hooks, never at module top level.)
 
 **Dialogs.** `dialog:addButton(text, callback)` or `dialog:addButton(text, options?, callback?)` returns a DialogButton.
 The callback receives the Player who clicked, runs behind the same error boundary as trigger actions, and may hide,
@@ -188,8 +189,10 @@ callback never runs. Buttons have no `destroy()` and no `fromHandle`; `button:ge
 **Multiboards.** Rows and columns count from 1. `setCell(row, column, options)`, `setRow(row, options)`,
 `setColumn(column, options)` and `setAll(options)` take `value`, `color` (`{r, g, b, a?}`), `icon`, `width` (a fraction
 of the screen width) and `showValue` with `showIcon` (always together); at least one option is required. A cell outside
-the board raises an error. The wrapper obtains and releases the native cell handles itself, so none can leak.
-`setRowCount` changes the count one row at a time, because w3ts reports that bigger steps are unsafe.
+the board raises an error. The wrapper obtains and releases the native cell handles itself, so none can leak. A new
+multiboard's cells show a default icon (an eye) and no text until they are styled, so start with, for example,
+`setAll({showValue = true, showIcon = false})`. `setRowCount` changes the count one row at a time, a safeguard: w3ts
+reports that bigger steps are unsafe, though a direct change from 0 to 5 rows worked in our probe.
 `Multiboard.suppressDisplay(flag)` hides or allows every multiboard. There is no `isMinimized()`: each player minimizes
 a multiboard on their own machine.
 

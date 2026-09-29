@@ -97,7 +97,8 @@ function Multiboard.suppressDisplay(flag) MultiboardSuppressDisplay(flag) end
 function Multiboard:getHandle() return registry.require(self, 'Multiboard.getHandle') end
 ---@return boolean
 function Multiboard:isDisposed() return registry.isDisposed(self, 'Multiboard.isDisposed') end
----Changes the row count one row at a time: w3ts reports that bigger steps are unsafe.
+---Changes the row count one row at a time, a safeguard: w3ts reports that bigger steps are unsafe (a direct change from
+---0 to 5 rows worked in our probe on 3.0.0.24268).
 ---@param count integer
 function Multiboard:setRowCount(count)
     local raw = registry.require(self, 'Multiboard.setRowCount')

@@ -189,6 +189,12 @@ v0.3.1: Not re-run (maintainer's decision, 2026-09-29). The release changes docu
 `Image.create`'s wrong-path error; a dedicated probe run on Warcraft III 3.0.0.24268 measured the behaviour it relies on
 (handle id -1 for a wrong path; `DestroyImage` on it does not crash). Library code is otherwise that of v0.3.0.
 
+v0.4.0: `ui-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `2a6cd9f`): a
+dialog and a multiboard shown directly in `on_main` did not appear; a quest, leaderboard and multiboard created in
+`on_main` did not crash, the leaderboard later showed its item and the quest was listed in the log; one
+`MultiboardSetRowCount` from 0 to 5 showed 5 rows, as did the wrapper's stepped change; a new 2 × 2 multiboard showed an
+eye icon in each cell and no text. The `ui` and `ui-min` gate runs (steps 8 and 9) are pending.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

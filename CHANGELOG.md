@@ -11,6 +11,9 @@
 - Leaderboard items are keyed by player and resize the board.
 - `setVisibleFor(Player)` on Multiboard and TimerDialog. No getters for display or minimized state.
 - A TimerDialog raises once its Timer is destroyed, except for `destroy()`.
+- README, measured by an in-game probe on 3.0.0.24268: dialogs and multiboards shown directly in `on_main` do not
+  appear, while creating quests, leaderboards and multiboards there works; a direct row-count change from 0 to 5 works
+  (stepping is kept as a safeguard); new multiboard cells show an eye icon and no text until styled.
 
 ## 0.3.1 (2026-09-29)
 
