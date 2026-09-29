@@ -91,6 +91,7 @@ for (
     "quest",
     "defeatcondition",
     "timerdialog",
+    "frame",
   ]
 ) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
@@ -135,6 +136,7 @@ const publicModules = [
   "quest",
   "defeatcondition",
   "timerdialog",
+  "frame",
 ];
 const soloEntries: Record<string, { source: string; allowed: string[] }> = {
   trigger: { source: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n', allowed: [] },
@@ -147,6 +149,7 @@ const soloEntries: Record<string, { source: string; allowed: string[] }> = {
     allowed: [],
   },
   dialog: { source: 'import "wrappers.dialog" as Dialog\nd = Dialog.create!\nd\\destroy!\n', allowed: ["player"] },
+  frame: { source: 'import "wrappers.frame" as Frame\nFrame.hideOrigin false\n', allowed: ["player"] },
 };
 // "wrappers.timer" is a prefix of "wrappers.timerdialog"; match whole module names by the closing quote.
 const bundles = (bundle: string, name: string) =>
@@ -166,7 +169,7 @@ for (const [entry, { source, allowed }] of Object.entries(soloEntries)) {
     }
   }
 }
-console.log("Moonwell: Trigger-, TextTag-, Multiboard- and Dialog-only maps bundle only what they import");
+console.log("Moonwell: Trigger-, TextTag-, Multiboard-, Dialog- and Frame-only maps bundle only what they import");
 
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));
 await moonwell(["check"]);

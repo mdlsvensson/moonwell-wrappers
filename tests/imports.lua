@@ -14,3 +14,10 @@ test('the dialog module loads the Player module and no other', function()
     eq(package.loaded['wrappers.player'] ~= nil, true)
     for _, name in ipairs({'unit', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
 end)
+
+test('the frame module loads the Player module and no other', function()
+    require('wrappers.frame')
+    eq(totalCalls(), 0)
+    eq(package.loaded['wrappers.player'] ~= nil, true)
+    for _, name in ipairs({'unit', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
+end)
