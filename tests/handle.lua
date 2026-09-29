@@ -1,7 +1,11 @@
 native('CreateTimer', function() return {} end)
+native('RemoveItem', function() end)
+native('RemoveDestructable', function() end)
 local Handle = require('wrappers.internal.handle')
 local Widget = require('wrappers.internal.widget')
 local Unit = require('wrappers.unit')
+local Item = require('wrappers.item')
+local Destructable = require('wrappers.destructable')
 local Timer = require('wrappers.timer')
 eq(totalCalls(), 0)
 
@@ -53,18 +57,27 @@ local function wrapAndMark(fromHandle, raw, probe, kind)
 end
 
 test('weak caches release unreferenced wrappers; strong caches keep them', function()
-    local rawUnit, rawTimer = {}, {}
+    local rawUnit, rawItem, rawDestructable, rawTimer = {}, {}, {}, {}
     local held = Unit.fromHandle({})
+    local heldItem, heldDestructable = Item.fromHandle({}), Destructable.fromHandle({})
     collectgarbage(); collectgarbage()
     eq(Unit.fromHandle(held.handle), held)
+    eq(Item.fromHandle(heldItem.handle), heldItem)
+    eq(Destructable.fromHandle(heldDestructable.handle), heldDestructable)
     local probe = setmetatable({}, {__mode = 'k'})
     wrapAndMark(Unit.fromHandle, rawUnit, probe, 'unit')
+    wrapAndMark(Item.fromHandle, rawItem, probe, 'item')
+    wrapAndMark(Destructable.fromHandle, rawDestructable, probe, 'destructable')
     wrapAndMark(Timer.fromHandle, rawTimer, probe, 'timer')
     collectgarbage(); collectgarbage()
     local left = {}
     for _, kind in pairs(probe) do left[kind] = true end
-    eq(left.unit, nil); eq(left.timer, true)
+    eq(left.unit, nil); eq(left.item, nil); eq(left.destructable, nil); eq(left.timer, true)
     local fresh = Unit.fromHandle(rawUnit)
     eq(fresh:isDisposed(), false); eq(fresh.handle, rawUnit)
+    local freshItem, freshDestructable = Item.fromHandle(rawItem), Destructable.fromHandle(rawDestructable)
+    eq(freshItem:isDisposed(), false); eq(freshItem.handle, rawItem)
+    eq(freshDestructable:isDisposed(), false); eq(freshDestructable.handle, rawDestructable)
     fresh:remove(); held:remove()
+    freshItem:remove(); heldItem:remove(); freshDestructable:remove(); heldDestructable:remove()
 end)

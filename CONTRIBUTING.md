@@ -70,19 +70,22 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
    foundation ticks print.
-3. Broad: at start, `Wrapper hero level` (above 1), `Wrapper ability level 2` with a cooldown near 30,
+3. Broad: at start, `Wrapper hero level` (above 1), `Wrapper ability level 2` (Storm Bolt) with a cooldown near 30,
    `Wrapper item <item name> charges 3`, `Wrapper force players <count>` and `Wrapper filtered heroes 1` print.
    `Wrapper region entered` prints when the footman walks into the rect. After about 2 seconds the hero walks to the
    item and `Wrapper item picked up true` prints; at 4 seconds the tree dies and `Wrapper tree death event` prints; at 6
    seconds `Wrapper tree restored` prints with its life, and the tree stands again.
-4. Type `-gate` in chat twice within the first ~30 seconds, while the hero is alive. `Wrapper chat once` prints only
-   after the first `-gate`; `Wrapper chat accepted` prints both times; `ERROR removed action ran` never prints. At 30
-   seconds `Wrapper broad cleanup passed` prints and the hero, item and tree disappear.
-5. Weak cache probe: at 30 seconds five probe footmen appear. At 50 seconds twenty more appear, then
-   `Wrapper weak cache probe collected=<bool> stale=<bool> identity=<bool>` prints and all the probe's footmen
-   disappear. It passes when all three are `true`, and `Wrapper weak cache probe passed` then prints too.
-   `collected=false` means Lua's collector had not yet freed the weak sentinel: the result is inconclusive, not a
-   failure. Run again, or tell the maintainer.
+4. Type `-gate` in chat twice within the first ~30 seconds, while the hero is alive. The chat trigger has a condition
+   that removes itself during its first evaluation. `Wrapper chat once` prints only after the first `-gate`;
+   `Wrapper chat accepted` prints both times; `ERROR removed action ran` never prints. The game does not crash and no
+   `[wrappers] ... failed` line prints. At 30 seconds `Wrapper broad cleanup passed` prints and the hero, item and tree
+   disappear.
+5. Weak cache probe: at 30 seconds five probe footmen appear (twenty more are created and removed at once). At 50
+   seconds twenty more are created and removed in the same callback;
+   `Wrapper weak cache probe collected=<bool> stale=<bool> identity=<bool>` prints and the five kept footmen disappear.
+   It passes when all three are `true`, and `Wrapper weak cache probe passed` then prints too. `collected=false` means
+   Lua's collector had not yet freed the weak sentinel: the result is inconclusive, not a failure. Run again, or tell
+   the maintainer.
 6. Set `probes = true` and run again. The intentional timer and trigger errors print
    (`[wrappers] Timer callback failed: ... intentional timer probe` and
    `[wrappers] Trigger callback failed: ... intentional trigger probe`) and both callbacks continue;
@@ -106,8 +109,10 @@ selection adjustments for visibility. Library code was commit `3b923d5` througho
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to
-`mdlsvensson/moonwell-wrappers`. Tags are immutable. This library is not a JSR or Pkl package. Change the Unreleased
-changelog heading to the released version/date and record the gate evidence before tagging.
+`mdlsvensson/moonwell-wrappers`. Tags are immutable. This library is not a JSR or Pkl package. Before tagging, change
+the Unreleased changelog heading to the released version/date, record the gate evidence, and update README: the Status
+paragraph, the sentence introducing the GitHub example and that example's `tag` must name the new tag, because the
+consumption check below uses that configuration.
 
 In a fresh Moonwell map, use the README GitHub configuration, run check/build, and inspect/commit moonwell.lock. Confirm
 it records the tagged commit. Remove only that disposable map's `.moonwell/` cache and repeat check; the lock must stay

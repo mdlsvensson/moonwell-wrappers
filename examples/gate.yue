@@ -111,11 +111,12 @@ broadGate = (owner) ->
   assert hero\isHero!
   hero\addXP 1000, true
   print "Wrapper hero level", hero\getLevel!, "strength", hero\getStr(true)
-  slow = $FourCC("Aslo")
-  assert hero\addAbility(slow)
-  hero\setAbilityLevel slow, 2
-  hero\startCooldown slow, 30
-  print "Wrapper ability level", hero\getAbilityLevel(slow), "cooldown", hero\getCooldownRemaining(slow)
+  -- Storm Bolt: three levels, and not one of the Paladin's own abilities.
+  stormBolt = $FourCC("AHtb")
+  assert hero\addAbility(stormBolt)
+  hero\setAbilityLevel stormBolt, 2
+  hero\startCooldown stormBolt, 30
+  print "Wrapper ability level", hero\getAbilityLevel(stormBolt), "cooldown", hero\getCooldownRemaining(stormBolt)
   claws = assert hero\addItemById($FourCC("ratc")), "no item added"
   assert hero\getItemInSlot(0) == claws
   assert hero\dropItemAt(claws, -200, 0)
@@ -141,6 +142,11 @@ broadGate = (owner) ->
   chat = Trigger.create!
   chat\registerChatEvent owner, "-gate", true
   chat\addCondition -> hero\isAlive!
+  -- Removes itself during its first evaluation; that evaluation still counts its result.
+  local gateOnce
+  gateOnce = chat\addCondition (self) ->
+    self\removeCondition gateOnce
+    true
   removed = chat\addAction -> print "ERROR removed action ran"
   local once
   once = chat\addAction (self) ->

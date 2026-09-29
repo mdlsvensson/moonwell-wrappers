@@ -34,6 +34,7 @@ test('destructable removal is idempotent and guards every method', function()
     local raw = d.handle
     d:remove(); d:remove()
     expectCall('RemoveDestructable', raw); eq(callCount('RemoveDestructable'), 1); eq(d.handle, nil)
+    eq(d:isDisposed(), true)
     checkDisposed(d, {'getHandle', 'getTypeId', 'getName', 'getMaxLife', 'setMaxLife', 'kill', 'restore',
         'isInvulnerable', 'setInvulnerable', 'show', 'setAnimation', 'queueAnimation', 'getLife', 'setLife',
         'getX', 'getY'})

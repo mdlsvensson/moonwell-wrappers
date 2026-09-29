@@ -94,6 +94,8 @@ await Deno.writeTextFile(
 );
 await moonwell(["build"]);
 const triggerBundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
+// Guard the absence checks below: they would pass vacuously if the bundle held no wrapper module at all.
+if (!triggerBundle.includes("wrappers.trigger")) throw new Error("Trigger-only bundle lacks wrappers.trigger");
 const publicModules = ["unit", "player", "item", "destructable", "rect", "region", "force", "group", "timer", "effect"];
 for (const unused of publicModules) {
   if (triggerBundle.includes(`wrappers.${unused}`)) throw new Error(`Trigger-only bundle includes wrappers.${unused}`);

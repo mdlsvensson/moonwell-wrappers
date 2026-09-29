@@ -90,8 +90,10 @@ the same Lua table while any reference to that wrapper exists.
 
 Unit, Item and Destructable use a weak cache: the game removes these on its own (decay, used powerups, dead trees), so a
 wrapper nothing references may be collected, and a later `fromHandle` returns a fresh wrapper. Keep a reference (a
-variable, table key or closure) wherever identity matters. Timer, Trigger, Group, Effect, Rect, Region and Force stay
-cached until you destroy them; Player wrappers stay cached for the game session.
+variable, table key or closure) wherever identity matters. Do not key weak tables (`__mode = 'k'`) by Unit, Item or
+Destructable wrappers for game data: each client's collector drops those entries at its own time, so game logic that
+reads such a table can desync. Timer, Trigger, Group, Effect, Rect, Region and Force stay cached until you destroy them;
+Player wrappers stay cached for the game session.
 
 Use `unit/item/destructable:remove()` and `timer/trigger/group/effect/rect/region/force:destroy()`. Repeated cleanup is
 harmless; other methods reject disposed receivers and disposed wrapper arguments. `unit:kill()` leaves its wrapper valid
@@ -158,10 +160,12 @@ apply. Calls made only for a local player do not become synchronized by using wr
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
 method. `setPosition` uses SetUnitPosition, which respects pathing; `setX`/`setY` use SetUnitX/SetUnitY, which do not.
 Inventory slots are zero-based integers below `getInventorySize()`. `getItemInSlot`, `removeItemFromSlot`, `addItemById`
-and `group:first()` return nil when there is nothing. Hero methods pass through to the natives, so Warcraft's behavior
-applies to non-heroes. `isLocal()` is true only on that player's machine: never change synchronized game state inside a
-branch on it. `enumSelected` inherits the native's synchronization behavior. `Rect.worldBounds()` allocates a new rect
-each call; destroy it. SetPlayerName is deliberately outside the API.
+and `group:first()` return nil when there is nothing. `group:first()` uses FirstOfGroup, which can also return nil while
+the group still holds removed units, so do not loop `while group:first()`; use `forEach` or `getUnits()`. Hero methods
+pass through to the natives, so Warcraft's behavior applies to non-heroes. `isLocal()` is true only on that player's
+machine: never change synchronized game state inside a branch on it. `enumSelected` inherits the native's
+synchronization behavior. `Rect.worldBounds()` allocates a new rect each call; destroy it. SetPlayerName is deliberately
+outside the API.
 
 Some methods that act also pass the native's result through. `trigger:evaluate()` returns the conditions' boolean
 result. On Unit, `damageTarget`, `modifySkillPoints`, `revive`, `addAbility`, `removeAbility`, `makeAbilityPermanent`,
@@ -180,9 +184,10 @@ Timer callbacks receive their Timer; trigger actions and conditions receive thei
 ordinary natives, then convert handles with `fromHandle` as needed. Registrations pass no native filter; filter inside a
 condition or an action. Warcraft cannot unregister an event, so destroying the trigger is the only way to remove one.
 `addAction` and `addCondition` return tokens; removing a token takes effect at once, even during a firing, and removing
-it twice does nothing. A token from another trigger raises an error. A condition's result counts as truthy or falsy; if
-it raises, the error is printed with `[wrappers] Trigger condition failed:` and the condition counts as false. The
-trigger owns each condition's boolexpr and destroys it on removal, on `clearConditions()` and on `destroy()`.
+it twice does nothing. A condition may remove its own token; the evaluation in progress still counts its result. A token
+from another trigger raises an error. A condition's result counts as truthy or falsy; if it raises, the error is printed
+with `[wrappers] Trigger condition failed:` and the condition counts as false. The trigger owns each condition's
+boolexpr and destroys it on removal, on `clearConditions()` and on `destroy()`.
 
 `start` replaces the timer's old schedule. Timeouts must be finite and nonnegative. One-shot timers remain allocated
 after firing: restart them or explicitly destroy them. A callback can restart or destroy its own timer. Stale callbacks

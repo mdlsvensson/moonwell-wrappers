@@ -11,12 +11,17 @@
   `execute`.
 - Group: `enumInRect`, `enumOfPlayer`, `enumSelected`, an optional Lua filter on every enumeration, `forEach`, `first`.
 - **Changed:** Unit, Item and Destructable wrappers use a weak cache. A wrapper nothing references may be collected, and
-  a later `fromHandle` returns a fresh one; identity is unchanged while any reference exists.
+  a later `fromHandle` returns a fresh one; identity is unchanged while any reference exists. Do not key weak tables
+  (`__mode = 'k'`) by these wrappers for game data: each client drops entries at its own collection time, which can
+  desync.
+- **Changed:** wrong or disposed wrapper arguments now report the method that was called, for example
+  `[wrappers] Effect.attach: expected Unit wrapper` (formerly `[wrappers] Unit.getHandle: expected Unit wrapper`; the
+  same for Group, Trigger and Player arguments to Unit). `issueTargetOrder` now reports `expected Widget wrapper`.
 - Trigger and Effect no longer import Unit or Player: wrapper arguments convert through the loaded classes.
 
 ### Release gate
 
-Automated checks passed 2026-09-28 on Windows: 66 behavior tests in 13 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+Automated checks passed 2026-09-29 on Windows: 69 behavior tests in 13 suites with YueScript 0.34.2; Lua 5.3.6 syntax
 checks (30 files); Moonwell normal/minified builds, unused-module exclusion, a Trigger-only bundle and bundled
 execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eight expected negative diagnostics; the gate example builds with
 clean editor diagnostics.

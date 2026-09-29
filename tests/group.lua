@@ -94,6 +94,18 @@ test('enumerations clear first and forward exact arguments', function()
     g:destroy(); r:destroy()
 end)
 
+test('invalid filters blame the caller, not the library', function()
+    local g, r, p = Group.create(), Rect.create(0, 0, 1, 1), Player.fromIndex(0)
+    for _, call in ipairs({function() g:enumInRange(0, 0, 10, 'filter') end, function() g:enumInRect(r, 1) end,
+        function() g:enumOfPlayer(p, true) end, function() g:enumSelected(p, {}) end, function() g:forEach(nil) end}) do
+        local ok, err = pcall(call)
+        eq(ok, false)
+        assert(tostring(err):find('tests/group.lua:', 1, true), tostring(err))
+        assert(tostring(err):find('expected a callback function', 1, true), tostring(err))
+    end
+    g:destroy(); r:destroy()
+end)
+
 test('filters run after native enumeration and remove rejected units', function()
     local a, b, c = {}, {}, {}
     local members = nativeGroup({a, b, c})

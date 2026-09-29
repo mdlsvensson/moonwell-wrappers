@@ -149,6 +149,37 @@ test('conditions own boolexprs and failures evaluate false', function()
     t:destroy()
 end)
 
+test('a condition that removes itself keeps its result for that evaluation', function()
+    local t, token, runs = Trigger.create(), nil, 0
+    token = t:addCondition(function(self) runs = runs + 1; self:removeCondition(token); return true end)
+    local boolexpr, nativeCondition, check = lastBoolexpr, lastCondition, conditions[#conditions]
+    resetCalls()
+    eq(check(), true); eq(runs, 1); eq(#PRINTED, 0)
+    eq(callCount('TriggerRemoveCondition'), 1); expectCall('TriggerRemoveCondition', t.handle, nativeCondition)
+    eq(callCount('DestroyCondition'), 1); expectCall('DestroyCondition', boolexpr)
+    eq(callName(1), 'TriggerRemoveCondition'); eq(callName(2), 'DestroyCondition'); eq(totalCalls(), 2)
+    eq(check(), false); eq(check(), false); eq(runs, 1)
+    t:removeCondition(token); eq(callCount('TriggerRemoveCondition'), 1); eq(callCount('DestroyCondition'), 1)
+    t:destroy()
+end)
+
+test('a condition that destroys its trigger keeps the destroy order', function()
+    local t, runs = Trigger.create(), 0
+    t:addCondition(function(self) runs = runs + 1; self:destroy(); return true end)
+    local check = conditions[#conditions]
+    t:addCondition(function() return true end)
+    local laterBoolexpr, laterCheck = lastBoolexpr, conditions[#conditions]
+    local raw = t.handle
+    resetCalls()
+    eq(check(), true); eq(runs, 1); eq(#PRINTED, 0); eq(t:isDisposed(), true); eq(t.handle, nil)
+    eq(callName(1), 'TriggerClearConditions'); eq(callName(2), 'DestroyCondition'); eq(callName(3), 'DestroyCondition')
+    eq(callName(4), 'DestroyTrigger'); eq(totalCalls(), 4)
+    expectCall('TriggerClearConditions', raw); expectCall('DestroyCondition', laterBoolexpr)
+    expectCall('DestroyTrigger', raw)
+    eq(check(), false); eq(laterCheck(), false); eq(runs, 1)
+    t:destroy(); eq(callCount('DestroyTrigger'), 1); eq(#PRINTED, 0)
+end)
+
 test('action tokens remove individual actions, even mid-firing', function()
     local t, hits, second = Trigger.create(), {}, nil
     t:addAction(function(self) hits[#hits + 1] = 'first'; self:removeAction(second) end)

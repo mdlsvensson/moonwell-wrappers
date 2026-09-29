@@ -29,10 +29,13 @@ local function wrapAll(raws)
     return result
 end
 
+---Level 3 blames the caller of the enumeration method, like Callback.check does for direct callers.
 ---@param filter unknown
 ---@param operation string
 local function checkFilter(filter, operation)
-    if filter ~= nil then Callback.check(filter, operation) end
+    if filter ~= nil and type(filter) ~= 'function' then
+        error('[wrappers] ' .. operation .. ': expected a callback function', 3)
+    end
 end
 
 ---Runs the filter over a snapshot, then removes rejected units. If the filter raises, the group is cleared and the
