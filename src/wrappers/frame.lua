@@ -297,4 +297,121 @@ function Frame:destroy()
     BlzDestroyFrame(raw)
 end
 
+---@param point framepointtype
+---@param relative MoonwellWrappers.Frame
+---@param relativePoint framepointtype
+---@param x number
+---@param y number
+function Frame:setPoint(point, relative, relativePoint, x, y)
+    local raw = registry.require(self, 'Frame.setPoint')
+    BlzFrameSetPoint(raw, point, registry.require(relative, 'Frame.setPoint'), relativePoint, x, y)
+end
+---Places a point of the frame at screen coordinates: 0-0.8 wide, 0-0.6 high, origin bottom left.
+---@param point framepointtype
+---@param x number
+---@param y number
+function Frame:setAbsPoint(point, x, y) BlzFrameSetAbsPoint(registry.require(self, 'Frame.setAbsPoint'), point, x, y) end
+---@param relative MoonwellWrappers.Frame
+function Frame:setAllPoints(relative)
+    local raw = registry.require(self, 'Frame.setAllPoints')
+    BlzFrameSetAllPoints(raw, registry.require(relative, 'Frame.setAllPoints'))
+end
+function Frame:clearPoints() BlzFrameClearAllPoints(registry.require(self, 'Frame.clearPoints')) end
+---@param width number
+---@param height number
+function Frame:setSize(width, height) BlzFrameSetSize(registry.require(self, 'Frame.setSize'), width, height) end
+---@param scale number
+function Frame:setScale(scale) BlzFrameSetScale(registry.require(self, 'Frame.setScale'), scale) end
+---@param level integer
+function Frame:setLevel(level) BlzFrameSetLevel(registry.require(self, 'Frame.setLevel'), level) end
+---@param text string
+function Frame:setText(text) BlzFrameSetText(registry.require(self, 'Frame.setText'), text) end
+---@param text string
+function Frame:addText(text) BlzFrameAddText(registry.require(self, 'Frame.addText'), text) end
+---@param r integer 0-255
+---@param g integer 0-255
+---@param b integer 0-255
+---@param a integer 0-255
+function Frame:setTextColor(r, g, b, a)
+    local raw = registry.require(self, 'Frame.setTextColor')
+    BlzFrameSetTextColor(raw, BlzConvertColor(a, r, g, b))
+end
+---@param r integer 0-255
+---@param g integer 0-255
+---@param b integer 0-255
+---@param a integer 0-255
+function Frame:setVertexColor(r, g, b, a)
+    local raw = registry.require(self, 'Frame.setVertexColor')
+    BlzFrameSetVertexColor(raw, BlzConvertColor(a, r, g, b))
+end
+---@param path string
+---@param height number
+---@param flags integer? Default 0.
+function Frame:setFont(path, height, flags)
+    BlzFrameSetFont(registry.require(self, 'Frame.setFont'), path, height, flags or 0)
+end
+---@param vertical textaligntype
+---@param horizontal textaligntype
+function Frame:setTextAlignment(vertical, horizontal)
+    BlzFrameSetTextAlignment(registry.require(self, 'Frame.setTextAlignment'), vertical, horizontal)
+end
+---@param size integer
+function Frame:setTextSizeLimit(size) BlzFrameSetTextSizeLimit(registry.require(self, 'Frame.setTextSizeLimit'), size) end
+---@param path string
+---@param flag integer? Default 0.
+---@param blend boolean? Default true.
+function Frame:setTexture(path, flag, blend)
+    local raw = registry.require(self, 'Frame.setTexture')
+    if blend == nil then blend = true end
+    BlzFrameSetTexture(raw, path, flag or 0, blend)
+end
+---@param path string
+---@param cameraIndex integer? Default 0.
+function Frame:setModel(path, cameraIndex)
+    BlzFrameSetModel(registry.require(self, 'Frame.setModel'), path, cameraIndex or 0)
+end
+---@param primaryProp integer
+---@param flags integer
+function Frame:setSpriteAnimate(primaryProp, flags)
+    BlzFrameSetSpriteAnimate(registry.require(self, 'Frame.setSpriteAnimate'), primaryProp, flags)
+end
+---For text areas.
+---@param flag boolean
+function Frame:setAutoScroll(flag) BlzTextAreaFrameSetAutoScroll(registry.require(self, 'Frame.setAutoScroll'), flag) end
+---@param value number
+function Frame:setValue(value) BlzFrameSetValue(registry.require(self, 'Frame.setValue'), value) end
+---@param min number
+---@param max number
+function Frame:setMinMaxValue(min, max) BlzFrameSetMinMaxValue(registry.require(self, 'Frame.setMinMaxValue'), min, max) end
+---@param step number
+function Frame:setStepSize(step) BlzFrameSetStepSize(registry.require(self, 'Frame.setStepSize'), step) end
+---@param alpha integer 0-255
+function Frame:setAlpha(alpha) BlzFrameSetAlpha(registry.require(self, 'Frame.setAlpha'), alpha) end
+---@param flag boolean
+function Frame:setEnabled(flag) BlzFrameSetEnable(registry.require(self, 'Frame.setEnabled'), flag) end
+---Shows `tooltip` while the mouse is over this frame.
+---@param tooltip MoonwellWrappers.Frame
+function Frame:setTooltip(tooltip)
+    local raw = registry.require(self, 'Frame.setTooltip')
+    BlzFrameSetTooltip(raw, registry.require(tooltip, 'Frame.setTooltip'))
+end
+---@param flag boolean
+function Frame:show(flag) BlzFrameSetVisible(registry.require(self, 'Frame.show'), flag) end
+---Shows the frame on that player's machine only. Only local visuals differ.
+---@param player MoonwellWrappers.Player
+function Frame:setVisibleFor(player)
+    local raw = registry.require(self, 'Frame.setVisibleFor')
+    BlzFrameSetVisible(raw, Handle.unwrap(player, 'Player', 'Frame.setVisibleFor') == GetLocalPlayer())
+end
+---On that player's machine only, disables and re-enables the frame, so a clicked button gives keyboard focus back
+---(hotkeys work again). Call it from a click callback with the callback's player.
+---@param player MoonwellWrappers.Player
+function Frame:releaseFocusFor(player)
+    local raw = registry.require(self, 'Frame.releaseFocusFor')
+    if Handle.unwrap(player, 'Player', 'Frame.releaseFocusFor') == GetLocalPlayer() then
+        BlzFrameSetEnable(raw, false)
+        BlzFrameSetEnable(raw, true)
+    end
+end
+
 return Frame
