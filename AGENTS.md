@@ -58,7 +58,8 @@ destructables are not drawn. The disposable gate map lived in `../wrappers-gate`
 per run, generated from `examples/gate.yue`); recreate it the same way for later releases. Tag consumption passed the
 same day: a fresh map locked `v0.3.0` to `1277875`. v0.3.1 (2026-09-29): documentation from the w3ts and WCSharp
 comparisons and an in-game probe (Moonwell's `docs/superpowers/research/`), `Image.create`'s wrong-path error, and
-flipped-boolean setter checks; the in-game gate was not re-run by the maintainer's decision (CONTRIBUTING). The probe
-map is `../wrappers-gate/src/probe.yue` (`deno task gate probe`). The README's "Reported native caveats" are other
-libraries' claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the
-automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
+flipped-boolean setter checks; the in-game gate was not re-run by the maintainer's decision (CONTRIBUTING). Tag
+consumption passed the same day: a fresh map locked `v0.3.1` to `94d650f`. The probe map is
+`../wrappers-gate/src/probe.yue` (`deno task gate probe`). The README's "Reported native caveats" are other libraries'
+claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the automated
+checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
