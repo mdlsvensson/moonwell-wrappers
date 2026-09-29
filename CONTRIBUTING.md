@@ -193,7 +193,12 @@ v0.4.0: `ui-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforge
 dialog and a multiboard shown directly in `on_main` did not appear; a quest, leaderboard and multiboard created in
 `on_main` did not crash, the leaderboard later showed its item and the quest was listed in the log; one
 `MultiboardSetRowCount` from 0 to 5 showed 5 rows, as did the wrapper's stepped change; a new 2 × 2 multiboard showed an
-eye icon in each cell and no text. The `ui` and `ui-min` gate runs (steps 8 and 9) are pending.
+eye icon in each cell and no text. The gate passed the same day with library `c685374`, confirmed by the maintainer's
+message-log screenshots and observations: step 8 printed every listed line in order, from `Wrapper dialog keyed by` to
+`Wrapper ui cleanup passed; quest item disposed true`, with no `[wrappers] ... failed` line; every listed visual
+matched, and `setSpeed 4` made the countdown run faster. Step 9: the minified `ui-min` run gave the same result and the
+packed map opened in World Editor. Steps 2–7 were not re-run (their code is unchanged since v0.3.1). Step 10 is
+deferred.
 
 ## First publication and tag gate (maintainer)
 

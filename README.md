@@ -4,11 +4,10 @@ Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Dest
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
 Quest, DefeatCondition and TimerDialog wrappers, editor completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.3.1` (2026-09-29): v0.3.0's presentation (text tags, sounds, lightning, images, ubersplats, fog
-modifiers, deeper effects, item and destructable enumeration), plus measured and reported native caveats and a check for
-wrong image paths. The v0.3.0 in-game gate passed; v0.3.1's runtime change is backed by an in-game probe. Multiplayer
-desync checks are deferred until before Moonwell 1.0. v0.4.0 (classic UI: dialogs, multiboards, leaderboards, quests,
-defeat conditions and timer dialogs) is in development on main; frames are not wrapped yet.
+**Status:** `v0.4.0` (2026-09-29): classic UI (dialogs, multiboards, leaderboards, quests, defeat conditions and timer
+dialogs), on top of v0.3's presentation wrappers and native caveats. Its in-game gate passed, normal and minified, after
+a probe of the classic UI's init-time behaviour. Multiplayer desync checks are deferred until before Moonwell 1.0.
+Frames are not wrapped yet.
 
 ## Use a local checkout
 
@@ -28,13 +27,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.3.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.4.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.3.1"
+    tag = "v0.4.0"
     dir = "src"
   }
 }

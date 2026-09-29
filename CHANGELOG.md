@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2026-09-29)
 
 - New classic UI wrappers: Dialog, Multiboard, Leaderboard, Quest, DefeatCondition and TimerDialog, all owned by the map
   and destroyed explicitly.
@@ -14,6 +14,20 @@
 - README, measured by an in-game probe on 3.0.0.24268: dialogs and multiboards shown directly in `on_main` do not
   appear, while creating quests, leaderboards and multiboards there works; a direct row-count change from 0 to 5 works
   (stepping is kept as a safeguard); new multiboard cells show an eye icon and no text until styled.
+
+### Release gate
+
+Automated checks passed 2026-09-29 on Windows: 147 behavior tests in 26 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (56 files); Moonwell 0.5.0 normal/minified builds, unused-module exclusion, Trigger-, TextTag-, Multiboard- and
+Dialog-only bundles (the Dialog map bundles only Dialog and Player) and bundled execution; LuaLS 3.19.1 positive
+fixtures and 13 expected negative diagnostics, including a Dialog button callback's parameter typed as Player; a direct
+LuaLS check of `src/wrappers` with the native declarations, no problems; the gate example builds with clean editor
+diagnostics.
+
+In game (maintainer, Warcraft III Reforged 3.0.0.24268, World Editor 3.00): the `ui-init` probe answered w3ts's classic
+UI notes (see README), then the classic UI gate (CONTRIBUTING step 8) passed normal and minified, and the packed map
+opened in World Editor. The earlier gate steps were not re-run (their code is unchanged). Multiplayer checks, including
+local visibility and dialog clicks by a second player, are deferred until before Moonwell 1.0.
 
 ## 0.3.1 (2026-09-29)
 

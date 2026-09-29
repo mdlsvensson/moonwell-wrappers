@@ -2,8 +2,8 @@
 
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
-remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0` and `v0.3.1` on
-the commits that record their gates. Tags must never be moved.
+remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1` and
+`v0.4.0` on the commits that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -69,4 +69,5 @@ consumption passed the same day: a fresh map locked `v0.3.1` to `94d650f`. The p
 `../wrappers-gate/src/probe.yue` (`deno task gate probe`). The README's "Reported native caveats" are other libraries'
 claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the automated
 checks, the in-game gate and the tag consumption gate in CONTRIBUTING. v0.4.0: the gate map has a `ui-init` probe
-(`../wrappers-gate/src/probe_ui.yue`, `deno task gate ui-init`) and the runs `ui` and `ui-min`.
+(`../wrappers-gate/src/probe_ui.yue`, `deno task gate ui-init`, results in `PROBE-UI-RESULTS.md`) and the runs `ui` and
+`ui-min`; the probe and the classic UI gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it).
