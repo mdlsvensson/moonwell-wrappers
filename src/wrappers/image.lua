@@ -13,7 +13,8 @@ local sizes = setmetatable({}, {__mode = 'k'})
 ---@return MoonwellWrappers.Image?
 ---@overload fun(raw: nil): nil
 function Image.fromHandle(raw) return registry.wrap(raw) end
----Creates a visible image centered on x, y.
+---Creates a visible image centered on x, y. A path the game cannot load raises an error: Warcraft returns an invalid
+---image (handle id -1) rather than nil, which this destroys first.
 ---@param path string
 ---@param width number
 ---@param height number
@@ -23,6 +24,11 @@ function Image.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Image
 function Image.create(path, width, height, x, y, imageType)
     local raw = CreateImage(path, width, height, 0, x - width / 2, y - height / 2, 0, 0, 0, 0, imageType)
+    -- Only compared with -1, which every machine gets for the same bad path; DestroyImage on it was safe in game.
+    if raw ~= nil and GetHandleId(raw) == -1 then
+        DestroyImage(raw)
+        error('[wrappers] Image.create: invalid image path: ' .. tostring(path), 2)
+    end
     local image = Handle.created(Image.fromHandle(raw), 'Image.create')
     sizes[image] = {width, height}
     SetImageRenderAlways(raw, true)

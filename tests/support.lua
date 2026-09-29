@@ -68,12 +68,20 @@ function checkGetters(wrapper, rows)
         expectCall(row[1], wrapper.handle, table.unpack(row, 4))
     end
 end
--- Rows: {nativeName, methodName, methodArgs...}.
+-- Rows: {nativeName, methodName, methodArgs...}. A row with boolean arguments runs again with each one flipped, so a
+-- wrapper that ignores a flag (passes a constant) fails whichever value the row uses.
 function checkSetters(wrapper, rows)
     for _, row in ipairs(rows) do
         native(row[1], function() end)
-        wrapper[row[2]](wrapper, table.unpack(row, 3))
-        expectCall(row[1], wrapper.handle, table.unpack(row, 3))
+        local variants, flipped, hasBoolean = {table.pack(table.unpack(row, 3))}, table.pack(table.unpack(row, 3)), false
+        for index = 1, flipped.n do
+            if type(flipped[index]) == 'boolean' then flipped[index], hasBoolean = not flipped[index], true end
+        end
+        if hasBoolean then variants[2] = flipped end
+        for _, args in ipairs(variants) do
+            wrapper[row[2]](wrapper, table.unpack(args, 1, args.n))
+            expectCall(row[1], wrapper.handle, table.unpack(args, 1, args.n))
+        end
     end
 end
 function checkDisposed(wrapper, methods)

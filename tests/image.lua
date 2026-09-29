@@ -3,6 +3,7 @@ for _, name in ipairs({'SetImageRenderAlways', 'ShowImage', 'SetImagePosition', 
     native(name, function() end)
 end
 native('CreateImage', function() return {} end)
+native('GetHandleId', function() return 8 end)
 native('GetLocalPlayer', function() return PLAYER_RAW end)
 local Image = require('wrappers.image')
 local Player = require('wrappers.player')
@@ -50,4 +51,15 @@ test('image destruction is idempotent and guards every method', function()
     fails(function() Image.create('aoe.blp', 64, 64, 0, 0, 1) end, 'Image.create')
     eq(callCount('SetImageRenderAlways'), 1)
     native('CreateImage', function() return {} end)
+end)
+
+test('a wrong image path raises and destroys the invalid image', function()
+    local invalid = {}
+    native('CreateImage', function() return invalid end)
+    native('GetHandleId', function(raw) return raw == invalid and -1 or 8 end)
+    fails(function() Image.create('missing.blp', 64, 64, 0, 0, 1) end, 'Image.create: invalid image path')
+    expectCall('DestroyImage', invalid); eq(callCount('DestroyImage'), 1)
+    eq(callCount('SetImageRenderAlways'), 0); eq(callCount('ShowImage'), 0)
+    native('CreateImage', function() return {} end)
+    native('GetHandleId', function() return 8 end)
 end)
