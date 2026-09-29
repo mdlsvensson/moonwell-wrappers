@@ -2,8 +2,8 @@
 
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
-remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1` and
-`v0.4.0` on the commits that record their gates. Tags must never be moved.
+remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1`,
+`v0.4.0` and `v0.5.0` on the commits that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -78,4 +78,6 @@ checks, the in-game gate and the tag consumption gate in CONTRIBUTING. v0.4.0: t
 `ui-min`; the probe and the classic UI gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). Tag
 consumption passed the same day: a fresh map locked `v0.4.0` to `7e8ef13`. v0.5.0: the gate map has a `frame-init` probe
 (`../wrappers-gate/src/probe_frame.yue`, `deno task gate frame-init`) and the runs `frames` and `frames-min`; the frames
-gate loads `war3mapImported\wrappers-gate.toc` from the gate map's assets.
+gate loads `war3mapImported\wrappers-gate.toc` from the gate map's assets (the probe found the game's templates need no
+TOC; results in `PROBE-FRAME-RESULTS.md`). The probe and the frames gate passed on 2026-09-29, normal and minified
+(CONTRIBUTING records it).

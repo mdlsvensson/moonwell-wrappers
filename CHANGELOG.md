@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-09-29)
 
 - New `wrappers.frame`: the `BlzFrame` API with an owned frame tree. Frames made by `Frame.create`, `createSimple` and
   `createByType` are owned; `destroy()` disposes the wrappers of their whole subtree. Template parts (`findChild`,
@@ -10,6 +10,24 @@
   the event's synced text and value. `releaseFocusFor(player)` gives keyboard focus back after a click.
 - `Frame.loadTOC` raises when a TOC file cannot be loaded; README shows how to import templates.
 - `setVisibleFor(Player)` on frames. No getters for machine-local frame state.
+- `Callback.call` (internal) takes any number of callback arguments.
+- README, measured by an in-game probe on 3.0.0.24268: the game's own templates (nine tried) create without a TOC file;
+  an unknown template gives nil; origin frames exist in `on_main`; destroying a frame removes its children, including a
+  re-parented one; a clicked button keeps the keyboard focus until `releaseFocusFor`.
+
+### Release gate
+
+Automated checks passed 2026-09-29 on Windows: 167 behavior tests in 29 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (60 files); Moonwell 0.5.0 normal/minified builds, unused-module exclusion, Trigger-, TextTag-, Multiboard-,
+Dialog- and Frame-only bundles (Dialog and Frame bundle only Player besides themselves) and bundled execution; LuaLS
+3.19.1 positive fixtures and 15 expected negative diagnostics, including a frame callback's parameter typed as Player; a
+direct LuaLS check of `src/wrappers` with the native declarations, no problems; the gate example builds with clean
+editor diagnostics.
+
+In game (maintainer, Warcraft III Reforged 3.0.0.24268): the `frame-init` probe answered the community notes the
+wrappers rely on (see README), then the frames gate (CONTRIBUTING step 9) passed normal and minified. The earlier gate
+steps were not re-run (their code is unchanged). Multiplayer checks, including frame creation order and events from a
+second player, are deferred until before Moonwell 1.0.
 
 ## 0.4.0 (2026-09-29)
 

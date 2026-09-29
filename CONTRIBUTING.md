@@ -218,6 +218,18 @@ matched, and `setSpeed 4` made the countdown run faster. Step 9: the minified `u
 packed map opened in World Editor. Steps 2–7 were not re-run (their code is unchanged since v0.3.1). Step 10 is
 deferred.
 
+v0.5.0: `frame-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `5918202`;
+`../wrappers-gate/PROBE-FRAME-RESULTS.md`): the origin frame existed in `on_main` and an icon made there showed;
+BlzGetFrameByName returned the created frame (identity); all nine templates tried (`ScriptDialogButton`,
+`EscMenuBackdrop`, `EscMenuTitleTextTemplate`, `EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`,
+`EscMenuSliderTemplate`, `QuestCheckBox`, `QuestButtonBaseTemplate`, `BattleNetTextAreaTemplate`) created without a TOC,
+and again after loading the gate map's TOC (which returned true); a missing TOC returned false; an unknown template
+returned nil; destroying a parent removed it, its child and a frame re-parented onto it, and the child was no longer
+found by name; after clicking a plain button Enter did not open the chat box, after a button that called
+`releaseFocusFor` it did; a button destroyed itself in its own click event without a crash. The frames gate (step 9) and
+its minified run (step 10) passed the same day, as the maintainer reported. Steps 2–8 were not re-run (their code is
+unchanged since v0.4.0). Step 11 is deferred.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

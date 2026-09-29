@@ -4,10 +4,9 @@ Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Dest
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
 Quest, DefeatCondition, TimerDialog and Frame wrappers, editor completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.4.0` (2026-09-29): classic UI (dialogs, multiboards, leaderboards, quests, defeat conditions and timer
-dialogs), on top of v0.3's presentation wrappers and native caveats. Its in-game gate passed, normal and minified, after
-a probe of the classic UI's init-time behaviour. Multiplayer desync checks are deferred until before Moonwell 1.0.
-v0.5.0 (frames) is in development on main.
+**Status:** `v0.5.0` (2026-09-29): frames (the `BlzFrame` API with an owned frame tree and event callbacks), on top of
+v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed, normal and minified, after a probe of the
+frame behaviour it relies on. Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -27,13 +26,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.4.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.5.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.4.0"
+    tag = "v0.5.0"
     dir = "src"
   }
 }
@@ -245,13 +244,19 @@ There are no getters for text, values, visibility, enabled state, alpha or size:
 (typed text, dragged sliders, local visibility). Read synced values in event callbacks. `setVisibleFor(Player)` compares
 with the local player, as for the presentation classes. Colors (`setTextColor`, `setVertexColor`) are integers 0–255.
 
-Templates other than the built-in ones come from `.fdf` files listed in a `.toc` file. Put the TOC under `assets/`, for
-example `assets/war3mapImported/templates.toc` (imported as `war3mapImported\templates.toc`), with one FDF path per line
-and an empty last line:
+The game's own templates need no TOC file: in a probe on 3.0.0.24268, `ScriptDialogButton`, `EscMenuBackdrop`,
+`EscMenuTitleTextTemplate`, `EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`, `EscMenuSliderTemplate`,
+`QuestCheckBox`, `QuestButtonBaseTemplate` and `BattleNetTextAreaTemplate` all created without one. An unknown template
+name makes the factory raise `native returned nil`. The same probe found origin frames available in `on_main`, that
+destroying a frame removes its children (including one re-parented onto it), that a clicked button keeps the keyboard
+focus until `releaseFocusFor`, and that a button can destroy itself in its own click callback.
+
+Your own templates come from `.fdf` files listed in a `.toc` file. Put both under `assets/`, for example
+`assets/war3mapImported/templates.toc` (imported as `war3mapImported\templates.toc`), with one FDF path per line and an
+empty last line:
 
 ```text
-UI\FrameDef\UI\EscMenuTemplates.fdf
-UI\FrameDef\Glue\StandardTemplates.fdf
+war3mapImported\MyFrames.fdf
 ```
 
 Then load it in a hook, before creating frames: `Frame.loadTOC("war3mapImported\\templates.toc")`. It raises when the
