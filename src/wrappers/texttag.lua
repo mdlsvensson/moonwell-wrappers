@@ -51,15 +51,16 @@ function TextTag.float(text, x, y, options)
     local o = Options.read(options, floatFields, 'TextTag.float')
     local raw = CreateTextTag()
     if raw == nil then return end
+    -- A new tag is permanent: make it temporary first, so an error below cannot leave an unreachable permanent tag.
+    SetTextTagPermanent(raw, false)
+    SetTextTagLifespan(raw, o.lifespan)
+    SetTextTagFadepoint(raw, o.fadepoint)
     SetTextTagText(raw, text, height(o.size))
     SetTextTagPos(raw, x, y, o.heightOffset)
     SetTextTagColor(raw, o.color[1], o.color[2], o.color[3], o.color[4])
     local velocity, radians = o.speed * 0.071 / 128, math.rad(o.angle)
     SetTextTagVelocity(raw, velocity * math.cos(radians), velocity * math.sin(radians))
     SetTextTagVisibility(raw, o.player == nil or o.player == GetLocalPlayer())
-    SetTextTagPermanent(raw, false)
-    SetTextTagLifespan(raw, o.lifespan)
-    SetTextTagFadepoint(raw, o.fadepoint)
 end
 ---@return texttag
 function TextTag:getHandle() return registry.require(self, 'TextTag.getHandle') end

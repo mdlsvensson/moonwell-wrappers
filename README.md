@@ -137,15 +137,17 @@ reject unknown keys and wrong types.
 
 `setVisibleFor(Player)` (TextTag, Image, Ubersplat) and `sound:playFor(Player)` compare with the local player, so only
 local visuals and audio differ; the objects exist on every machine. `show(flag)` afterwards applies to everyone.
-Lightning has no local visibility. There is no `sound:isPlaying()`, and Effect has no position getters: those natives
-answer differently on each machine.
+Lightning has no local visibility. Do not wrap with `fromHandle` a text tag that has a lifespan or a sound released with
+`KillSoundWhenDone` (for example one made by GUI or BJ code): the game ends those on its own, and text tag ids are
+reused, so the wrapper would go stale. There is no `sound:isPlaying()`, and Effect has no position getters: those
+natives answer differently on each machine.
 
 Value ranges are the natives': colors are integers 0–255, except `lightning:setColor`, which takes numbers 0–1. Sound
-volume is 0–127 and `getDuration()` is in milliseconds. Text tag `size` is World Editor's font size; `setVelocity` takes
-native units. Effect orientation is in radians. `Image.create(path, width, height, x, y, imageType)` centres the image
-on `x, y` and makes it visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat.
-`image:setPosition` also centres, so it fails on an image wrapped with `fromHandle`, whose size is unknown. Fog
-modifiers start stopped.
+volume is 0–127 and `getDuration()` is in milliseconds; it can be 0 until the file is loaded, so do not drive
+synchronized game logic from it. Text tag `size` is World Editor's font size; `setVelocity` takes native units. Effect
+orientation is in radians. `Image.create(path, width, height, x, y, imageType)` centres the image on `x, y` and makes it
+visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. `image:setPosition` also centres,
+so it fails on an image wrapped with `fromHandle`, whose size is unknown. Fog modifiers start stopped.
 
 `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return a new dense array of what the
 native enumerates. The filter runs afterwards as ordinary Lua and keeps the objects for which it returns truthy; its

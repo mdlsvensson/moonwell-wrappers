@@ -36,7 +36,8 @@ add gameplay systems, implicit cleanup or a w3ts compatibility layer without a n
   `Handle.unwrapWidget`.
 - Presentation wrappers exist only for objects the map owns and destroys. Anything the game can end on its own (text
   tags with a lifespan, sounds released when done) goes through a helper that returns nothing. Local visibility helpers
-  pass a machine-local boolean to the same native on every machine. No getters for machine-local values.
+  pass a machine-local boolean to the same native on every machine; the one exception is `sound:playFor`, which calls
+  `StartSound` only on that player's machine (spec §4). No getters for machine-local values.
 - Options tables go through `internal/options.lua`: unknown keys and wrong types fail before any native.
 
 ## Verification

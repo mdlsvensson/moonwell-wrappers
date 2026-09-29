@@ -86,6 +86,19 @@ test('float options change size, color, motion, timing and audience', function()
     native('CreateTextTag', function() return {} end)
 end)
 
+test('float makes the tag temporary before any native that can raise', function()
+    local raw = {}
+    native('CreateTextTag', function() return raw end)
+    native('SetTextTagText', function() error('boom') end)
+    fails(function() TextTag.float('x', 0, 0) end, 'boom')
+    -- Restore the doubles before asserting, so a failed assertion cannot leak into later tests.
+    native('SetTextTagText', function() end)
+    native('CreateTextTag', function() return {} end)
+    expectCall('SetTextTagPermanent', raw, false)
+    expectCall('SetTextTagLifespan', raw, 2)
+    expectCall('SetTextTagFadepoint', raw, 1)
+end)
+
 test('float does nothing without a free text tag and rejects bad options first', function()
     native('CreateTextTag', function() return nil end)
     eq(TextTag.float('x', 0, 0), nil)

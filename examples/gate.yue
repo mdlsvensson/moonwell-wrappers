@@ -252,6 +252,7 @@ presentationGate = (owner) ->
       bell\play!
       print "Wrapper sound play"
     elseif step == 2
+      print "Wrapper sound duration after play", bell\getDuration!
       bell\stop!
       Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
       print "Wrapper playOnce first call"
@@ -281,6 +282,9 @@ presentationGate = (owner) ->
       aoe\setVisibleFor other
       Effect.flashOn clap, marker, "origin"
       print "Wrapper image hidden"
+    elseif step == 8
+      Sound.playOnce "Units\\Human\\Footman\\FootmanYes1.flac", x: 0, y: 0
+      print "Wrapper playOnce 3D"
     elseif step == 10
       tag\destroy!
       bolt\destroy!

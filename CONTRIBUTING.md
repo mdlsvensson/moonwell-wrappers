@@ -66,7 +66,8 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
 
 1. Create a disposable Moonwell map and configure this checkout with the local path example in README. Copy
    `examples/gate.yue` to its `src/main.yue`; run check and test. The gate starts just after the map loads (times below
-   count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds), then read the whole
+   count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds); the presentation run
+   (step 7) never prints it and ends at about 20 seconds with `Wrapper presentation cleanup passed`. Then read the whole
    message log (F12); opening it pauses a single-player game.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
@@ -101,14 +102,17 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    from the blue one, raised and attacking, and a blue (player 2 colour) Footman model beside it; the talk-to-me mark on
    the claws item. The minimap shows a revealed circle towards the top right and a revealed square towards the bottom
    left. `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound
-   plays (`Wrapper sound play`). At 4 s it stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it
-   is silent then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop:
-   the fix is decided with the maintainer before release. At 8 s the footman voice plays from the centre
-   (`Wrapper 3D sound`). At 10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce
-   for another player plays at volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman
-   and reads `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up,
-   the splat fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle
-   disappears and a thunder clap flashes on the footman (`Wrapper image hidden`). At 20 s everything disappears and
+   plays (`Wrapper sound play`). At 4 s `Wrapper sound duration after play <n>` prints (record whether it differs from
+   the start value), the sound stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it is silent
+   then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the fix is
+   decided with the maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At
+   10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
+   volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
+   `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up, the splat
+   fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle disappears
+   and a thunder clap flashes on the footman (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a
+   footman voice plays from the centre; if it is silent while the 8 s voice was audible, record it: `playOnce` may need
+   default sound distances (spec §5.2), decided with the maintainer before release. At 20 s everything disappears and
    `Wrapper presentation cleanup passed` prints. If a sound, model or splat never appears or plays in any run, its path
    or name may not exist in this game version: substitute one from World Editor and record it. Restore
    `presentation = false`.
@@ -117,7 +121,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and play
    past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line, from
    its own Lua collector; record both. The same online check covers v0.3.0's local visibility: setVisibleFor, playFor
-   and the player options of TextTag.float and Sound.playOnce show or play only for that player, with no desync.
+   and the player options of TextTag.float and Sound.playOnce show or play only for that player, with no desync. It also
+   covers `playFor` followed by `destroy()` (the other machines never started that sound) and whether `getDuration()`
+   agrees across machines.
 10. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
