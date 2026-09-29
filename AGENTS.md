@@ -55,5 +55,6 @@ v0.2.0: the in-game gate passed on 2026-09-29, including the weak cache probe
 the in-game gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). It found game behaviour now in the
 README: Chain Lightning fades by itself, `lightning:setColor` shows no visible change, and effects attached to items and
 destructables are not drawn. The disposable gate map lived in `../wrappers-gate` (`deno task gate <run>`, one command
-per run, generated from `examples/gate.yue`); recreate it the same way for later releases. Later releases repeat the
-automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
+per run, generated from `examples/gate.yue`); recreate it the same way for later releases. Tag consumption passed the
+same day: a fresh map locked `v0.3.0` to `1277875`. Later releases repeat the automated checks, the in-game gate and the
+tag consumption gate in CONTRIBUTING.
