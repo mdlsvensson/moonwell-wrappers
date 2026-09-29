@@ -1,4 +1,7 @@
-for _, name in ipairs({'trigger', 'effect', 'timer', 'destructable', 'rect', 'region'}) do require('wrappers.' .. name) end
+for _, name in ipairs({'trigger', 'effect', 'timer', 'destructable', 'rect', 'region', 'texttag', 'sound', 'lightning',
+    'image', 'ubersplat', 'fogmodifier'}) do
+    require('wrappers.' .. name)
+end
 eq(totalCalls(), 0)
 
 test('modules that only take wrapper arguments load no other public module', function()

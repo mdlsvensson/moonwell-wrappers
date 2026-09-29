@@ -69,7 +69,24 @@ await Deno.writeTextFile(
 );
 await moonwell(["build"]);
 const bundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
-for (const unused of ["effect", "trigger", "group", "timer", "destructable", "rect", "region", "force"]) {
+for (
+  const unused of [
+    "effect",
+    "trigger",
+    "group",
+    "timer",
+    "destructable",
+    "rect",
+    "region",
+    "force",
+    "texttag",
+    "sound",
+    "lightning",
+    "image",
+    "ubersplat",
+    "fogmodifier",
+  ]
+) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
 }
 // Run the actual bundled script with the Warcraft globals it uses during module loading.
@@ -87,20 +104,43 @@ const runtime = await run(yue, ["-e", probe]);
 if (!runtime.output.includes("BUNDLE PASSED")) throw new Error(runtime.output);
 console.log("Moonwell: normal/minified builds, unused-module exclusion and bundled runtime passed");
 
-// Trigger takes wrapper arguments only, so a Trigger-only map must bundle no other public module.
-await Deno.writeTextFile(
-  join(consumer, "src/main.yue"),
-  'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n',
-);
-await moonwell(["build"]);
-const triggerBundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
-// Guard the absence checks below: they would pass vacuously if the bundle held no wrapper module at all.
-if (!triggerBundle.includes("wrappers.trigger")) throw new Error("Trigger-only bundle lacks wrappers.trigger");
-const publicModules = ["unit", "player", "item", "destructable", "rect", "region", "force", "group", "timer", "effect"];
-for (const unused of publicModules) {
-  if (triggerBundle.includes(`wrappers.${unused}`)) throw new Error(`Trigger-only bundle includes wrappers.${unused}`);
+// Trigger and TextTag take wrapper arguments only, so a map importing just one of them bundles no other public module.
+const publicModules = [
+  "unit",
+  "player",
+  "item",
+  "destructable",
+  "rect",
+  "region",
+  "force",
+  "group",
+  "timer",
+  "effect",
+  "trigger",
+  "texttag",
+  "sound",
+  "lightning",
+  "image",
+  "ubersplat",
+  "fogmodifier",
+];
+const soloEntries: Record<string, string> = {
+  trigger: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n',
+  texttag: 'import "wrappers.texttag" as TextTag\nt = TextTag.create!\nt\\destroy!\nTextTag.float "+1", 0, 0\n',
+};
+for (const [entry, source] of Object.entries(soloEntries)) {
+  await Deno.writeTextFile(join(consumer, "src/main.yue"), source);
+  await moonwell(["build"]);
+  const soloBundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
+  // Guard the absence checks below: they would pass vacuously if the bundle held no wrapper module at all.
+  if (!soloBundle.includes(`wrappers.${entry}`)) throw new Error(`${entry}-only bundle lacks wrappers.${entry}`);
+  for (const unused of publicModules) {
+    if (unused !== entry && soloBundle.includes(`wrappers.${unused}`)) {
+      throw new Error(`${entry}-only bundle includes wrappers.${unused}`);
+    }
+  }
 }
-console.log("Moonwell: a Trigger-only map bundles no other public module");
+console.log("Moonwell: Trigger-only and TextTag-only maps bundle no other public module");
 
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));
 await moonwell(["check"]);
