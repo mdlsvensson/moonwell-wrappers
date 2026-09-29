@@ -263,3 +263,8 @@ v0.4.0: Passed 2026-09-29 for `v0.4.0` with Moonwell at `913725a` (0.5.0 plus `U
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
 `7e8ef13630605ce49844e206445830a123f8a272`, the fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
+
+v0.5.0: Passed 2026-09-29 for `v0.5.0` with Moonwell at `1afdc29` (0.5.0 plus `UnitAlive` in its natives list), in a map
+made fresh with `init --link`: check, normal and minified builds of the gate example; `moonwell.lock` recorded commit
+`b91ffd444bc5a28d62229b3a75d05a9b9e6b2382`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
+stayed unchanged after removing the map's `.moonwell/` and checking again.
