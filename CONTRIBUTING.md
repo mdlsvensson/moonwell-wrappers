@@ -110,7 +110,7 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At 10 s
    `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
    volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
-   `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up, the splat
+   `Wrapper tag moved`, the bolt moves above the footman and turns red, the circle turns green and moves up, the splat
    fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle disappears
    and a thunder clap flashes on the footman (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a
    footman voice plays from the centre; if it is silent while the 8 s voice was audible, record it: `playOnce` may need

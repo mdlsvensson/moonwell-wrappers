@@ -145,6 +145,10 @@ Lightning has no local visibility. Do not wrap with `fromHandle` a text tag that
 reused, so the wrapper would go stale. There is no `sound:isPlaying()`, and Effect has no position getters: those
 natives answer differently on each machine.
 
+Some lightning types fade by themselves right after creation, as their spells do: in the v0.3.0 gate Chain Lightning
+(`CLPB`) vanished within a moment, while Drain Life (`DRAL`) stayed until destroyed. Pick a lasting type for a
+`Lightning` you keep.
+
 Value ranges are the natives': colors are integers 0–255, except `lightning:setColor`, which takes numbers 0–1. Sound
 volume is 0–127 and `getDuration()` is in milliseconds; it can be 0 until the file is loaded, so do not drive
 synchronized game logic from it. Text tag `size` is World Editor's font size; `setVelocity` takes native units. Effect

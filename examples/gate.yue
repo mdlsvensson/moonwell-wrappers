@@ -275,7 +275,7 @@ presentationGate = (owner) ->
       tag\setPositionOnUnit marker, 0
       tag\setText "Wrapper tag moved", 10
       bolt\move -300, 250, 60, 300, 250, 60
-      bolt\setColor 0, 1, 0, 1
+      bolt\setColor 1, 0, 0, 1
       aoe\setColor 0, 255, 0, 255
       aoe\setPosition 0, 300
       splat\finish!
