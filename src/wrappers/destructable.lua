@@ -1,5 +1,6 @@
 local Handle = require('wrappers.internal.handle')
 local Widget = require('wrappers.internal.widget')
+local Callback = require('wrappers.internal.callback')
 
 ---@class MoonwellWrappers.Destructable: MoonwellWrappers.Widget
 ---@field handle destructable? Read-only by convention; nil after removal.
@@ -63,6 +64,28 @@ end
 function Destructable:remove()
     local raw = registry.dispose(self, 'Destructable.remove')
     if raw then RemoveDestructable(raw) end
+end
+
+---Returns a new array of the destructables in the rect. `filter` runs afterwards, as ordinary Lua, and keeps the
+---destructables for which it returns truthy; its errors propagate.
+---@param rect MoonwellWrappers.Rect
+---@param filter (fun(destructable: MoonwellWrappers.Destructable): any)?
+---@return MoonwellWrappers.Destructable[]
+function Destructable.enumInRect(rect, filter)
+    local rawRect = Handle.unwrap(rect, 'Rect', 'Destructable.enumInRect')
+    Callback.optional(filter, 'Destructable.enumInRect')
+    local raws = {}
+    -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
+    ---@diagnostic disable-next-line: param-type-mismatch
+    EnumDestructablesInRect(rawRect, nil, function() raws[#raws + 1] = GetEnumDestructable() end)
+    local destructables = {}
+    for index, raw in ipairs(raws) do destructables[index] = assert(Destructable.fromHandle(raw)) end
+    if filter == nil then return destructables end
+    local kept = {}
+    for _, destructable in ipairs(destructables) do
+        if filter(destructable) then kept[#kept + 1] = destructable end
+    end
+    return kept
 end
 
 Widget.install(Destructable, registry)

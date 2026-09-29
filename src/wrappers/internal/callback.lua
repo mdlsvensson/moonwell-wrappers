@@ -6,6 +6,15 @@ function Callback.check(value, operation)
     if type(value) ~= 'function' then error('[wrappers] ' .. operation .. ': expected a callback function', 3) end
 end
 
+---Accepts nil or a function; used for optional filters.
+---@param value unknown
+---@param operation string
+function Callback.optional(value, operation)
+    if value ~= nil and type(value) ~= 'function' then
+        error('[wrappers] ' .. operation .. ': expected a callback function', 3)
+    end
+end
+
 ---@param value unknown
 ---@param operation string
 function Callback.nonnegative(value, operation)

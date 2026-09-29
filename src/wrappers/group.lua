@@ -29,15 +29,6 @@ local function wrapAll(raws)
     return result
 end
 
----Level 3 blames the caller of the enumeration method, like Callback.check does for direct callers.
----@param filter unknown
----@param operation string
-local function checkFilter(filter, operation)
-    if filter ~= nil and type(filter) ~= 'function' then
-        error('[wrappers] ' .. operation .. ': expected a callback function', 3)
-    end
-end
-
 ---Runs the filter over a snapshot, then removes rejected units. If the filter raises, the group is cleared and the
 ---error re-raised, so a half-filtered group never escapes.
 ---@param raw group
@@ -93,7 +84,7 @@ function Group:clear() GroupClear(registry.require(self, 'Group.clear')) end
 function Group:enumInRange(x, y, radius, filter)
     local raw = registry.require(self, 'Group.enumInRange')
     Callback.nonnegative(radius, 'Group.enumInRange')
-    checkFilter(filter, 'Group.enumInRange')
+    Callback.optional(filter, 'Group.enumInRange')
     GroupClear(raw)
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
@@ -105,7 +96,7 @@ end
 function Group:enumInRect(rect, filter)
     local raw = registry.require(self, 'Group.enumInRect')
     local rawRect = Handle.unwrap(rect, 'Rect', 'Group.enumInRect')
-    checkFilter(filter, 'Group.enumInRect')
+    Callback.optional(filter, 'Group.enumInRect')
     GroupClear(raw)
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
@@ -117,7 +108,7 @@ end
 function Group:enumOfPlayer(player, filter)
     local raw = registry.require(self, 'Group.enumOfPlayer')
     local rawPlayer = Handle.unwrap(player, 'Player', 'Group.enumOfPlayer')
-    checkFilter(filter, 'Group.enumOfPlayer')
+    Callback.optional(filter, 'Group.enumOfPlayer')
     GroupClear(raw)
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
@@ -130,7 +121,7 @@ end
 function Group:enumSelected(player, filter)
     local raw = registry.require(self, 'Group.enumSelected')
     local rawPlayer = Handle.unwrap(player, 'Player', 'Group.enumSelected')
-    checkFilter(filter, 'Group.enumSelected')
+    Callback.optional(filter, 'Group.enumSelected')
     GroupClear(raw)
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch

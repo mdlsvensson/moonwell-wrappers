@@ -2,6 +2,7 @@ native('CreateDestructable', function() return {} end)
 native('RemoveDestructable', function() end)
 local Handle = require('wrappers.internal.handle')
 local Destructable = require('wrappers.destructable')
+local Rect = require('wrappers.rect')
 eq(totalCalls(), 0)
 
 test('destructable identity, factory and widget family', function()
@@ -38,4 +39,38 @@ test('destructable removal is idempotent and guards every method', function()
     checkDisposed(d, {'getHandle', 'getTypeId', 'getName', 'getMaxLife', 'setMaxLife', 'kill', 'restore',
         'isInvulnerable', 'setInvulnerable', 'show', 'setAnimation', 'queueAnimation', 'getLife', 'setLife',
         'getX', 'getY'})
+end)
+
+local enumerated, current, inNative, seenRect, seenFilter = {}, nil, false, nil, 'unset'
+native('GetEnumDestructable', function() return current end)
+native('EnumDestructablesInRect', function(rect, filter, callback)
+    seenRect, seenFilter, inNative = rect, filter, true
+    for _, raw in ipairs(enumerated) do current = raw; callback() end
+    current, inNative = nil, false
+end)
+
+test('enumInRect returns a snapshot of the enumerated destructables', function()
+    local area, a, b = Rect.fromHandle({}), {}, {}
+    enumerated = {a, b}
+    local all = Destructable.enumInRect(area)
+    eq(#all, 2); eq(all[1], Destructable.fromHandle(a)); eq(all[2], Destructable.fromHandle(b))
+    eq(seenRect, area.handle); eq(seenFilter, nil); eq(callCount('EnumDestructablesInRect'), 1)
+end)
+
+test('enumInRect filters after the native returns, as ordinary Lua', function()
+    local area, a, b = Rect.fromHandle({}), {}, {}
+    enumerated = {a, b}
+    local kept = Destructable.enumInRect(area, function(tree)
+        assert(not inNative, 'filter ran inside the native enumeration')
+        return tree.handle == a
+    end)
+    eq(#kept, 1); eq(kept[1], Destructable.fromHandle(a))
+    fails(function() Destructable.enumInRect(area, function() error('boom') end) end, 'boom')
+end)
+
+test('enumInRect validates its rect and filter before the native', function()
+    fails(function() Destructable.enumInRect({}) end, 'Destructable.enumInRect: expected Rect wrapper')
+    fails(function() Destructable.enumInRect(Rect.fromHandle({}), 1) end,
+        'Destructable.enumInRect: expected a callback function')
+    eq(callCount('EnumDestructablesInRect'), 0)
 end)
