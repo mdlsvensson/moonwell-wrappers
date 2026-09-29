@@ -70,4 +70,5 @@ consumption passed the same day: a fresh map locked `v0.3.1` to `94d650f`. The p
 claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the automated
 checks, the in-game gate and the tag consumption gate in CONTRIBUTING. v0.4.0: the gate map has a `ui-init` probe
 (`../wrappers-gate/src/probe_ui.yue`, `deno task gate ui-init`, results in `PROBE-UI-RESULTS.md`) and the runs `ui` and
-`ui-min`; the probe and the classic UI gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it).
+`ui-min`; the probe and the classic UI gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). Tag
+consumption passed the same day: a fresh map locked `v0.4.0` to `7e8ef13`.
