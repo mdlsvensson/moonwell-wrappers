@@ -111,10 +111,11 @@ handle. There is no generic native liveness or handle-type check. Do not modify 
 Unit, Item and Destructable are widgets (`MoonwellWrappers.Widget` in the editor). All three have `getLife()`,
 `setLife(value)`, `getX()` and `getY()`. Parameters typed Widget accept any of them: `unit:issueTargetOrder`,
 `unit:issueTargetOrderById`, `unit:damageTarget`, `trigger:registerDeathEvent`, `Effect.attach` and `Effect.flashOn`.
-Warcraft drew no effect attached to an item in the v0.3.0 gate (3.0.0.24268, a Claws of Attack item, two effect models).
-`Effect.attach` accepts an Item, as the native does, but showed nothing; `Effect.flashOn` uses the same native and is
-expected to behave alike. Create the effect at the item's position instead. There is no `Widget.fromHandle`: convert a
-raw widget with the class you know it is, for example `Item.fromHandle(GetManipulatedItem())`.
+Warcraft drew no effect attached to an item or a destructable in the v0.3.0 gate (3.0.0.24268: a Claws of Attack item
+and a summer tree, standard effect models). `Effect.attach` accepts them, as the native does, but showed nothing;
+`Effect.flashOn` uses the same native and is expected to behave alike. Attach to a unit, or create the effect at the
+object's position instead. There is no `Widget.fromHandle`: convert a raw widget with the class you know it is, for
+example `Item.fromHandle(GetManipulatedItem())`.
 
 ## Presentation
 

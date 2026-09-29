@@ -11,8 +11,8 @@
   `playAnimation`.
 - `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return snapshots.
 - **Changed:** `Effect.attach` accepts any widget (Unit, Item, Destructable). A wrong argument now reports
-  `[wrappers] Effect.attach: expected Widget wrapper` (formerly `expected Unit wrapper`). An Item is accepted, but in
-  the gate Warcraft drew no effect attached to an item (see README, Widgets).
+  `[wrappers] Effect.attach: expected Widget wrapper` (formerly `expected Unit wrapper`). Items and destructables are
+  accepted, but in the gate Warcraft drew no effect attached to them (see README, Widgets).
 
 ## 0.2.0 (2026-09-29)
 

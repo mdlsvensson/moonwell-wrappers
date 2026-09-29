@@ -209,13 +209,8 @@ presentationGate = (owner) ->
   tag\setColor 255, 220, 0, 255
   tag\setPosition -250, 250, 0
   TextTag.float "Wrapper float for another player", 0, 150, player: other
-  -- Lightning heights are absolute, not above the ground. GetLocationZ is used here for visuals only.
-  ground = Location 0, 0
-  groundZ = (x, y) ->
-    MoveLocation ground, x, y
-    GetLocationZ ground
-  print "Wrapper bolt ground heights", groundZ(-300, -250), groundZ(300, -250), groundZ(-300, 250), groundZ(300, 250)
-  bolt = Lightning.create "CLPB", -300, -250, groundZ(-300, -250) + 60, 300, -250, groundZ(300, -250) + 60
+  -- Chain Lightning (CLPB) faded right after creation in an earlier gate run; Drain Life is expected to stay.
+  bolt = Lightning.create "DRAL", -300, -250, 60, 300, -250, 60
   aoe = Image.create "ReplaceableTextures\\Selection\\SpellAreaOfEffect.blp", 256, 256, 0, 0, 1
   splat = Ubersplat.create "HMED", 350, 250
   near = FogModifier.radius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
@@ -248,8 +243,6 @@ presentationGate = (owner) ->
     Destructable.create($FourCC("LTlt"), -896, 640, 270, 1, 0)
     Destructable.create($FourCC("LTlt"), -704, 640, 270, 1, 0)
   }
-  -- Warcraft draws no effect attached to an item; this checks attaching to a destructable.
-  onTree = Effect.attach "Abilities\\Spells\\Orc\\LightningShield\\LightningShieldTarget.mdl", trees[1], "origin"
   potionId = $FourCC("phea")
   print "Wrapper enumerated potions", #Item.enumInRect(box, (item) -> item\getTypeId! == potionId)
   print "Wrapper enumerated trees", #Destructable.enumInRect(box)
@@ -281,7 +274,7 @@ presentationGate = (owner) ->
     elseif step == 6
       tag\setPositionOnUnit marker, 0
       tag\setText "Wrapper tag moved", 10
-      bolt\move -300, 250, groundZ(-300, 250) + 60, 300, 250, groundZ(300, 250) + 60
+      bolt\move -300, 250, 60, 300, 250, 60
       bolt\setColor 0, 1, 0, 1
       aoe\setColor 0, 255, 0, 255
       aoe\setPosition 0, 300
@@ -309,8 +302,6 @@ presentationGate = (owner) ->
       box\destroy!
       tinted\destroy!
       blue\destroy!
-      onTree\destroy!
-      RemoveLocation ground
       bell\destroy!
       voice\destroy!
       item\remove! for item in *potions
