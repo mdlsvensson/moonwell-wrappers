@@ -30,12 +30,12 @@ local function report(label, message)
     print('[wrappers] ' .. label .. ' failed: ' .. (printable and text or '<unprintable error>'))
 end
 
----@generic T
+---Runs a callback behind the callback boundary: an error is printed and does not propagate.
 ---@param label string
----@param fn fun(value: T): ...
----@param argument T
-function Callback.call(label, fn, argument)
-    local ok, message = pcall(fn, argument)
+---@param fn function
+---@param ... any Passed to fn.
+function Callback.call(label, fn, ...)
+    local ok, message = pcall(fn, ...)
     if not ok then report(label .. ' callback', message) end
 end
 

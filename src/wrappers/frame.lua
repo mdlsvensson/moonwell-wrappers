@@ -1,5 +1,7 @@
 local Handle = require('wrappers.internal.handle')
 local Options = require('wrappers.internal.options')
+local Callback = require('wrappers.internal.callback')
+local PlayerWrapper = require('wrappers.player')
 
 ---A Blz frame. Owned frames (made by Frame.create, createSimple or createByType) can be destroyed, which disposes
 ---their whole subtree. Template parts (findChild, getChild) belong to the owned frame they were found through.
@@ -412,6 +414,83 @@ function Frame:releaseFocusFor(player)
         BlzFrameSetEnable(raw, false)
         BlzFrameSetEnable(raw, true)
     end
+end
+
+---Opaque token returned by Frame:on; pass it to Frame:off.
+---@class MoonwellWrappers.FrameHandler
+
+---@class MoonwellWrappers.FrameEvent
+---@field type frameeventtype
+---@field frame MoonwellWrappers.Frame
+---@field text string The event's synced text (edit boxes).
+---@field value number The event's synced value (sliders, check boxes, popup menus, the mouse wheel).
+
+---@alias MoonwellWrappers.FrameCallback fun(player: MoonwellWrappers.Player, event: MoonwellWrappers.FrameEvent): ...
+
+---@type table<MoonwellWrappers.FrameHandler, MoonwellWrappers.FrameCell>
+local handlers = setmetatable({}, {__mode = 'k'})
+
+---The internal trigger's action: runs the live callbacks for the event type that fired, in the order added. Callbacks
+---added during this firing wait for the next one; removed or disposed ones are skipped at once.
+---@param frame MoonwellWrappers.Frame
+local function route(frame)
+    local state = states[frame]
+    if not state then return end
+    local eventType = BlzGetTriggerFrameEvent()
+    local list = state.byType[eventType]
+    if not list then return end
+    local player = PlayerWrapper.fromHandle(GetTriggerPlayer())
+    local text, value = BlzGetTriggerFrameText(), BlzGetTriggerFrameValue()
+    for index = 1, #list do
+        local callback = list[index].callback
+        if callback then
+            Callback.call('Frame event', callback, player, {type = eventType, frame = frame, text = text, value = value})
+        end
+    end
+end
+
+---Runs `callback` when the event fires for this frame, behind the callback boundary. It receives the Player who caused
+---the event and the event's synced data.
+---@param eventType frameeventtype For example FRAMEEVENT_CONTROL_CLICK.
+---@param callback MoonwellWrappers.FrameCallback
+---@return MoonwellWrappers.FrameHandler
+function Frame:on(eventType, callback)
+    local raw = registry.require(self, 'Frame.on')
+    if eventType == nil then error('[wrappers] Frame.on: expected a frame event type', 2) end
+    Callback.check(callback, 'Frame.on')
+    local state = states[self]
+    if not state.trigger then
+        local trigger = Handle.created(CreateTrigger(), 'Frame.on')
+        TriggerAddAction(trigger, function() route(self) end)
+        state.trigger = trigger
+    end
+    local list = state.byType[eventType]
+    if not list then
+        list = {}
+        state.byType[eventType] = list
+        BlzTriggerRegisterFrameEvent(state.trigger, raw, eventType)
+    end
+    ---@type MoonwellWrappers.FrameCell
+    local cell = {frame = self, eventType = eventType, callback = callback}
+    list[#list + 1] = cell
+    state.cells[#state.cells + 1] = cell
+    ---@type MoonwellWrappers.FrameHandler
+    local token = {}
+    handlers[token] = cell
+    return token
+end
+---Removes a callback at once, even during a firing. Removing it twice does nothing.
+---@param token MoonwellWrappers.FrameHandler
+function Frame:off(token)
+    registry.require(self, 'Frame.off')
+    local cell = handlers[token]
+    if not cell then error('[wrappers] Frame.off: expected FrameHandler token', 2) end
+    if cell.frame ~= self then error('[wrappers] Frame.off: token belongs to another frame', 2) end
+    if not cell.callback then return end
+    cell.callback = nil
+    local state = states[self]
+    state.byType[cell.eventType] = without(state.byType[cell.eventType], cell)
+    state.cells = without(state.cells, cell)
 end
 
 return Frame
