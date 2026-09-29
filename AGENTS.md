@@ -43,5 +43,5 @@ recovery, minified gameplay and World Editor opening (Warcraft 3.0.0.24268, Worl
 consumption passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`.
 v0.2.0: the in-game gate passed on 2026-09-29, including the weak cache probe
 (`collected=true stale=true identity=true`); the two-player desync run is deferred to Moonwell's pre-1.0 online checks
-(LAN was removed from the game). Later releases repeat the automated checks, the in-game gate and the tag consumption
-gate in CONTRIBUTING.
+(LAN was removed from the game). Tag consumption passed the same day: a fresh map locked `v0.2.0` to `7baa81e`. Later
+releases repeat the automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.

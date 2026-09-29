@@ -44,6 +44,12 @@ The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-lo
 Deferred, not passed: the two-player no-desync run. Reforged's latest patch removed LAN, and online multiplayer and
 desync checks wait until the last step before Moonwell 1.0 (Moonwell's backlog).
 
+GitHub-tag consumption **passed 2026-09-29** with Moonwell 0.5.0: a fresh map configured with the README GitHub settings
+ran check, build and `build --minify` with the gate example; `moonwell.lock` recorded tag `v0.2.0` at commit
+`7baa81eb46d0e4dec6e18a976e55fb90d3858cfd`, and the fetched files matched the tag's `src/`. After removing only that
+map's `.moonwell/`, check downloaded the tag again and left the lock unchanged. (The tagged commit's copy of this
+section does not include this check; the tag was not moved.)
+
 ## 0.1.0 (2026-09-28)
 
 - Annotated Lua wrappers for Player, Unit, Timer, Trigger, Group and Effect, consumed through Moonwell 0.5.0 libraries.

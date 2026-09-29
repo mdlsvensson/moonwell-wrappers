@@ -129,3 +129,7 @@ unchanged. Record the result and only then mark first-tag consumption verified. 
 v0.1.0: Passed 2026-09-28 for `v0.1.0` with Moonwell 0.5.0: check, normal and minified builds; `moonwell.lock` recorded
 commit `c1209f5fb3141d91df2234e765e66c43bb01fc02`, the fetched files matched the tag's `src/`, and the lock stayed
 unchanged after removing the map's `.moonwell/` and checking again.
+
+v0.2.0: Passed 2026-09-29 for `v0.2.0` with Moonwell 0.5.0: check, normal and minified builds of the gate example;
+`moonwell.lock` recorded commit `7baa81eb46d0e4dec6e18a976e55fb90d3858cfd`, the fetched files matched the tag's `src/`,
+and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
