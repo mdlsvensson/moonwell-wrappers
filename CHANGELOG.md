@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- New `wrappers.frame`: the `BlzFrame` API with an owned frame tree. Frames made by `Frame.create`, `createSimple` and
+  `createByType` are owned; `destroy()` disposes the wrappers of their whole subtree. Template parts (`findChild`,
+  `getChild`) belong to their frame; game frames (`Frame.origin`, `byName`, `fromHandle`) are borrowed and never
+  destroyed through a wrapper. Create contexts are allocated automatically.
+- Frame events go to callbacks: `frame:on(eventType, callback)` with removable tokens; callbacks receive the Player and
+  the event's synced text and value. `releaseFocusFor(player)` gives keyboard focus back after a click.
+- `Frame.loadTOC` raises when a TOC file cannot be loaded; README shows how to import templates.
+- `setVisibleFor(Player)` on frames. No getters for machine-local frame state.
+
 ## 0.4.0 (2026-09-29)
 
 - New classic UI wrappers: Dialog, Multiboard, Leaderboard, Quest, DefeatCondition and TimerDialog, all owned by the map

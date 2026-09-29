@@ -2,12 +2,12 @@
 
 Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Destructable, Rect, Region, Force, Timer,
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
-Quest, DefeatCondition and TimerDialog wrappers, editor completion, stable handle identity and explicit cleanup.
+Quest, DefeatCondition, TimerDialog and Frame wrappers, editor completion, stable handle identity and explicit cleanup.
 
 **Status:** `v0.4.0` (2026-09-29): classic UI (dialogs, multiboards, leaderboards, quests, defeat conditions and timer
 dialogs), on top of v0.3's presentation wrappers and native caveats. Its in-game gate passed, normal and minified, after
 a probe of the classic UI's init-time behaviour. Multiplayer desync checks are deferred until before Moonwell 1.0.
-Frames are not wrapped yet.
+v0.5.0 (frames) is in development on main.
 
 ## Use a local checkout
 
@@ -94,8 +94,9 @@ Unit, Item and Destructable use a weak cache: the game removes these on its own 
 wrapper nothing references may be collected, and a later `fromHandle` returns a fresh wrapper. Keep a reference (a
 variable, table key or closure) wherever identity matters. Do not key weak tables (`__mode = 'k'`) by Unit, Item or
 Destructable wrappers for game data: each client's collector drops those entries at its own time, so game logic that
-reads such a table can desync. Timer, Trigger, Group, Effect, Rect, Region, Force and the presentation and classic UI
-classes stay cached until you destroy them; Player wrappers stay cached for the game session.
+reads such a table can desync. Timer, Trigger, Group, Effect, Rect, Region, Force and the presentation, classic UI and
+frame classes stay cached until you destroy them (game frames for the session); Player wrappers stay cached for the game
+session.
 
 Use `unit/item/destructable:remove()` and `timer/trigger/group/effect/rect/region/force:destroy()`, and `destroy()` on
 the presentation classes. Repeated cleanup is harmless; other methods reject disposed receivers and disposed wrapper
@@ -212,6 +213,51 @@ raises `Timer is disposed`.
 There are no getters for whether a multiboard, leaderboard or timer dialog is displayed or minimized: they answer
 differently on each machine.
 
+## Frames
+
+`wrappers.frame` wraps the `BlzFrame` API. Create, destroy and re-parent frames on every machine in the same order,
+never inside a branch on the local player: frame handles and the wrapper's create contexts must agree across machines.
+Screen coordinates run 0–0.8 wide and 0–0.6 high, from the bottom left.
+
+There are three kinds of frame:
+
+- **Owned** frames come from `Frame.create(template, parent, options?)` (option `priority`),
+  `Frame.createSimple(template, parent)` and `Frame.createByType(frameType, parent, options?)` (options `name`,
+  `inherits`). `frame:destroy()` destroys the frame and everything under it; the wrappers of its owned descendants and
+  template parts are disposed at once and their callbacks never run again.
+- **Template parts** are the frames a template creates inside a frame: `frame:findChild(name)` finds one by name (the
+  wrapper passes each owned frame its own create context, so names never clash), and `frame:getChild(index)` by
+  zero-based index. A part belongs to the owned frame it was found through and cannot be destroyed or re-parented.
+- **Borrowed** frames are the game's: `Frame.origin(ORIGIN_FRAME_GAME_UI)`, `Frame.byName(name, context?)`,
+  `Frame.fromHandle(raw)`. They can be parents but never be destroyed through a wrapper, and can only be re-parented
+  under another borrowed frame, so destroying one of your frames never silently destroys a game frame.
+
+`frame:setParent(parent)` moves an owned frame, and it is then destroyed with its new parent. A frame cannot be moved
+into its own subtree.
+
+Events go to callbacks: `frame:on(FRAMEEVENT_CONTROL_CLICK, function(player, event) ... end)` returns a token for
+`frame:off(token)`. The callback receives the Player who caused the event and `event` with `type`, `frame`, `text` (edit
+boxes) and `value` (sliders, check boxes, popup menus, the mouse wheel): the event's synced data. Callbacks run behind
+the same error boundary as trigger actions and may destroy their own frame. After a click, a button keeps the keyboard
+focus and hotkeys stop working; call `frame:releaseFocusFor(player)` in the click callback.
+
+There are no getters for text, values, visibility, enabled state, alpha or size: they answer differently on each machine
+(typed text, dragged sliders, local visibility). Read synced values in event callbacks. `setVisibleFor(Player)` compares
+with the local player, as for the presentation classes. Colors (`setTextColor`, `setVertexColor`) are integers 0–255.
+
+Templates other than the built-in ones come from `.fdf` files listed in a `.toc` file. Put the TOC under `assets/`, for
+example `assets/war3mapImported/templates.toc` (imported as `war3mapImported\templates.toc`), with one FDF path per line
+and an empty last line:
+
+```text
+UI\FrameDef\UI\EscMenuTemplates.fdf
+UI\FrameDef\Glue\StandardTemplates.fdf
+```
+
+Then load it in a hook, before creating frames: `Frame.loadTOC("war3mapImported\\templates.toc")`. It raises when the
+game cannot load the file. `Frame.hideOrigin(flag)` hides the game's own UI and `Frame.enableAutoPosition(flag)` turns
+its automatic layout off or on, for everyone.
+
 ## Editor types
 
 Use Moonwell's normal YueScript + Lua extension setup and run the map's `deno task check`. Moonwell supplies native
@@ -269,6 +315,7 @@ apply. Calls made only for a local player do not become synchronized by using wr
 | `wrappers.quest`           | `create(options?)`, `flashButton()`, `refresh()`; `setTitle(text)`, `setDescription(text)`, `setIcon(path)`, `setRequired(flag)`/`isRequired()`, `setCompleted(flag)`/`isCompleted()`, `setFailed(flag)`/`isFailed()`, `setDiscovered(flag)`/`isDiscovered()`, `setEnabled(flag)`/`isEnabled()`, `addItem(description)` (returns a QuestItem), `destroy()`. QuestItem: `setDescription(text)`, `setCompleted(flag)`, `isCompleted()`, `getQuest()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `wrappers.defeatcondition` | `create(description?)`; `setDescription(text)`, `destroy()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `wrappers.timerdialog`     | `create(Timer, title?)`; `setTitle(text)`, `setTitleColor(r, g, b, a)`, `setTimeColor(r, g, b, a)`, `setSpeed(factor)`, `setRealTimeRemaining(seconds)`, `show(flag)`, `setVisibleFor(Player)`, `destroy()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `wrappers.frame`           | `create(template, parent, options?)`, `createSimple(template, parent)`, `createByType(frameType, parent, options?)`, `origin(originType, index?)`, `byName(name, context?)`, `loadTOC(path)`, `hideOrigin(flag)`, `enableAutoPosition(flag)`; `getName()`, `getParent()`, `getChildrenCount()`, `getChild(index)`, `findChild(name)`, `setParent(Frame)`, `setPoint(point, Frame, relativePoint, x, y)`, `setAbsPoint(point, x, y)`, `setAllPoints(Frame)`, `clearPoints()`, `setSize(width, height)`, `setScale(scale)`, `setLevel(level)`, `setText(text)`, `addText(text)`, `setTextColor(r, g, b, a)`, `setVertexColor(r, g, b, a)`, `setFont(path, height, flags?)`, `setTextAlignment(vertical, horizontal)`, `setTextSizeLimit(size)`, `setTexture(path, flag?, blend?)`, `setModel(path, cameraIndex?)`, `setSpriteAnimate(primaryProp, flags)`, `setAutoScroll(flag)`, `setValue(value)`, `setMinMaxValue(min, max)`, `setStepSize(step)`, `setAlpha(alpha)`, `setEnabled(flag)`, `setTooltip(Frame)`, `show(flag)`, `setVisibleFor(Player)`, `releaseFocusFor(Player)`, `on(eventType, callback)`, `off(token)`, `destroy()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
 method. `setPosition` uses SetUnitPosition, which respects pathing; `setX`/`setY` use SetUnitX/SetUnitY, which do not.

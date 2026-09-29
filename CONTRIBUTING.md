@@ -69,7 +69,8 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds); the presentation run
    (step 7) never prints it and ends at about 20 seconds with `Wrapper presentation cleanup passed`; the classic UI run
    (step 8) never prints it either and ends about 45 seconds after its dialog is destroyed, with
-   `Wrapper ui cleanup passed`. Then read the whole message log (F12); opening it pauses a single-player game.
+   `Wrapper ui cleanup passed`; the frames run (step 9) never prints it either and ends when you click its `Close`
+   button. Then read the whole message log (F12); opening it pauses a single-player game.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
@@ -144,9 +145,24 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    (yellow title, green time) counts down from about 1:00; at 36 s it counts faster (`speed 4`; record what it shows);
    at 39 s it shows about 0:10; at 42 s it disappears. At 45 s `Wrapper ui cleanup passed; quest item disposed true`
    prints and the quests leave the log. Restore `ui = false`.
-9. Build with `--minify` and play the packed map; repeat steps 2–5, 7 and 8 (without the probe). Open the packed map in
-   World Editor.
-10. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
+9. Frames (v0.5.0): first run the gate map's `frame-init` probe (`../wrappers-gate`, `deno task gate frame-init`,
+   instructions in its `PROBE-FRAME.md`) and record its answers in the results below and in README. If a template the
+   gate uses did not create after loading the gate map's TOC, change the gate to one that did before continuing. Then
+   set `frames = true` and run again; only the frames gate runs. `Wrapper frames shown: <name> children <n>` prints
+   (record both). A panel appears in the centre with a yellow title `Wrapper frames`, a `Click me` button, an edit box,
+   a slider, a check box and a `Close` button; a footman icon appears top left; `ERROR visible for another player` never
+   appears. Hovering `Click me` shows `Wrapper tooltip`. Clicking it prints
+   `Wrapper frame clicked by <your name> count
+   1` (then 2, …); right after a click, pressing Enter opens the chat box
+   (focus was released). Typing in the edit box and pressing Enter prints
+   `Wrapper edit box enter by <your name> <text>`. Dragging the slider prints `Wrapper slider value <n>`. Ticking and
+   unticking the check box print `Wrapper checkbox checked by <your name>` and `... unchecked ...`. At 5 s the footman
+   icon jumps into the panel's top right (`Wrapper badge moved into the panel`); click `Close` only after that. Clicking
+   `Close` removes the panel and the icon, prints `Wrapper frames closed; badge disposed true button disposed true`, and
+   no `[wrappers] ... failed` line prints. Restore `frames = false`.
+10. Build with `--minify` and play the packed map; repeat steps 2–5 and 7–9 (without the probes). Open the packed map in
+    World Editor.
+11. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
     step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and
     play past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line,
     from its own Lua collector; record both. The same online check covers v0.3.0's local visibility: setVisibleFor,
@@ -154,8 +170,10 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     desync. It also covers `playFor` followed by `destroy()` (the other machines never started that sound) and whether
     `getDuration()` agrees across machines. It also covers v0.4.0: `setVisibleFor` on Multiboard and TimerDialog shows
     only for that player; `leaderboard:assign` and a dialog shown to one player appear only on that player's screen; a
-    dialog click by the second player prints that player's name on both machines; no desync.
-11. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
+    dialog click by the second player prints that player's name on both machines; no desync. It also covers v0.5.0:
+    frames created in the same order on both machines, `setVisibleFor` and `releaseFocusFor` acting only for that
+    player, and frame events from the second player printing that player's name on both machines; no desync.
+12. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
     occurs. Then stop and apply it.

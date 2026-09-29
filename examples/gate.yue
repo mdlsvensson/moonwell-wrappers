@@ -3,6 +3,7 @@
 -- Type -gate in chat twice while the hero is alive. CONTRIBUTING lists every expected message.
 -- Set presentation = true for a separate run of the v0.3.0 presentation gate only.
 -- Set ui = true for a separate run of the v0.4.0 classic UI gate only.
+-- Set frames = true for a separate run of the v0.5.0 frames gate only; it loads war3mapImported\wrappers-gate.toc.
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -28,10 +29,12 @@ import "wrappers.leaderboard" as Leaderboard
 import "wrappers.quest" as Quest
 import "wrappers.defeatcondition" as DefeatCondition
 import "wrappers.timerdialog" as TimerDialog
+import "wrappers.frame" as Frame
 
 probes = false
 presentation = false
 ui = false
+frames = false
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -318,6 +321,73 @@ presentationGate = (owner) ->
       self\destroy!
       print "Wrapper presentation cleanup passed"
 
+-- v0.5.0 frames. Run with frames = true; the templates come from the gate map's TOC file.
+framesGate = ->
+  other = Player.fromIndex 1
+  Frame.loadTOC "war3mapImported\\wrappers-gate.toc"
+  gameUi = Frame.origin ORIGIN_FRAME_GAME_UI
+  panel = Frame.create "EscMenuBackdrop", gameUi
+  panel\setAbsPoint FRAMEPOINT_CENTER, 0.4, 0.35
+  panel\setSize 0.32, 0.3
+  title = Frame.create "EscMenuTitleTextTemplate", panel
+  title\setPoint FRAMEPOINT_TOP, panel, FRAMEPOINT_TOP, 0, -0.03
+  title\setText "Wrapper frames"
+  title\setTextColor 255, 220, 0, 255
+  button = Frame.createByType "GLUETEXTBUTTON", panel, name: "WrapperClick", inherits: "ScriptDialogButton"
+  button\setPoint FRAMEPOINT_TOP, title, FRAMEPOINT_BOTTOM, 0, -0.01
+  button\setSize 0.14, 0.035
+  button\setText "Click me"
+  clicks = 0
+  button\on FRAMEEVENT_CONTROL_CLICK, (player) ->
+    clicks += 1
+    button\releaseFocusFor player
+    print "Wrapper frame clicked by", player\getName!, "count", clicks
+  tip = Frame.create "EscMenuLabelTextTemplate", panel
+  tip\setPoint FRAMEPOINT_BOTTOM, button, FRAMEPOINT_TOP, 0, 0.005
+  tip\setText "Wrapper tooltip"
+  button\setTooltip tip
+  box = Frame.create "EscMenuEditBoxTemplate", panel
+  box\setPoint FRAMEPOINT_TOP, button, FRAMEPOINT_BOTTOM, 0, -0.01
+  box\setSize 0.2, 0.03
+  box\on FRAMEEVENT_EDITBOX_ENTER, (player, event) ->
+    print "Wrapper edit box enter by", player\getName!, event.text
+  slider = Frame.create "EscMenuSliderTemplate", panel
+  slider\setPoint FRAMEPOINT_TOP, box, FRAMEPOINT_BOTTOM, 0, -0.015
+  slider\setSize 0.2, 0.012
+  slider\setMinMaxValue 0, 10
+  slider\setStepSize 1
+  slider\setValue 5
+  slider\on FRAMEEVENT_SLIDER_VALUE_CHANGED, (_, event) ->
+    print "Wrapper slider value", event.value
+  check = Frame.create "QuestCheckBox", panel
+  check\setPoint FRAMEPOINT_TOPLEFT, slider, FRAMEPOINT_BOTTOMLEFT, 0, -0.015
+  check\on FRAMEEVENT_CHECKBOX_CHECKED, (player) -> print "Wrapper checkbox checked by", player\getName!
+  check\on FRAMEEVENT_CHECKBOX_UNCHECKED, (player) -> print "Wrapper checkbox unchecked by", player\getName!
+  hidden = Frame.create "EscMenuLabelTextTemplate", panel
+  hidden\setPoint FRAMEPOINT_BOTTOMLEFT, panel, FRAMEPOINT_BOTTOMLEFT, 0.03, 0.03
+  hidden\setText "ERROR visible for another player"
+  hidden\setVisibleFor other
+  badge = Frame.createByType "BACKDROP", gameUi, name: "WrapperBadge"
+  badge\setTexture "ReplaceableTextures\\CommandButtons\\BTNFootman.blp"
+  badge\setSize 0.04, 0.04
+  badge\setAbsPoint FRAMEPOINT_TOPLEFT, 0.02, 0.55
+  closeButton = Frame.createByType "GLUETEXTBUTTON", panel, name: "WrapperClose", inherits: "ScriptDialogButton"
+  closeButton\setPoint FRAMEPOINT_BOTTOMRIGHT, panel, FRAMEPOINT_BOTTOMRIGHT, -0.03, 0.025
+  closeButton\setSize 0.09, 0.03
+  closeButton\setText "Close"
+  closeButton\on FRAMEEVENT_CONTROL_CLICK, ->
+    panel\destroy!
+    print "Wrapper frames closed; badge disposed", badge\isDisposed!, "button disposed", button\isDisposed!
+  print "Wrapper frames shown:", panel\getName!, "children", panel\getChildrenCount!
+  mover = Timer.create!
+  mover\start 5, false, (self) ->
+    self\destroy!
+    unless panel\isDisposed!
+      badge\setParent panel
+      badge\clearPoints!
+      badge\setPoint FRAMEPOINT_TOPRIGHT, panel, FRAMEPOINT_TOPRIGHT, -0.03, -0.03
+      print "Wrapper badge moved into the panel"
+
 -- v0.4.0 classic UI, after the dialog: a board, a leaderboard, quests and a timer dialog, one step every 3 seconds.
 uiBoards = (owner) ->
   other = Player.fromIndex 1
@@ -452,7 +522,9 @@ mw.on_main ->
   start\start 0, false, (self) ->
     self\destroy!
     owner = Player.fromIndex 0
-    if ui
+    if frames
+      framesGate!
+    elseif ui
       uiGate owner
     elseif presentation
       presentationGate owner
