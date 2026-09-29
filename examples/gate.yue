@@ -205,7 +205,13 @@ presentationGate = (owner) ->
   tag\setColor 255, 220, 0, 255
   tag\setPosition -250, 250, 0
   TextTag.float "Wrapper float for another player", 0, 150, player: other
-  bolt = Lightning.create "CLPB", -300, -250, 60, 300, -250, 60
+  -- Lightning heights are absolute, not above the ground. GetLocationZ is used here for visuals only.
+  ground = Location 0, 0
+  groundZ = (x, y) ->
+    MoveLocation ground, x, y
+    GetLocationZ ground
+  print "Wrapper bolt ground heights", groundZ(-300, -250), groundZ(300, -250), groundZ(-300, 250), groundZ(300, 250)
+  bolt = Lightning.create "CLPB", -300, -250, groundZ(-300, -250) + 60, 300, -250, groundZ(300, -250) + 60
   aoe = Image.create "ReplaceableTextures\\Selection\\SpellAreaOfEffect.blp", 256, 256, 0, 0, 1
   splat = Ubersplat.create "HMED", 350, 250
   near = FogModifier.radius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
@@ -222,23 +228,24 @@ presentationGate = (owner) ->
   tinted\playAnimation ANIM_TYPE_ATTACK
   blue = Effect.create "units\\human\\Footman\\Footman.mdl", -550, 0
   blue\setPlayerColor other
-  claws = Item.create $FourCC("ratc"), 200, -100
-  onItem = Effect.attach "Abilities\\Spells\\Other\\TalkToMe\\TalkToMe.mdl", claws, "origin"
   bell = Sound.create "Sound\\Interface\\Warning.flac"
   voice = Sound.create "Units\\Human\\Footman\\FootmanYes1.flac", is3D: true
   voice\setDistances 600, 10000
   voice\setDistanceCutoff 3000
   print "Wrapper presentation started; sound duration", bell\getDuration!
-  box = Rect.create -900, 500, -700, 700
+  -- Trees snap to a 64-unit grid (sometimes further), so these are grid points well inside the box.
+  box = Rect.create -1024, 448, -576, 832
   potions = {
     Item.create($FourCC("ratc"), -800, 600)
     Item.create($FourCC("phea"), -780, 620)
     Item.create($FourCC("phea"), -820, 580)
   }
   trees = {
-    Destructable.create($FourCC("LTlt"), -850, 650, 270, 1, 0)
-    Destructable.create($FourCC("LTlt"), -750, 650, 270, 1, 0)
+    Destructable.create($FourCC("LTlt"), -896, 640, 270, 1, 0)
+    Destructable.create($FourCC("LTlt"), -704, 640, 270, 1, 0)
   }
+  -- Warcraft draws no effect attached to an item; this checks attaching to a destructable.
+  onTree = Effect.attach "Abilities\\Spells\\Orc\\LightningShield\\LightningShieldTarget.mdl", trees[1], "origin"
   potionId = $FourCC("phea")
   print "Wrapper enumerated potions", #Item.enumInRect(box, (item) -> item\getTypeId! == potionId)
   print "Wrapper enumerated trees", #Destructable.enumInRect(box)
@@ -270,7 +277,7 @@ presentationGate = (owner) ->
     elseif step == 6
       tag\setPositionOnUnit marker, 0
       tag\setText "Wrapper tag moved", 10
-      bolt\move -300, 250, 60, 300, 250, 60
+      bolt\move -300, 250, groundZ(-300, 250) + 60, 300, 250, groundZ(300, 250) + 60
       bolt\setColor 0, 1, 0, 1
       aoe\setColor 0, 255, 0, 255
       aoe\setPosition 0, 300
@@ -296,8 +303,8 @@ presentationGate = (owner) ->
       box\destroy!
       tinted\destroy!
       blue\destroy!
-      onItem\destroy!
-      claws\remove!
+      onTree\destroy!
+      RemoveLocation ground
       bell\destroy!
       voice\destroy!
       item\remove! for item in *potions
