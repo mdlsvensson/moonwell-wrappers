@@ -110,14 +110,15 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At 10 s
    `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
    volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
-   `Wrapper tag moved`, the bolt moves above the footman and turns red, the circle turns green and moves up, the splat
-   fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle disappears
-   and a thunder clap flashes on the footman (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a
-   footman voice plays from the centre; if it is silent while the 8 s voice was audible, record it: `playOnce` may need
-   default sound distances (spec §5.2), decided with the maintainer before release. At 20 s everything disappears and
-   `Wrapper presentation cleanup passed` prints. If a sound, model or splat never appears or plays in any run, its path
-   or name may not exist in this game version: substitute one from World Editor and record it. Record whether the bolt
-   stays visible and moves at 12 s. Restore `presentation = false`.
+   `Wrapper tag moved`, the bolt moves above the footman (its `setColor` red showed no visible change on 3.0.0.24268;
+   see README), the circle turns green and moves up, the splat fades out, the bottom-left reveal ends and a thunder clap
+   flashes below the footman. At 14 s the circle disappears and a thunder clap flashes on the footman
+   (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a footman voice plays from the centre; if it is
+   silent while the 8 s voice was audible, record it: `playOnce` may need default sound distances (spec §5.2), decided
+   with the maintainer before release. At 20 s everything disappears and `Wrapper presentation cleanup passed` prints.
+   If a sound, model or splat never appears or plays in any run, its path or name may not exist in this game version:
+   substitute one from World Editor and record it. Record whether the bolt stays visible and moves at 12 s. Restore
+   `presentation = false`.
 8. Build with `--minify` and play the packed map; repeat steps 2–5 and 7. Open the packed map in World Editor.
 9. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
    step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and play
@@ -142,6 +143,19 @@ and World Editor 3.00 (file version 3.0.0.24268). Steps 2, 3, 5 (`collected=true
 (the minified run, now step 8) passed with library `5417ce6`. Gate copies added one camera line. Step 4: the first
 `-gate` printed `Wrapper chat once` and `Wrapper chat accepted` on `830cf31` (same library code); the second `-gate` was
 not observed. Step 8 (the two-player run, now step 9) is deferred.
+
+v0.3.0: Passed 2026-09-29, confirmed by the maintainer's message-log screenshots and observations on Warcraft III
+Reforged 3.0.0.24268 and World Editor 3.00, library code `dae9982` (unchanged since), run from a disposable map with one
+command per run. Steps 2–5 and 6 passed as in v0.2.0, normal and minified, including
+`collected=true stale=true
+identity=true`. Step 7 found four gate problems, each fixed in the gate and documented: trees
+snap to a 64-unit grid and the native enumeration left out one that landed on the box edge (wider box); Chain Lightning
+fades right after creation (the gate uses Drain Life); Warcraft draws no effect attached to an item or a destructable
+(README; an editor error is in Moonwell's backlog); `lightning:setColor` stores the colour but showed no visible change
+(README). After the fixes, step 7 passed normal and minified: the first-play knight voice and the 3D `playOnce` were
+audible, sound duration 1903 before and after play, potions 2 and trees 2, the image slightly off-centre under the
+footman (within the footman's placement; an origin error would be 128 units), and every other listed observation. Step
+8: the minified runs passed and the packed map opened in World Editor. Step 9 is deferred.
 
 ## First publication and tag gate (maintainer)
 

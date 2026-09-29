@@ -2,8 +2,8 @@
 
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
-remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5` and `v0.2.0` on the commit that
-records its gate. Tags must never be moved.
+remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0` and `v0.3.0` on the commits
+that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -51,5 +51,9 @@ recovery, minified gameplay and World Editor opening (Warcraft 3.0.0.24268, Worl
 consumption passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`.
 v0.2.0: the in-game gate passed on 2026-09-29, including the weak cache probe
 (`collected=true stale=true identity=true`); the two-player desync run is deferred to Moonwell's pre-1.0 online checks
-(LAN was removed from the game). Tag consumption passed the same day: a fresh map locked `v0.2.0` to `7baa81e`. Later
-releases repeat the automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
+(LAN was removed from the game). Tag consumption passed the same day: a fresh map locked `v0.2.0` to `7baa81e`. v0.3.0:
+the in-game gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). It found game behaviour now in the
+README: Chain Lightning fades by itself, `lightning:setColor` shows no visible change, and effects attached to items and
+destructables are not drawn. The disposable gate map lived in `../wrappers-gate` (`deno task gate <run>`, one command
+per run, generated from `examples/gate.yue`); recreate it the same way for later releases. Later releases repeat the
+automated checks, the in-game gate and the tag consumption gate in CONTRIBUTING.

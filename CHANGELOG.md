@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-09-29)
 
 - New wrappers: TextTag, Sound, Lightning, Image, Ubersplat and FogModifier. They exist only for objects the map owns
   and destroys: `TextTag.create` makes a permanent tag, and a Sound wrapper is never released when done.
@@ -13,6 +13,27 @@
 - **Changed:** `Effect.attach` accepts any widget (Unit, Item, Destructable). A wrong argument now reports
   `[wrappers] Effect.attach: expected Widget wrapper` (formerly `expected Unit wrapper`). Items and destructables are
   accepted, but in the gate Warcraft drew no effect attached to them (see README, Widgets).
+
+### Release gate
+
+Automated checks passed 2026-09-29 on Windows: 107 behavior tests in 20 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (44 files); Moonwell 0.5.0 normal/minified builds, unused-module exclusion, Trigger-only and TextTag-only bundles
+and bundled execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eleven expected negative diagnostics; a direct LuaLS
+check of `src/wrappers` with no problems; the gate example builds with clean editor diagnostics.
+
+The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-log screenshots and observations on
+Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, library code `dae9982`:
+
+- **Core, probes and weak cache (normal and minified):** as in v0.2.0, `collected=true stale=true identity=true`.
+- **Presentation (normal and minified):** text tags (owned and floating, hidden for another player), sounds (first-play
+  knight voice, 3D sound, 3D `playOnce`, silence for another player; duration 1903 before and after play), image centred
+  under the footman within its placement, splat, fog reveals, effect colour/alpha/player colour/orientation, flashes, a
+  lasting Drain Life bolt that moved, potions 2 and trees 2 from `enumInRect`.
+- **Found in game and documented:** Chain Lightning fades by itself; `lightning:setColor` showed no visible change;
+  effects attached to items and destructables are not drawn. The gate example was fixed for these and for trees snapping
+  to a 64-unit grid.
+- **World Editor:** opened the packed minified map.
+- **Deferred:** the two-player run and the multiplayer checks of local visibility (Moonwell's pre-1.0 online checks).
 
 ## 0.2.0 (2026-09-29)
 

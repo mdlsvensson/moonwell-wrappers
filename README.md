@@ -4,10 +4,9 @@ Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Dest
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat and FogModifier wrappers, editor completion, stable
 handle identity and explicit cleanup.
 
-**Status:** `v0.2.0` (broad coverage) released 2026-09-29; its in-game gate passed. v0.3.0 (presentation: text tags,
-sounds, lightning, images, ubersplats, fog modifiers, deeper effects, item and destructable enumeration) is in
-development on main. Multiplayer desync checks are deferred until before Moonwell 1.0. Dialogs, multiboards, frames and
-other UI types are not wrapped yet.
+**Status:** `v0.3.0` (presentation: text tags, sounds, lightning, images, ubersplats, fog modifiers, deeper effects,
+item and destructable enumeration) released 2026-09-29; its in-game gate passed. Multiplayer desync checks are deferred
+until before Moonwell 1.0. Dialogs, multiboards, frames and other UI types are not wrapped yet.
 
 ## Use a local checkout
 
@@ -27,13 +26,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.2.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.3.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.2.0"
+    tag = "v0.3.0"
     dir = "src"
   }
 }
@@ -147,7 +146,8 @@ natives answer differently on each machine.
 
 Some lightning types fade by themselves right after creation, as their spells do: in the v0.3.0 gate Chain Lightning
 (`CLPB`) vanished within a moment, while Drain Life (`DRAL`) stayed until destroyed. Pick a lasting type for a
-`Lightning` you keep.
+`Lightning` you keep. `lightning:setColor` stores the colour (the game reads it back), but on 3.0.0.24268 the Drain Life
+bolt showed no visible change for green or red; do not rely on it for visuals.
 
 Value ranges are the natives': colors are integers 0–255, except `lightning:setColor`, which takes numbers 0–1. Sound
 volume is 0–127 and `getDuration()` is in milliseconds; it can be 0 until the file is loaded, so do not drive
