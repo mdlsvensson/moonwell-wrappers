@@ -13,11 +13,14 @@ The approved design and implementation history live in the sibling Moonwell repo
   `../moonwell/docs/superpowers/plans/2026-09-28-moonwell-wrappers-broad.md` (v0.2.0)
 - `../moonwell/docs/superpowers/specs/2026-09-29-moonwell-wrappers-presentation-design.md` and
   `../moonwell/docs/superpowers/plans/2026-09-29-moonwell-wrappers-presentation.md` (v0.3.0)
+- `../moonwell/docs/superpowers/specs/2026-09-29-moonwell-wrappers-classic-ui-design.md` and
+  `../moonwell/docs/superpowers/plans/2026-09-29-moonwell-wrappers-classic-ui.md` (v0.4.0)
 
 README documents the complete public API. CONTRIBUTING documents tool versions, checks and the manual release gate.
 v0.2.0 adds broad gameplay coverage; v0.3.0 adds presentation (text tags, sounds, lightning, images, ubersplats, fog
-modifiers), deeper effects and item/destructable enumeration. Classic UI and frames remain in Moonwell's backlog. Do not
-add gameplay systems, implicit cleanup or a w3ts compatibility layer without a new design.
+modifiers), deeper effects and item/destructable enumeration; v0.4.0 adds classic UI (dialogs, multiboards,
+leaderboards, quests, defeat conditions, timer dialogs). Frames remain in Moonwell's backlog. Do not add gameplay
+systems, implicit cleanup or a w3ts compatibility layer without a new design.
 
 ## Rules
 
@@ -39,6 +42,9 @@ add gameplay systems, implicit cleanup or a w3ts compatibility layer without a n
   pass a machine-local boolean to the same native on every machine; the one exception is `sound:playFor`, which calls
   `StartSound` only on that player's machine (spec §4). No getters for machine-local values.
 - Options tables go through `internal/options.lua`: unknown keys and wrong types fail before any native.
+- Children that die with their parent (dialog buttons, quest items) are wrappers owned by the parent: its `clear()` or
+  `destroy()` disposes them, and they have no `destroy()` or `fromHandle`. Native handles that must be released
+  (multiboard items) never become wrappers: get and release them in the same call.
 
 ## Verification
 
@@ -62,4 +68,5 @@ flipped-boolean setter checks; the in-game gate was not re-run by the maintainer
 consumption passed the same day: a fresh map locked `v0.3.1` to `94d650f`. The probe map is
 `../wrappers-gate/src/probe.yue` (`deno task gate probe`). The README's "Reported native caveats" are other libraries'
 claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the automated
-checks, the in-game gate and the tag consumption gate in CONTRIBUTING.
+checks, the in-game gate and the tag consumption gate in CONTRIBUTING. v0.4.0: the gate map has a `ui-init` probe
+(`../wrappers-gate/src/probe_ui.yue`, `deno task gate ui-init`) and the runs `ui` and `ui-min`.

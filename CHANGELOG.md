@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- New classic UI wrappers: Dialog, Multiboard, Leaderboard, Quest, DefeatCondition and TimerDialog, all owned by the map
+  and destroyed explicitly.
+- Dialog buttons take a callback that receives the clicking Player; the dialog owns one internal trigger. Buttons and
+  quest items belong to their dialog or quest, which dispose them on `clear()`/`destroy()`.
+- Multiboard rows and columns count from 1; cell methods (`setCell`, `setRow`, `setColumn`, `setAll`) obtain and release
+  the native cell handles themselves. `setRowCount` changes the count one row at a time.
+- Leaderboard items are keyed by player and resize the board.
+- `setVisibleFor(Player)` on Multiboard and TimerDialog. No getters for display or minimized state.
+- A TimerDialog raises once its Timer is destroyed, except for `destroy()`.
+
 ## 0.3.1 (2026-09-29)
 
 - **Changed:** `Image.create` raises `[wrappers] Image.create: invalid image path: <path>` when the game cannot load the

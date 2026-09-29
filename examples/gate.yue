@@ -2,6 +2,7 @@
 -- Run once normally, then set probes = true to verify callback errors remain visible and recover.
 -- Type -gate in chat twice while the hero is alive. CONTRIBUTING lists every expected message.
 -- Set presentation = true for a separate run of the v0.3.0 presentation gate only.
+-- Set ui = true for a separate run of the v0.4.0 classic UI gate only.
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -21,9 +22,16 @@ import "wrappers.lightning" as Lightning
 import "wrappers.image" as Image
 import "wrappers.ubersplat" as Ubersplat
 import "wrappers.fogmodifier" as FogModifier
+import "wrappers.dialog" as Dialog
+import "wrappers.multiboard" as Multiboard
+import "wrappers.leaderboard" as Leaderboard
+import "wrappers.quest" as Quest
+import "wrappers.defeatcondition" as DefeatCondition
+import "wrappers.timerdialog" as TimerDialog
 
 probes = false
 presentation = false
+ui = false
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -310,13 +318,143 @@ presentationGate = (owner) ->
       self\destroy!
       print "Wrapper presentation cleanup passed"
 
+-- v0.4.0 classic UI, after the dialog: a board, a leaderboard, quests and a timer dialog, one step every 3 seconds.
+uiBoards = (owner) ->
+  other = Player.fromIndex 1
+  footman = "ReplaceableTextures\\CommandButtons\\BTNFootman.blp"
+  board = Multiboard.create 3, 3, "Wrapper multiboard"
+  board\setTitleColor 255, 220, 0, 255
+  board\setAll {showValue: true, showIcon: false, width: 0.05}
+  board\setColumn 1, {width: 0.08}
+  board\setCell 1, 1, {value: "Name", color: {255, 204, 0}}
+  board\setCell 1, 2, {value: "Kills"}
+  board\setCell 2, 1, {value: "Footman", icon: footman, showValue: true, showIcon: true}
+  board\setRow 3, {value: "Row 3"}
+  board\setColumn 3, {icon: footman, showValue: false, showIcon: true}
+  board\show true
+  print "Wrapper multiboard", board\getTitle!, board\getRowCount!, board\getColumnCount!
+  local leaders, quest, optional, first, defeat, countdown, clock
+  steps = Timer.create!
+  step = 0
+  steps\start 3, true, (self) ->
+    step += 1
+    if step == 1
+      board\setRowCount 6
+      board\setRow 6, {value: "Row 6"}
+      print "Wrapper multiboard rows", board\getRowCount!
+    elseif step == 2
+      board\setRowCount 2
+      print "Wrapper multiboard rows", board\getRowCount!
+    elseif step == 3
+      board\minimize true
+      print "Wrapper multiboard minimized"
+    elseif step == 4
+      board\minimize false
+      board\setVisibleFor other
+      print "Wrapper multiboard hidden for another player"
+    elseif step == 5
+      board\destroy!
+      leaders = Leaderboard.create "Wrapper leaderboard"
+      leaders\setLabelColor 255, 220, 0, 255
+      leaders\addItem owner, "You", 5
+      leaders\addItem other, "Other", 9
+      leaders\setItemValueColor other, 0, 128, 255, 255
+      leaders\sortByValue false
+      leaders\assign owner
+      leaders\show true
+      print "Wrapper leaderboard items", leaders\getItemCount!
+    elseif step == 6
+      leaders\setItemValue owner, 12
+      leaders\setItemLabel owner, "You (12)"
+      leaders\sortByValue false
+      leaders\setStyle {icons: false}
+      print "Wrapper leaderboard re-sorted"
+    elseif step == 7
+      leaders\removeItem other
+      print "Wrapper leaderboard items", leaders\getItemCount!, "has other", leaders\hasItem(other)
+    elseif step == 8
+      leaders\destroy!
+      quest = Quest.create {title: "Wrapper quest", description: "The first item completes 3 s later.", icon: footman}
+      first = quest\addItem "Wrapper first item"
+      quest\addItem "Wrapper second item"
+      optional = Quest.create {title: "Wrapper optional quest", description: "Fails 6 s later.", required: false}
+      defeat = DefeatCondition.create "Wrapper defeat condition"
+      Quest.flashButton!
+      print "Wrapper quests created: open the quest log (F9)"
+    elseif step == 9
+      first\setCompleted true
+      Quest.refresh!
+      print "Wrapper quest item completed", first\isCompleted!
+    elseif step == 10
+      quest\setCompleted true
+      optional\setFailed true
+      Quest.refresh!
+      print "Wrapper quest completed", quest\isCompleted!, "optional failed", optional\isFailed!
+    elseif step == 11
+      clock = Timer.create!
+      clock\start 60, false, -> nil
+      countdown = TimerDialog.create clock, "Wrapper timer dialog"
+      countdown\setTitleColor 255, 220, 0, 255
+      countdown\setTimeColor 0, 255, 0, 255
+      countdown\show true
+      print "Wrapper timer dialog shown"
+    elseif step == 12
+      countdown\setSpeed 4
+      print "Wrapper timer dialog speed 4"
+    elseif step == 13
+      countdown\setRealTimeRemaining 10
+      print "Wrapper timer dialog remaining 10"
+    elseif step == 14
+      countdown\setVisibleFor other
+      print "Wrapper timer dialog hidden for another player"
+    elseif step == 15
+      countdown\destroy!
+      clock\destroy!
+      quest\destroy!
+      optional\destroy!
+      defeat\destroy!
+      self\destroy!
+      print "Wrapper ui cleanup passed; quest item disposed", first\isDisposed!
+
+-- v0.4.0 classic UI. Run with ui = true: the dialog first; its last button starts uiBoards.
+uiGate = (owner) ->
+  dialog = Dialog.create!
+  dialog\setMessage "Wrapper dialog"
+  -- Warcraft hides a dialog when a button is clicked; show it again a moment later.
+  reshow = (player) ->
+    later = Timer.create!
+    later\start 0.5, false, (self) ->
+      self\destroy!
+      dialog\show player unless dialog\isDisposed!
+  dialog\addButton "Keyed (K)", {hotkey: "K"}, (player) ->
+    print "Wrapper dialog keyed by", player\getName!
+    reshow player
+  dialog\addButton "Plain", (player) ->
+    print "Wrapper dialog plain by", player\getName!
+    reshow player
+  dialog\addButton "Rebuild", (player) ->
+    dialog\clear!
+    dialog\addButton "After clear", (clicker) ->
+      print "Wrapper dialog after clear by", clicker\getName!
+      reshow clicker
+    dialog\addButton "Destroy dialog", ->
+      dialog\destroy!
+      print "Wrapper dialog destroyed from its own button"
+      uiBoards owner
+    print "Wrapper dialog rebuilt"
+    reshow player
+  dialog\show owner
+  print "Wrapper dialog shown: press K, click Plain, Rebuild, After clear, then Destroy dialog"
+
 -- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
 mw.on_main ->
   start = Timer.create!
   start\start 0, false, (self) ->
     self\destroy!
     owner = Player.fromIndex 0
-    if presentation
+    if ui
+      uiGate owner
+    elseif presentation
       presentationGate owner
     else
       foundationGate owner

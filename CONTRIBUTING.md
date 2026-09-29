@@ -67,8 +67,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
 1. Create a disposable Moonwell map and configure this checkout with the local path example in README. Copy
    `examples/gate.yue` to its `src/main.yue`; run check and test. The gate starts just after the map loads (times below
    count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds); the presentation run
-   (step 7) never prints it and ends at about 20 seconds with `Wrapper presentation cleanup passed`. Then read the whole
-   message log (F12); opening it pauses a single-player game.
+   (step 7) never prints it and ends at about 20 seconds with `Wrapper presentation cleanup passed`; the classic UI run
+   (step 8) never prints it either and ends about 45 seconds after its dialog is destroyed, with
+   `Wrapper ui cleanup passed`. Then read the whole message log (F12); opening it pauses a single-player game.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
@@ -119,15 +120,42 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    If a sound, model or splat never appears or plays in any run, its path or name may not exist in this game version:
    substitute one from World Editor and record it. Record whether the bolt stays visible and moves at 12 s. Restore
    `presentation = false`.
-8. Build with `--minify` and play the packed map; repeat steps 2–5 and 7. Open the packed map in World Editor.
-9. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
-   step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and play
-   past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line, from
-   its own Lua collector; record both. The same online check covers v0.3.0's local visibility: setVisibleFor, playFor
-   and the player options of TextTag.float and Sound.playOnce show or play only for that player, with no desync. It also
-   covers `playFor` followed by `destroy()` (the other machines never started that sound) and whether `getDuration()`
-   agrees across machines.
-10. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
+8. Classic UI (v0.4.0): first run the gate map's `ui-init` probe (`../wrappers-gate`, `deno task gate ui-init`,
+   instructions in its `PROBE-UI.md`) and record its answers in the results below and in README. Then set `ui = true`
+   and run again; only the classic UI gate runs. A dialog titled `Wrapper dialog` appears with `Keyed (K)`, `Plain` and
+   `Rebuild` (`Wrapper dialog shown: ...` prints). Press K: the dialog closes, `Wrapper dialog keyed by <your name>`
+   prints and the dialog comes back half a second later. Click `Plain`: `Wrapper dialog plain by <your name>`. Click
+   `Rebuild`: `Wrapper dialog rebuilt` prints and the dialog comes back with only `After clear` and `Destroy dialog`.
+   Click `After clear`: `Wrapper dialog after clear by <your name>`. Click `Destroy dialog`:
+   `Wrapper dialog destroyed from its own button` prints, the dialog never comes back, and no `[wrappers] ... failed`
+   line prints. Times below count from that click. At once a multiboard titled `Wrapper multiboard` (yellow) appears top
+   right with 3 × 3 cells: a yellow `Name` and `Kills` in row 1; `Footman` with its icon in row 2; `Row 3` in row 3;
+   footman icons down column 3; a wider first column. `Wrapper multiboard Wrapper multiboard 3 3` prints. At 3 s it
+   grows to 6 rows with `Row 6` in the last (`Wrapper multiboard rows 6`); at 6 s it shrinks to 2
+   (`Wrapper multiboard rows 2`); at 9 s it minimizes to its title; at 12 s it expands, then disappears
+   (`Wrapper multiboard hidden for another player`). At 15 s a leaderboard titled `Wrapper leaderboard` (yellow) appears
+   with `Other 9` (blue value) above `You 5`; `Wrapper leaderboard items 2` prints. At 18 s `You (12)` moves to the top
+   and the icons disappear. At 21 s `Other` is removed and the board shrinks to one row
+   (`Wrapper leaderboard items 1 has other false`). At 24 s the leaderboard disappears, the quest button flashes and
+   `Wrapper quests created: open the quest log (F9)` prints: the log lists `Wrapper quest` (required, footman icon, two
+   items), `Wrapper optional quest` (optional) and the defeat condition `Wrapper defeat condition`. At 27 s the first
+   item shows as completed (`Wrapper quest item completed true`); at 30 s the quest shows completed and the optional
+   quest failed (`Wrapper quest completed true optional failed true`). At 33 s a timer dialog `Wrapper timer dialog`
+   (yellow title, green time) counts down from about 1:00; at 36 s it counts faster (`speed 4`; record what it shows);
+   at 39 s it shows about 0:10; at 42 s it disappears. At 45 s `Wrapper ui cleanup passed; quest item disposed true`
+   prints and the quests leave the log. Restore `ui = false`.
+9. Build with `--minify` and play the packed map; repeat steps 2–5, 7 and 8 (without the probe). Open the packed map in
+   World Editor.
+10. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
+    step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and
+    play past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line,
+    from its own Lua collector; record both. The same online check covers v0.3.0's local visibility: setVisibleFor,
+    playFor and the player options of TextTag.float and Sound.playOnce show or play only for that player, with no
+    desync. It also covers `playFor` followed by `destroy()` (the other machines never started that sound) and whether
+    `getDuration()` agrees across machines. It also covers v0.4.0: `setVisibleFor` on Multiboard and TimerDialog shows
+    only for that player; `leaderboard:assign` and a dialog shown to one player appear only on that player's screen; a
+    dialog click by the second player prints that player's name on both machines; no desync.
+11. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
     occurs. Then stop and apply it.
