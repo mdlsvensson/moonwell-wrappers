@@ -95,28 +95,29 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    `[wrappers] Trigger condition failed: ... intentional condition probe` prints, and the action behind that condition
    never runs (no `ERROR condition probe action ran`). Restore `probes = false`.
 7. Presentation (v0.3.0): set `presentation = true` and run again; only the presentation gate runs, around the map
-   centre. At start `Wrapper bolt ground heights <four numbers>` prints (record them: lightning heights are absolute, so
-   the gate adds them), then `Wrapper presentation started; sound duration <n>` (record `n`; 0 can mean the file was not
-   loaded yet), `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2`. Visible at once: a yellow
-   `Wrapper text tag` upper left; a chain lightning bolt below the footman; the area-of-effect circle centred under the
-   footman; a building-base splat upper right; a red, half-transparent, slowed Footman model turned 90 degrees (yaw π/2)
-   from the blue one, raised and attacking, and a blue (player 2 colour) Footman model beside it; a lightning shield at
-   the base of the left tree among the potions, further up and left (an effect attached to a destructable; Warcraft
-   draws no effect attached to an item). The minimap shows a revealed circle towards the top right and a revealed square
-   towards the bottom left. `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades,
-   and the warning sound plays (`Wrapper sound play`). At 4 s `Wrapper sound duration after play <n>` prints (record
-   whether it differs from the start value), the sound stops, `Wrapper playOnce first call` prints and a knight's voice
-   plays. If it is silent then but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec
-   §5.2) and stop: the fix is decided with the maintainer before release. At 8 s the footman voice plays from the centre
-   (`Wrapper 3D sound`). At 10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce
-   for another player plays at volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman
-   and reads `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up,
-   the splat fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle
-   disappears and a thunder clap flashes on the footman (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints
-   and a footman voice plays from the centre; if it is silent while the 8 s voice was audible, record it: `playOnce` may
-   need default sound distances (spec §5.2), decided with the maintainer before release. At 20 s everything disappears
-   and `Wrapper presentation cleanup passed` prints. If a sound, model or splat never appears or plays in any run, its
-   path or name may not exist in this game version: substitute one from World Editor and record it. Record whether the
+   centre, and a fog modifier reveals that area. At start `Wrapper bolt ground heights <four numbers>` prints (record
+   them: lightning heights are absolute, so the gate adds them), then `Wrapper presentation started; sound duration <n>`
+   (record `n`; 0 can mean the file was not loaded yet), `Wrapper enumerated potions 2` and
+   `Wrapper enumerated trees 2`. Visible at once: a yellow `Wrapper text tag` upper left; a chain lightning bolt below
+   the footman; the area-of-effect circle centred under the footman; a building-base splat upper right; a red,
+   half-transparent, slowed Footman model turned 90 degrees (yaw π/2) from the blue one, raised and attacking, and a
+   blue (player 2 colour) Footman model beside it; a lightning shield at the base of the left tree among the potions,
+   further up and left (an effect attached to a destructable; Warcraft draws no effect attached to an item). The minimap
+   shows a revealed circle towards the top right and a revealed square towards the bottom left.
+   `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound plays
+   (`Wrapper sound play`). At 4 s `Wrapper sound duration after play <n>` prints (record whether it differs from the
+   start value), the sound stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it is silent then
+   but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the fix is
+   decided with the maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At
+   10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
+   volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
+   `Wrapper tag moved`, the bolt moves above the footman and turns green, the circle turns green and moves up, the splat
+   fades out, the bottom-left reveal ends and a thunder clap flashes below the footman. At 14 s the circle disappears
+   and a thunder clap flashes on the footman (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a
+   footman voice plays from the centre; if it is silent while the 8 s voice was audible, record it: `playOnce` may need
+   default sound distances (spec §5.2), decided with the maintainer before release. At 20 s everything disappears and
+   `Wrapper presentation cleanup passed` prints. If a sound, model or splat never appears or plays in any run, its path
+   or name may not exist in this game version: substitute one from World Editor and record it. Record whether the
    lightning shield appears on the tree and whether the bolt is visible and moves at 12 s. Restore
    `presentation = false`.
 8. Build with `--minify` and play the packed map; repeat steps 2–5 and 7. Open the packed map in World Editor.

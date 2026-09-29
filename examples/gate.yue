@@ -200,6 +200,10 @@ broadGate = (owner) ->
 presentationGate = (owner) ->
   other = Player.fromIndex 1
   marker = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
+  -- Reveal the gate's area; the far radius and rect reveals below stay outside it.
+  sight = Rect.create -1100, -500, 700, 900
+  view = FogModifier.rect owner, FOG_OF_WAR_VISIBLE, sight, true, false
+  view\start!
   tag = TextTag.create!
   tag\setText "Wrapper text tag", 12
   tag\setColor 255, 220, 0, 255
@@ -300,6 +304,8 @@ presentationGate = (owner) ->
       near\destroy!
       far\destroy!
       area\destroy!
+      view\destroy!
+      sight\destroy!
       box\destroy!
       tinted\destroy!
       blue\destroy!
