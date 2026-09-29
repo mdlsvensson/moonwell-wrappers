@@ -188,7 +188,11 @@ broadGate = (owner) ->
       print "Wrapper broad cleanup passed"
       churnProbe owner
 
+-- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
 mw.on_main ->
-  owner = Player.fromIndex 0
-  foundationGate owner
-  broadGate owner
+  start = Timer.create!
+  start\start 0, false, (self) ->
+    self\destroy!
+    owner = Player.fromIndex 0
+    foundationGate owner
+    broadGate owner

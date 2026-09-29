@@ -65,7 +65,9 @@ conservatively nullable in LuaLS 3.19.1; narrow it or assert it. Factories valid
 Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual versions if different.
 
 1. Create a disposable Moonwell map and configure this checkout with the local path example in README. Copy
-   `examples/gate.yue` to its `src/main.yue`; run check and test.
+   `examples/gate.yue` to its `src/main.yue`; run check and test. The gate starts just after the map loads (times below
+   count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds), then read the whole
+   message log (F12); opening it pauses a single-player game.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
