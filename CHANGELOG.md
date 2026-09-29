@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.2.0)
+## 0.2.0 (2026-09-29)
 
 - New wrappers: Item, Destructable, Rect, Region and Force.
 - Unit: hero, ability, inventory, mana, movement, presentation and by-id order methods, `isAlive()` and `damageTarget`.
@@ -26,7 +26,23 @@ checks (30 files); Moonwell normal/minified builds, unused-module exclusion, a T
 execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eight expected negative diagnostics; the gate example builds with
 clean editor diagnostics.
 
-Pending: the in-game gate (including the weak cache probe and a two-player LAN run) and tag consumption.
+The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-log screenshots on Warcraft III Reforged
+3.0.0.24268 and World Editor 3.00 (file version 3.0.0.24268), library commit `5417ce6`:
+
+- **Normal and minified runs:** startup messages (hero level 4, ability level 2 with a 30-second cooldown, item charges
+  3, filtered heroes 1), region entry, item pickup, unit and tree death events, both cleanups, the tree restore, and
+  `Wrapper broad cleanup passed` at 30 seconds.
+- **Weak cache probe:** `collected=true stale=true identity=true` and `Wrapper weak cache probe passed` (normal run).
+- **Probe run:** all three intentional errors printed (timer, trigger, condition), then recovery.
+- **World Editor:** opened the packed minified map.
+- **Chat:** the first `-gate` printed `Wrapper chat once` and `Wrapper chat accepted`, so the self-removing action and
+  condition both ran in game. That was the first run, on `830cf31`, which has the same library code. The second `-gate`
+  was not observed.
+- **Gate fix during the run:** it printed its startup messages while the map loaded, where they never reach the log;
+  `5417ce6` starts it just after loading.
+
+Deferred, not passed: the two-player no-desync run. Reforged's latest patch removed LAN, and online multiplayer and
+desync checks wait until the last step before Moonwell 1.0 (Moonwell's backlog).
 
 ## 0.1.0 (2026-09-28)
 

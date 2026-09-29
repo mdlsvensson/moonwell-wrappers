@@ -3,9 +3,9 @@
 Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Destructable, Rect, Region, Force, Timer,
 Trigger, Group and Effect wrappers, editor completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.1.0` released 2026-09-28. `v0.2.0` (broad coverage) is on main; its in-game gate is pending, so use
-`v0.1.0` from GitHub until it is tagged. UI and presentation types (dialogs, multiboards, sounds, text tags) are not
-wrapped yet.
+**Status:** `v0.2.0` (broad coverage) released 2026-09-29; its in-game gate passed. Multiplayer desync checks are
+deferred until before Moonwell 1.0. UI and presentation types (dialogs, multiboards, sounds, text tags) are not wrapped
+yet.
 
 ## Use a local checkout
 
@@ -25,13 +25,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.1.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.2.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.1.0"
+    tag = "v0.2.0"
     dir = "src"
   }
 }

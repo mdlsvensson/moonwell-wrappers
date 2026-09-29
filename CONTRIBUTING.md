@@ -94,9 +94,10 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    `[wrappers] Trigger condition failed: ... intentional condition probe` prints, and the action behind that condition
    never runs (no `ERROR condition probe action ran`). Restore `probes = false`.
 7. Build with `--minify` and play the packed map; repeat steps 2–5. Open the packed map in World Editor.
-8. Host a two-player LAN game of the minified map and play past the weak cache probe (about a minute). Neither machine
-   may desync. Each machine prints its own probe line, from its own Lua collector; record both. If a LAN game is not
-   possible, record that and decide with the maintainer before tagging.
+8. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
+   step before Moonwell 1.0 (Moonwell's backlog). Then: host an online game of the minified map for two players and play
+   past the weak cache probe (about a minute). Neither machine may desync. Each machine prints its own probe line, from
+   its own Lua collector; record both.
 9. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
    this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
    `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
@@ -107,6 +108,11 @@ version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified
 opening all passed. The probe screenshot confirms both intentional errors followed by ticks, death and cleanup in F12.
 The disposable gate used three-second ticks, death at nine seconds and cleanup at fifteen seconds, with camera and
 selection adjustments for visibility. Library code was commit `3b923d5` throughout.
+
+v0.2.0: Passed 2026-09-29, confirmed by the maintainer's message-log screenshots on Warcraft III Reforged 3.0.0.24268
+and World Editor 3.00 (file version 3.0.0.24268). Steps 2, 3, 5 (`collected=true stale=true identity=true`), 6 and 7
+passed with library `5417ce6`. Gate copies added one camera line. Step 4: the first `-gate` printed `Wrapper chat once`
+and `Wrapper chat accepted` on `830cf31` (same library code); the second `-gate` was not observed. Step 8 is deferred.
 
 ## First publication and tag gate (maintainer)
 
