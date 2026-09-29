@@ -157,6 +157,10 @@ audible, sound duration 1903 before and after play, potions 2 and trees 2, the i
 footman (within the footman's placement; an origin error would be 128 units), and every other listed observation. Step
 8: the minified runs passed and the packed map opened in World Editor. Step 9 is deferred.
 
+v0.3.1: Not re-run (maintainer's decision, 2026-09-29). The release changes documentation, tests and one runtime check,
+`Image.create`'s wrong-path error; a dedicated probe run on Warcraft III 3.0.0.24268 measured the behaviour it relies on
+(handle id -1 for a wrong path; `DestroyImage` on it does not crash). Library code is otherwise that of v0.3.0.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

@@ -4,9 +4,11 @@ Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Dest
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat and FogModifier wrappers, editor completion, stable
 handle identity and explicit cleanup.
 
-**Status:** `v0.3.0` (presentation: text tags, sounds, lightning, images, ubersplats, fog modifiers, deeper effects,
-item and destructable enumeration) released 2026-09-29; its in-game gate passed. Multiplayer desync checks are deferred
-until before Moonwell 1.0. Dialogs, multiboards, frames and other UI types are not wrapped yet.
+**Status:** `v0.3.1` (2026-09-29): v0.3.0's presentation (text tags, sounds, lightning, images, ubersplats, fog
+modifiers, deeper effects, item and destructable enumeration), plus measured and reported native caveats and a check for
+wrong image paths. The v0.3.0 in-game gate passed; v0.3.1's runtime change is backed by an in-game probe. Multiplayer
+desync checks are deferred until before Moonwell 1.0. Dialogs, multiboards, frames and other UI types are not wrapped
+yet.
 
 ## Use a local checkout
 
@@ -26,13 +28,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.3.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.3.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.3.0"
+    tag = "v0.3.1"
     dir = "src"
   }
 }
@@ -145,16 +147,24 @@ reused, so the wrapper would go stale. There is no `sound:isPlaying()`, and Effe
 natives answer differently on each machine.
 
 Some lightning types fade by themselves right after creation, as their spells do: in the v0.3.0 gate Chain Lightning
-(`CLPB`) vanished within a moment, while Drain Life (`DRAL`) stayed until destroyed. Pick a lasting type for a
-`Lightning` you keep. `lightning:setColor` stores the colour (the game reads it back), but on 3.0.0.24268 the Drain Life
-bolt showed no visible change for green or red; do not rely on it for visuals.
+(`CLPB`) vanished within a moment, while Drain Life (`DRAL`) stayed until destroyed; a later probe found the same fading
+for Healing Wave (`HWPB`) and Spirit Link (`SPLK`). Pick a lasting type for a `Lightning` you keep. `lightning:setColor`
+stores the colour (the game reads it back), but on 3.0.0.24268 the Drain Life bolt showed no visible change for green,
+red or an alpha of 0.2; do not rely on it for visuals. Lightning heights are absolute, not relative to the ground: on
+uneven terrain add the ground height (for example `GetLocationZ`), or the bolt can run under it.
+
+`sound:play()` on a sound that is still playing cuts it off, and nothing plays (probe on 3.0.0.24268): let it finish, or
+use another Sound or `Sound.playOnce`. `splat:finish()` fades the splat out while the wrapper stays valid (destroy it as
+usual); `splat:reset()` did not bring a finished splat back.
 
 Value ranges are the natives': colors are integers 0–255, except `lightning:setColor`, which takes numbers 0–1. Sound
 volume is 0–127 and `getDuration()` is in milliseconds; it can be 0 until the file is loaded, so do not drive
 synchronized game logic from it. Text tag `size` is World Editor's font size; `setVelocity` takes native units. Effect
 orientation is in radians. `Image.create(path, width, height, x, y, imageType)` centres the image on `x, y` and makes it
-visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. `image:setPosition` also centres,
-so it fails on an image wrapped with `fromHandle`, whose size is unknown. Fog modifiers start stopped.
+visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game cannot load raises
+`[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not nil, and the
+wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with `fromHandle`, whose
+size is unknown. Fog modifiers start stopped.
 
 `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return a new dense array of what the
 native enumerates. The filter runs afterwards as ordinary Lua and keeps the objects for which it returns truthy; its
@@ -252,5 +262,28 @@ Callbacks must be synchronous: do not yield or call TriggerSleepAction. Use time
 caught and printed with `[wrappers] Timer/Trigger callback failed:`; periodic ticks and future actions continue. Errors
 do not automatically destroy resources. During the 2026-09-28 gate on Warcraft 3.0.0.24268, F12 retained these errors
 and the subsequent tick and cleanup messages.
+
+## Reported native caveats
+
+Other libraries document these Warcraft behaviours (w3ts 3.0.2 doc comments and WCSharp 3.3.9; compared in Moonwell's
+`docs/superpowers/research/`). They are **not tested by our gates**; they are listed because ignoring them can cause a
+desync, a crash or wrong game logic.
+
+- `getName()` on Unit, Item and Destructable returns the text in each player's game language. Display it, but do not
+  compare or branch on it in synchronized logic.
+- `GetHandleId` is prone to desyncs in Lua, where handle ids depend on each machine's garbage collection. Key tables by
+  the wrapper or the handle instead; the wrappers expose no id.
+- `group:enumOfPlayer` includes units with Locust; the other enumerations skip them.
+- `timer:getRemaining()` can be wrong after the timer was paused and resumed.
+- `unit:getX()` and `getY()` of a unit loaded into a transport return its position before loading.
+- `unit:setX` and `setY` do not interrupt orders (`setPosition` does), and a unit with movement speed 0 moves while its
+  model stays. `unit:setFacing` turns at the unit's turn rate; `BlzSetUnitFacingEx(unit:getHandle(), angle)` turns it at
+  once.
+- `unit:setInvulnerable` relies on the `Avul` ability; a map whose object data removes it crashes the game.
+- `unit:addXP` with a negative amount lowers experience but never the level.
+- An order issued to a unit inside its own attack event can lock its AI; issue it from a zero-second timer instead.
+- `destructable:restore(life, birth)`: 0, or more than the maximum, restores full life; less than 0.5 gives 0.5.
+- Image types draw in a fixed order, selection over occlusion mask over indicator over ubersplat, and images of one type
+  in creation order. Only selection images draw above water.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the in-game release gate.

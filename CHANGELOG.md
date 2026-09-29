@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.1 (2026-09-29)
+
+- **Changed:** `Image.create` raises `[wrappers] Image.create: invalid image path: <path>` when the game cannot load the
+  path. Warcraft returns an invalid image (handle id -1) rather than nil; the wrapper destroys it first. Found by an
+  in-game probe, which also showed that destroying such an image does not crash.
+- README: behaviour measured by that probe on 3.0.0.24268: `sound:play()` on a sound that still plays cuts it off and
+  nothing plays; `splat:finish()` fades the splat and `reset()` does not bring it back; `lightning:setColor` shows no
+  visible alpha either; Healing Wave and Spirit Link fade by themselves; lightning heights are absolute.
+- README: a new "Reported native caveats" section, from comparing w3ts and WCSharp (not tested by our gates):
+  locale-dependent `getName()`, `GetHandleId` desyncs, Locust in `enumOfPlayer`, `getRemaining` after a pause, unit
+  position and facing notes, `Avul`, negative XP, orders inside attack events, `restore` life values, image layering.
+- Tests: setter checks now also run each row with its boolean arguments flipped, so a wrapper that ignores a flag fails.
+
+### Release gate
+
+Automated checks passed 2026-09-29 on Windows: 108 behavior tests in 20 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (44 files); Moonwell 0.5.0 normal/minified builds, unused-module exclusion, Trigger-only and TextTag-only bundles
+and bundled execution; LuaLS 3.19.1 positive fixtures and the expected negative diagnostics; a direct LuaLS check of
+`src/wrappers` with the native declarations, no problems; the gate example builds with clean editor diagnostics. A
+planted hard-coded `setInvulnerable` flag failed the new setter check.
+
+The in-game gate was **not re-run**, by the maintainer's decision: the only runtime change is the wrong-path check, and
+the probe run (2026-09-29, Warcraft III 3.0.0.24268; Moonwell's
+`docs/superpowers/research/2026-09-29-wcsharp-comparison.md` §9) measured what it relies on: a wrong path gives a
+non-nil image with handle id -1, and `DestroyImage` on it does not crash.
+
 ## 0.3.0 (2026-09-29)
 
 - New wrappers: TextTag, Sound, Lightning, Image, Ubersplat and FogModifier. They exist only for objects the map owns
