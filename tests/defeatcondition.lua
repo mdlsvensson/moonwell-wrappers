@@ -1,0 +1,27 @@
+native('CreateDefeatCondition', function() return {} end)
+for _, name in ipairs({'DefeatConditionSetDescription', 'DestroyDefeatCondition'}) do native(name, function() end) end
+local DefeatCondition = require('wrappers.defeatcondition')
+eq(totalCalls(), 0)
+
+test('defeat conditions set their description and keep identity', function()
+    local condition = DefeatCondition.create('Lose the prince')
+    expectCall('DefeatConditionSetDescription', condition.handle, 'Lose the prince')
+    eq(DefeatCondition.fromHandle(condition.handle), condition); eq(DefeatCondition.fromHandle(nil), nil)
+    eq(condition:getHandle(), condition.handle); eq(condition:isDisposed(), false)
+    checkSetters(condition, {{'DefeatConditionSetDescription', 'setDescription', 'Changed'}})
+    local plain = DefeatCondition.create()
+    eq(callCount('DefeatConditionSetDescription'), 2)
+    local raw = condition.handle
+    condition:destroy(); condition:destroy()
+    expectCall('DestroyDefeatCondition', raw); eq(callCount('DestroyDefeatCondition'), 1)
+    eq(condition.handle, nil); eq(condition:isDisposed(), true)
+    checkDisposed(condition, {'getHandle', 'setDescription'})
+    plain:destroy()
+end)
+
+test('create fails clearly when the native returns nil', function()
+    native('CreateDefeatCondition', function() return nil end)
+    fails(function() DefeatCondition.create('x') end, 'DefeatCondition.create: native returned nil')
+    eq(callCount('DefeatConditionSetDescription'), 0)
+    native('CreateDefeatCondition', function() return {} end)
+end)
