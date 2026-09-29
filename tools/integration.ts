@@ -85,6 +85,12 @@ for (
     "image",
     "ubersplat",
     "fogmodifier",
+    "dialog",
+    "multiboard",
+    "leaderboard",
+    "quest",
+    "defeatcondition",
+    "timerdialog",
   ]
 ) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
@@ -104,7 +110,7 @@ const runtime = await run(yue, ["-e", probe]);
 if (!runtime.output.includes("BUNDLE PASSED")) throw new Error(runtime.output);
 console.log("Moonwell: normal/minified builds, unused-module exclusion and bundled runtime passed");
 
-// Trigger and TextTag take wrapper arguments only, so a map importing just one of them bundles no other public module.
+// A map importing just one module bundles only that module and the public modules it returns wrappers of.
 const publicModules = [
   "unit",
   "player",
@@ -123,24 +129,44 @@ const publicModules = [
   "image",
   "ubersplat",
   "fogmodifier",
+  "dialog",
+  "multiboard",
+  "leaderboard",
+  "quest",
+  "defeatcondition",
+  "timerdialog",
 ];
-const soloEntries: Record<string, string> = {
-  trigger: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n',
-  texttag: 'import "wrappers.texttag" as TextTag\nt = TextTag.create!\nt\\destroy!\nTextTag.float "+1", 0, 0\n',
+const soloEntries: Record<string, { source: string; allowed: string[] }> = {
+  trigger: { source: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n', allowed: [] },
+  texttag: {
+    source: 'import "wrappers.texttag" as TextTag\nt = TextTag.create!\nt\\destroy!\nTextTag.float "+1", 0, 0\n',
+    allowed: [],
+  },
+  multiboard: {
+    source: 'import "wrappers.multiboard" as Multiboard\nb = Multiboard.create 1, 1\nb\\destroy!\n',
+    allowed: [],
+  },
+  dialog: { source: 'import "wrappers.dialog" as Dialog\nd = Dialog.create!\nd\\destroy!\n', allowed: ["player"] },
 };
-for (const [entry, source] of Object.entries(soloEntries)) {
+// "wrappers.timer" is a prefix of "wrappers.timerdialog"; match whole module names by the closing quote.
+const bundles = (bundle: string, name: string) =>
+  bundle.includes(`wrappers.${name}"`) || bundle.includes(`wrappers.${name}'`);
+for (const [entry, { source, allowed }] of Object.entries(soloEntries)) {
   await Deno.writeTextFile(join(consumer, "src/main.yue"), source);
   await moonwell(["build"]);
   const soloBundle = await Deno.readTextFile(join(consumer, "dist/stage/map.w3x/war3map.lua"));
   // Guard the absence checks below: they would pass vacuously if the bundle held no wrapper module at all.
-  if (!soloBundle.includes(`wrappers.${entry}`)) throw new Error(`${entry}-only bundle lacks wrappers.${entry}`);
+  if (!bundles(soloBundle, entry)) throw new Error(`${entry}-only bundle lacks wrappers.${entry}`);
+  for (const name of allowed) {
+    if (!bundles(soloBundle, name)) throw new Error(`${entry}-only bundle lacks wrappers.${name}`);
+  }
   for (const unused of publicModules) {
-    if (unused !== entry && soloBundle.includes(`wrappers.${unused}`)) {
+    if (unused !== entry && !allowed.includes(unused) && bundles(soloBundle, unused)) {
       throw new Error(`${entry}-only bundle includes wrappers.${unused}`);
     }
   }
 }
-console.log("Moonwell: Trigger-only and TextTag-only maps bundle no other public module");
+console.log("Moonwell: Trigger-, TextTag-, Multiboard- and Dialog-only maps bundle only what they import");
 
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));
 await moonwell(["check"]);

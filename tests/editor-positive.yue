@@ -4,6 +4,7 @@ import "wrappers.player" as Player
 import "wrappers.timer" as Timer
 import "wrappers.group" as Group
 import "wrappers.texttag" as TextTag
+import "wrappers.dialog" as Dialog
 
 mw.on_main ->
   unit = Unit.create Player.fromIndex(0), 1751543663, 0, 0, 270
@@ -16,3 +17,5 @@ mw.on_main ->
     unit\remove!
     self\destroy!
   TextTag.float "+1", 0, 0, size: 12, color: {255, 0, 0}
+  dialog = Dialog.create!
+  dialog\addButton "Stay", (player) -> player\addGold 10

@@ -1,9 +1,16 @@
 for _, name in ipairs({'trigger', 'effect', 'timer', 'destructable', 'rect', 'region', 'texttag', 'sound', 'lightning',
-    'image', 'ubersplat', 'fogmodifier'}) do
+    'image', 'ubersplat', 'fogmodifier', 'multiboard', 'leaderboard', 'quest', 'defeatcondition', 'timerdialog'}) do
     require('wrappers.' .. name)
 end
 eq(totalCalls(), 0)
 
 test('modules that only take wrapper arguments load no other public module', function()
     for _, name in ipairs({'unit', 'player', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
+end)
+
+test('the dialog module loads the Player module and no other', function()
+    require('wrappers.dialog')
+    eq(totalCalls(), 0)
+    eq(package.loaded['wrappers.player'] ~= nil, true)
+    for _, name in ipairs({'unit', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
 end)
