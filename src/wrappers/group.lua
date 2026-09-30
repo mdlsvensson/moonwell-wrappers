@@ -8,24 +8,20 @@ local Group = {}
 ---@type MoonwellWrappers.Registry<MoonwellWrappers.Group, group>
 local registry = Handle.new(Group, 'Group')
 
----Raw member handles in native order, skipping nil entries.
+---Wrappers of the members in native order, skipping nil entries. Every unit is wrapped before any callback runs, so a
+---unit removed mid-iteration keeps its disposed wrapper. `raws`, when given, receives the raw handle at each index.
 ---@param raw group
----@return unit[]
-local function members(raw)
+---@param raws unit[]?
+---@return MoonwellWrappers.Unit[]
+local function snapshot(raw, raws)
     local result = {}
     for index = 0, BlzGroupGetSize(raw) - 1 do
         local unit = BlzGroupUnitAt(raw, index)
-        if unit then result[#result + 1] = unit end
+        if unit then
+            result[#result + 1] = assert(Unit.fromHandle(unit))
+            if raws then raws[#result] = unit end
+        end
     end
-    return result
-end
-
----Wraps every raw handle before any callback runs, so a unit removed mid-iteration keeps its disposed wrapper.
----@param raws unit[]
----@return MoonwellWrappers.Unit[]
-local function wrapAll(raws)
-    local result = {}
-    for index, unit in ipairs(raws) do result[index] = assert(Unit.fromHandle(unit)) end
     return result
 end
 
@@ -35,8 +31,8 @@ end
 ---@param filter (fun(unit: MoonwellWrappers.Unit): any)?
 local function applyFilter(raw, filter)
     if filter == nil then return end
-    local raws = members(raw)
-    local units, rejected = wrapAll(raws), {}
+    local raws = {}
+    local units, rejected = snapshot(raw, raws), {}
     local ok, message = pcall(function()
         for index, unit in ipairs(units) do
             if not filter(unit) then rejected[#rejected + 1] = raws[index] end
@@ -131,13 +127,13 @@ end
 ---@return integer
 function Group:getSize() return BlzGroupGetSize(registry.require(self, 'Group.getSize')) end
 ---@return MoonwellWrappers.Unit[]
-function Group:getUnits() return wrapAll(members(registry.require(self, 'Group.getUnits'))) end
+function Group:getUnits() return snapshot(registry.require(self, 'Group.getUnits')) end
 ---Iterates a getUnits() snapshot; errors propagate to the caller.
 ---@param callback fun(unit: MoonwellWrappers.Unit): ...
 function Group:forEach(callback)
     local raw = registry.require(self, 'Group.forEach')
     Callback.check(callback, 'Group.forEach')
-    for _, unit in ipairs(wrapAll(members(raw))) do callback(unit) end
+    for _, unit in ipairs(snapshot(raw)) do callback(unit) end
 end
 ---@return MoonwellWrappers.Unit?
 function Group:first() return Unit.fromHandle(FirstOfGroup(registry.require(self, 'Group.first'))) end
