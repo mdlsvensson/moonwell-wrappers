@@ -17,8 +17,10 @@ function Effect.fromHandle(raw) return registry.wrap(raw) end
 function Effect.create(model, x, y)
     return Handle.created(Effect.fromHandle(AddSpecialEffect(model, x, y)), 'Effect.create')
 end
+---Takes a Unit in the editor: Warcraft draws no effect attached to an item or a destructable (v0.3.0 gate). The
+---runtime still accepts any Widget, for custom models.
 ---@param model string
----@param target MoonwellWrappers.Widget
+---@param target MoonwellWrappers.Unit
 ---@param attachmentPoint string
 ---@return MoonwellWrappers.Effect
 function Effect.attach(model, target, attachmentPoint)
@@ -32,9 +34,10 @@ end
 function Effect.flash(model, x, y)
     DestroyEffect(Handle.created(AddSpecialEffect(model, x, y), 'Effect.flash'))
 end
----Attaches and destroys an effect at once, which plays its death animation. Returns nothing.
+---Attaches and destroys an effect at once, which plays its death animation. Returns nothing. Takes a Unit in the
+---editor, like Effect.attach.
 ---@param model string
----@param target MoonwellWrappers.Widget
+---@param target MoonwellWrappers.Unit
 ---@param attachmentPoint string
 function Effect.flashOn(model, target, attachmentPoint)
     local raw = Handle.unwrapWidget(target, 'Effect.flashOn')

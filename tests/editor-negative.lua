@@ -3,6 +3,7 @@ local PlayerWrapper = require('wrappers.player')
 local Timer = require('wrappers.timer')
 local Group = require('wrappers.group')
 local Item = require('wrappers.item')
+local Destructable = require('wrappers.destructable')
 local Trigger = require('wrappers.trigger')
 local Effect = require('wrappers.effect')
 local TextTag = require('wrappers.texttag')
@@ -31,6 +32,9 @@ Item.create(1, 0, 0):nonexistentMethod() -- EXPECT undefined-field
 local slotItem = unit:getItemInSlot(0)
 slotItem:setCharges(1) -- EXPECT need-check-nil
 Effect.attach('model.mdx', Timer.create(), 'origin') -- EXPECT param-type-mismatch
+-- Warcraft draws no effect attached to an item or a destructable (v0.3.0 gate), so the editor flags them.
+Effect.attach('model.mdx', Item.create(1, 0, 0), 'origin') -- EXPECT param-type-mismatch
+Effect.flashOn('model.mdx', Destructable.create(1, 0, 0, 0, 1, 0), 'origin') -- EXPECT param-type-mismatch
 TextTag.create():setVisibleFor(unit) -- EXPECT param-type-mismatch
 TextTag.float('x', 0, 0, {size = 'big'}) -- EXPECT assign-type-mismatch
 Dialog.create():addButton('x', nil, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch

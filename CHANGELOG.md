@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1 (unreleased)
+
+- `Effect.attach` and `Effect.flashOn` take a Unit in the editor, so LuaLS flags an Item or a Destructable: Warcraft
+  drew no effect attached to them in the v0.3.0 gate. The runtime still accepts any widget, for custom models.
+
 ## 0.5.0 (2026-09-29)
 
 - New `wrappers.frame`: the `BlzFrame` API with an owned frame tree. Frames made by `Frame.create`, `createSimple` and

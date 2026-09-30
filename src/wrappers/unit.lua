@@ -122,7 +122,8 @@ end
 function Unit:getName() return GetUnitName(registry.require(self, 'Unit.getName')) end
 ---@return integer
 function Unit:getCurrentOrder() return GetUnitCurrentOrder(registry.require(self, 'Unit.getCurrentOrder')) end
----Not dead and not removed. UnitAlive is a common.ai native missing from Moonwell's natives.
+---Not dead and not removed. Moonwell 0.5.1 knows the common.ai native UnitAlive; this avoids it so the library still
+---works with Moonwell 0.5.0.
 ---@return boolean
 function Unit:isAlive()
     local raw = registry.require(self, 'Unit.isAlive')
