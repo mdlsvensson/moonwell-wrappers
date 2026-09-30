@@ -3,7 +3,7 @@
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
 remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1`,
-`v0.4.0`, `v0.5.0`, `v0.5.1` and `v0.6.0` on the commits that record their gates. Tags must never be moved.
+`v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0` and `v0.7.0` on the commits that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -101,3 +101,9 @@ and plan `2026-09-30-moonwell-wrappers-refactor`).
 The in-game gate passed for `core`, `probes`, `presentation`, `ui` and `perf`. Frames and the minified runs were not
 re-run. The performance probe is `../wrappers-gate/src/probe_perf.yue` (`deno task gate perf`). Tag consumption passed
 the same day: a fresh map locked `v0.6.0` to `933b580`.
+
+v0.7.0 (2026-09-30): the port prerequisites (Moonwell spec and plan `2026-09-30-moonwell-wrappers-port-prerequisites`).
+`wrappers.damage` and `wrappers.sync` share `internal/listeners.lua`: one trigger per key, disabled while empty and
+never destroyed. Damage events are live only while their listeners run (a weak set), and DAMAGED events have no type
+setters. `Sync.send` checks 255 bytes. The gate map's `port` run (`deno task gate port`, CONTRIBUTING step 13) passed;
+it found that `isAttack` is false for `damageTarget` and that `setPathing(false)` does not make orders cross trees.

@@ -5,10 +5,10 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog and Frame wrappers, Damage and Sync modules, editor completion, stable handle
 identity and explicit cleanup.
 
-**Status:** `v0.6.0` (2026-09-30): the refactor after the review. Errors point at the calling line, methods and group
-enumeration are cheaper, `isAlive()` uses `UnitAlive` (Moonwell 0.5.1 or later), and `exists()` is new. It builds on
-v0.5's frames, v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer
-desync checks are deferred until before Moonwell 1.0.
+**Status:** `v0.7.0` (2026-09-30): the prerequisites for the wc3-lib port. Damage events (`wrappers.damage`), checked
+sync messages (`wrappers.sync`), `unit:getCollisionSize()` and `unit:setPathing(flag)`. It builds on v0.6's refactor
+(errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames, v0.4's classic UI and v0.3's presentation
+wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -28,13 +28,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.6.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.7.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.6.0"
+    tag = "v0.7.0"
     dir = "src"
   }
 }
@@ -526,6 +526,15 @@ Every listener of one hit gets the same event, so a change is visible to the lis
 the hit's listeners run; afterwards (for example from a timer) they raise `the damage event is over`. Each phase has one
 shared trigger, created by the first listener and disabled while the phase has none.
 
+Measured by the v0.7.0 gate on 3.0.0.24268:
+
+- `isAttack` is what `BlzGetEventIsAttack` reports: false for damage dealt with `unit:damageTarget`, even with its
+  `attack` argument true.
+- A type change before armor takes effect (magic against a footman's heavy armor doubled the hit); a type change after
+  armor, with the raw native, changed nothing.
+- When a listener deals damage itself, the nested hit gets its own event, and the outer event's setters still change the
+  outer hit afterwards.
+
 ```yue
 import "wrappers.damage" as Damage
 
@@ -541,7 +550,8 @@ Damage.onDamaging (event) ->
 
 Call `send` for the local player only, inside a local-player branch; the listeners run on every machine, in the same
 order, some frames later (about 0.09 s on one machine). The game cuts longer messages to 255 bytes and still reports
-success, so `send` raises instead. Split longer data yourself.
+success, so `send` raises instead. Split longer data yourself. Prefixes of 16, 17 and 32 characters arrived whole in the
+v0.7.0 gate, so the wrappers only require a non-empty prefix.
 
 ```yue
 import "wrappers.sync" as Sync
@@ -552,13 +562,14 @@ Sync.send "load", code if Player.fromIndex(0)\isLocal!
 
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
 method. `setPosition` uses SetUnitPosition, which respects pathing; `setX`/`setY` use SetUnitX/SetUnitY, which do not.
-Inventory slots are zero-based integers below `getInventorySize()`. `getItemInSlot`, `removeItemFromSlot`, `addItemById`
-and `group:first()` return nil when there is nothing. `group:first()` uses FirstOfGroup, which can also return nil while
-the group still holds removed units, so do not loop `while group:first()`; use `forEach` or `getUnits()`. Hero methods
-pass through to the natives, so Warcraft's behavior applies to non-heroes. `isLocal()` is true only on that player's
-machine: never change synchronized game state inside a branch on it. `enumSelected` inherits the native's
-synchronization behavior. `Rect.worldBounds()` allocates a new rect each call; destroy it. SetPlayerName is deliberately
-outside the API.
+`setPathing(false)` does not let move orders cross trees: in the v0.7.0 gate a footman ordered across a tree line walked
+around it. Inventory slots are zero-based integers below `getInventorySize()`. `getItemInSlot`, `removeItemFromSlot`,
+`addItemById` and `group:first()` return nil when there is nothing. `group:first()` uses FirstOfGroup, which can also
+return nil while the group still holds removed units, so do not loop `while group:first()`; use `forEach` or
+`getUnits()`. Hero methods pass through to the natives, so Warcraft's behavior applies to non-heroes. `isLocal()` is
+true only on that player's machine: never change synchronized game state inside a branch on it. `enumSelected` inherits
+the native's synchronization behavior. `Rect.worldBounds()` allocates a new rect each call; destroy it. SetPlayerName is
+deliberately outside the API.
 
 Some methods that act also pass the native's result through. `trigger:evaluate()` returns the conditions' boolean
 result. On Unit, `damageTarget`, `modifySkillPoints`, `revive`, `addAbility`, `removeAbility`, `makeAbilityPermanent`,

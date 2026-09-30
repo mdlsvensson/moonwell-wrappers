@@ -198,8 +198,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     - at start: `Wrapper collision size <n>` (record it) and `Wrapper port gate started`;
     - step 1: `Wrapper damaged step 1 amount <X>` and `Wrapper life loss step 1 <X>`: the baseline, 100 reduced by
       armor;
-    - step 2: `Wrapper damaging Footman Footman true 100.0 200.0`, then `Wrapper damaged step 2 amount <Y>` and
-      `Wrapper life loss step 2 <Y>`, with Y about twice X;
+    - step 2: `Wrapper damaging Footman Footman false 100.0 200.0` (`isAttack` is false for `damageTarget` even with
+      `attack` true: the native's value), then `Wrapper damaged step 2 amount <Y>` and `Wrapper life loss step 2 <Y>`,
+      with Y about twice X;
     - step 3: the attack type changed to magic before armor: `Wrapper damaged step 3 amount <Z>` with Z different from X
       (record it);
     - step 4: the attack type changed with the raw native after armor: `Wrapper life loss step 4 <X>`, unchanged, which
@@ -209,8 +210,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       is only the nested hit's, the outer setter still works after a nested hit;
     - step 6: `Wrapper stale damage event false <…>DamagingEvent.setAmount: the damage event is over`;
     - step 7: `Wrapper life loss step 7 <X>` with no `Wrapper damaged` line, then `Wrapper damage listeners removed`;
-    - step 8: a third footman appears left of the trees and walks straight through them; at step 12
-      `Wrapper pathing walker x <n>` with n over 448;
+    - step 8: a third footman appears left of the trees with pathing off and is ordered across them; it walks around the
+      end of the tree line (the pathfinder still avoids trees); at step 12 `Wrapper pathing walker x <n>` with n over
+      448;
     - step 13: `Wrapper sync sent true`, `Wrapper sync 256 bytes rejected true <…>over the 255-byte limit`, then shortly
       `Wrapper sync received from <your name> 255 true` and the prefix lines: record which of `prefix 16 arrived`,
       `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
@@ -285,6 +287,13 @@ Step 9 (frames) and step 10 (minified) were not re-run, by the maintainer's deci
 parentheses on raising returns and the shared `require`, which the unit tests and the sweep cover, and minified builds
 run the same code. Performance against v0.5.1 is recorded in the CHANGELOG and in
 `../wrappers-gate/PROBE-PERF-RESULTS.md`.
+
+v0.7.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, `deno task gate port` (step 13), normal
+build. Every step printed as described, with two corrections to the expectations, now written into step 13: `isAttack`
+reads false for `damageTarget` (the native's value), and the footman with pathing off walked around the tree line, not
+through it (`Wrapper pathing walker x 563.7461`). Collision size 31.0; step 3 gave 178.5714 (magic against heavy armor
+doubles); the nested hit's outer `setAmount 0` took effect; prefixes of 16, 17 and 32 characters arrived whole. Steps
+2–10 were not re-run: this release adds modules and two Unit methods and changes no existing code path.
 
 ## First publication and tag gate (maintainer)
 

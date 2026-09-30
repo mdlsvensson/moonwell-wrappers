@@ -106,7 +106,8 @@ function Unit:isHidden() return IsUnitHidden(registry.require(self, 'Unit.isHidd
 ---The unit's collision radius, as the game uses it for pathing.
 ---@return number
 function Unit:getCollisionSize() return BlzGetUnitCollisionSize(registry.require(self, 'Unit.getCollisionSize')) end
----With false the unit ignores pathing: it walks through units, trees and cliffs until set back to true.
+---Turns the unit's pathing on or off (SetUnitPathing). A move order still routes around trees with pathing off
+---(v0.7.0 gate, 3.0.0.24268).
 ---@param flag boolean
 function Unit:setPathing(flag) SetUnitPathing(registry.require(self, 'Unit.setPathing'), flag) end
 ---@param kind unittype

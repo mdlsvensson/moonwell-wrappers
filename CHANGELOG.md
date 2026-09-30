@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-09-30)
 
 - New `unit:getCollisionSize()` and `unit:setPathing(flag)`.
 - New `wrappers.damage`: listeners before armor (`onDamaging`) and after armor (`onDamaged`), removable with
@@ -10,6 +10,37 @@
 - New `wrappers.sync`: `Sync.send` raises for data over 255 bytes (the game cuts it silently) and for an empty prefix;
   `Sync.on` and `Sync.off` manage listeners per prefix.
 - Nothing existing changes; there are no migrations.
+
+### Release gate
+
+Automated checks passed 2026-09-30 on Windows:
+
+- 32 suites with YueScript 0.34.2, including the new `damage` (11 tests) and `sync` (5 tests) suites and the sweep of
+  every damage and sync function;
+- Lua 5.3.6 syntax checks (67 files);
+- Moonwell normal and minified builds, the one-module bundles (now also Damage-only and Sync-only) and bundled
+  execution;
+- LuaLS 3.19.1 fixtures (20 expected negative diagnostics, among them a type setter on a DAMAGED event);
+- the native-call check of `src/wrappers` against Moonwell's declarations;
+- the gate example builds with clean editor diagnostics.
+
+In-game gate, 2026-09-30, Warcraft III 3.0.0.24268, the new `port` run, normal build (the other runs were not re-run:
+this release changes no existing code path):
+
+- Footman collision size: 31.0.
+- Damage from `damageTarget` with 100 and a normal attack type: 89.29 after armor, equal to the life lost. A DAMAGING
+  listener doubled it to 200 (178.57 after armor and lost). Changing the attack type to magic before armor also gave
+  178.57; changing it with the raw native after armor changed nothing (89.29 lost).
+- `isAttack` read false for `damageTarget` with its `attack` argument true: that is the native's value (README).
+- A nested 10-damage hit inside a DAMAGING listener got its own event (8.93 after armor), and `setAmount 0` on the outer
+  event afterwards still worked: the outer hit read 0.0 and only 8.93 life was lost.
+- A setter on a stored event raised `DamagingEvent.setAmount: the damage event is over`; after `Damage.off`, a hit
+  printed no listener line.
+- `setPathing(false)`: a footman ordered across a tree line walked around it, so pathing off does not make orders cross
+  trees (README; the method comment said otherwise before the gate and was corrected).
+- Sync on one machine: a 255-byte message arrived intact; `send` rejected 256 bytes; prefixes of 16, 17 and 32
+  characters all arrived whole, so no prefix length limit was added.
+- No `[wrappers] ... failed` line printed.
 
 ## 0.6.0 (2026-09-30)
 
