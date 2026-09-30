@@ -78,11 +78,11 @@ end
 ---@overload fun(raw: nil): nil
 function Trigger.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Trigger
-function Trigger.create() return Handle.created(Trigger.fromHandle(CreateTrigger()), 'Trigger.create') end
+function Trigger.create() return (Handle.created(Trigger.fromHandle(CreateTrigger()), 'Trigger.create')) end
 ---@return trigger
-function Trigger:getHandle() return registry.require(self, 'Trigger.getHandle') end
+function Trigger:getHandle() return (registry.require(self, 'Trigger.getHandle')) end
 ---@return boolean
-function Trigger:isDisposed() return registry.isDisposed(self, 'Trigger.isDisposed') end
+function Trigger:isDisposed() return (registry.isDisposed(self, 'Trigger.isDisposed')) end
 function Trigger:enable() EnableTrigger(registry.require(self, 'Trigger.enable')) end
 function Trigger:disable() DisableTrigger(registry.require(self, 'Trigger.disable')) end
 ---@return boolean

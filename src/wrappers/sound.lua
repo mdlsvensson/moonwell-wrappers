@@ -43,7 +43,7 @@ function Sound.fromHandle(raw) return registry.wrap(raw) end
 function Sound.create(path, options)
     local o = Options.read(options, createFields, 'Sound.create')
     local raw = CreateSound(path, o.looping, o.is3D, o.stopWhenOutOfRange, o.fadeIn, o.fadeOut, o.eax)
-    return Handle.created(Sound.fromHandle(raw), 'Sound.create')
+    return (Handle.created(Sound.fromHandle(raw), 'Sound.create'))
 end
 ---Plays a sound once and releases it when done. Returns nothing, so no wrapper can go stale. With `player`, the other
 ---machines play it at volume 0, so every machine starts and releases the sound identically.
@@ -60,9 +60,9 @@ function Sound.playOnce(path, options)
     KillSoundWhenDone(raw)
 end
 ---@return sound
-function Sound:getHandle() return registry.require(self, 'Sound.getHandle') end
+function Sound:getHandle() return (registry.require(self, 'Sound.getHandle')) end
 ---@return boolean
-function Sound:isDisposed() return registry.isDisposed(self, 'Sound.isDisposed') end
+function Sound:isDisposed() return (registry.isDisposed(self, 'Sound.isDisposed')) end
 function Sound:play() StartSound(registry.require(self, 'Sound.play')) end
 ---Starts the sound on that player's machine only. The sound itself exists on every machine.
 ---@param player MoonwellWrappers.Player

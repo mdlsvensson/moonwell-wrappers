@@ -18,12 +18,12 @@ function Item.fromHandle(raw) return registry.wrap(raw) end
 ---@param y number
 ---@return MoonwellWrappers.Item
 function Item.create(typeId, x, y)
-    return Handle.created(Item.fromHandle(CreateItem(typeId, x, y)), 'Item.create')
+    return (Handle.created(Item.fromHandle(CreateItem(typeId, x, y)), 'Item.create'))
 end
 ---@return item
-function Item:getHandle() return registry.require(self, 'Item.getHandle') end
+function Item:getHandle() return (registry.require(self, 'Item.getHandle')) end
 ---@return boolean
-function Item:isDisposed() return registry.isDisposed(self, 'Item.isDisposed') end
+function Item:isDisposed() return (registry.isDisposed(self, 'Item.isDisposed')) end
 ---@return integer
 function Item:getTypeId() return GetItemTypeId(registry.require(self, 'Item.getTypeId')) end
 ---@return string
@@ -40,7 +40,7 @@ function Item:setCharges(charges) SetItemCharges(registry.require(self, 'Item.se
 ---@return MoonwellWrappers.Player
 function Item:getOwner()
     local owner = GetItemPlayer(registry.require(self, 'Item.getOwner'))
-    return Handle.created(PlayerWrapper.fromHandle(owner), 'Item.getOwner')
+    return (Handle.created(PlayerWrapper.fromHandle(owner), 'Item.getOwner'))
 end
 ---@param owner MoonwellWrappers.Player
 ---@param changeColor boolean

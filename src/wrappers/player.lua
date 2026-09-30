@@ -17,13 +17,13 @@ function PlayerWrapper.fromIndex(index)
     if type(index) ~= 'number' or index % 1 ~= 0 or index < 0 or index >= bj_MAX_PLAYER_SLOTS then
         error('[wrappers] Player.fromIndex: expected an integer player slot', 2)
     end
-    return Handle.created(PlayerWrapper.fromHandle(Player(index)), 'Player.fromIndex')
+    return (Handle.created(PlayerWrapper.fromHandle(Player(index)), 'Player.fromIndex'))
 end
 
 ---@return player
-function PlayerWrapper:getHandle() return registry.require(self, 'Player.getHandle') end
+function PlayerWrapper:getHandle() return (registry.require(self, 'Player.getHandle')) end
 ---@return boolean
-function PlayerWrapper:isDisposed() return registry.isDisposed(self, 'Player.isDisposed') end
+function PlayerWrapper:isDisposed() return (registry.isDisposed(self, 'Player.isDisposed')) end
 ---@return integer
 function PlayerWrapper:getId() return GetPlayerId(registry.require(self, 'Player.getId')) end
 ---@return string

@@ -15,7 +15,7 @@ function Effect.fromHandle(raw) return registry.wrap(raw) end
 ---@param y number
 ---@return MoonwellWrappers.Effect
 function Effect.create(model, x, y)
-    return Handle.created(Effect.fromHandle(AddSpecialEffect(model, x, y)), 'Effect.create')
+    return (Handle.created(Effect.fromHandle(AddSpecialEffect(model, x, y)), 'Effect.create'))
 end
 ---Takes a Unit in the editor: Warcraft draws no effect attached to an item or a destructable (v0.3.0 gate). The
 ---runtime still accepts any Widget, for custom models.
@@ -25,7 +25,7 @@ end
 ---@return MoonwellWrappers.Effect
 function Effect.attach(model, target, attachmentPoint)
     local raw = Handle.unwrapWidget(target, 'Effect.attach')
-    return Handle.created(Effect.fromHandle(AddSpecialEffectTarget(model, raw, attachmentPoint)), 'Effect.attach')
+    return (Handle.created(Effect.fromHandle(AddSpecialEffectTarget(model, raw, attachmentPoint)), 'Effect.attach'))
 end
 ---Creates and destroys an effect at once, which plays its death animation. Returns nothing.
 ---@param model string
@@ -44,9 +44,9 @@ function Effect.flashOn(model, target, attachmentPoint)
     DestroyEffect(Handle.created(AddSpecialEffectTarget(model, raw, attachmentPoint), 'Effect.flashOn'))
 end
 ---@return effect
-function Effect:getHandle() return registry.require(self, 'Effect.getHandle') end
+function Effect:getHandle() return (registry.require(self, 'Effect.getHandle')) end
 ---@return boolean
-function Effect:isDisposed() return registry.isDisposed(self, 'Effect.isDisposed') end
+function Effect:isDisposed() return (registry.isDisposed(self, 'Effect.isDisposed')) end
 ---@param x number
 ---@param y number
 ---@param z number

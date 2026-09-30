@@ -36,8 +36,8 @@ local function resize(raw) LeaderboardSetSizeByItemCount(raw, LeaderboardGetItem
 ---@param operation string
 ---@return leaderboard, integer, player
 local function itemOf(board, player, operation)
-    local raw = registry.require(board, operation)
-    local p = Handle.unwrap(player, 'Player', operation)
+    local raw = registry.require(board, operation, 1)
+    local p = Handle.unwrap(player, 'Player', operation, 1)
     if not LeaderboardHasPlayerItem(raw, p) then error('[wrappers] ' .. operation .. ': player has no item', 3) end
     return raw, LeaderboardGetPlayerIndex(raw, p), p
 end
@@ -55,9 +55,9 @@ function Leaderboard.create(label)
     return board
 end
 ---@return leaderboard
-function Leaderboard:getHandle() return registry.require(self, 'Leaderboard.getHandle') end
+function Leaderboard:getHandle() return (registry.require(self, 'Leaderboard.getHandle')) end
 ---@return boolean
-function Leaderboard:isDisposed() return registry.isDisposed(self, 'Leaderboard.isDisposed') end
+function Leaderboard:isDisposed() return (registry.isDisposed(self, 'Leaderboard.isDisposed')) end
 ---@param text string
 function Leaderboard:setLabel(text) LeaderboardSetLabel(registry.require(self, 'Leaderboard.setLabel'), text) end
 ---@param r integer 0-255

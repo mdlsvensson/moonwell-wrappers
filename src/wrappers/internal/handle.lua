@@ -1,7 +1,7 @@
 ---@class MoonwellWrappers.Registry<T, H>
 ---@field name string
 ---@field wrap fun(raw: H?): T?
----@field require fun(value: unknown, operation: string): H
+---@field require fun(value: unknown, operation: string, depth: integer?): H
 ---@field dispose fun(value: unknown, operation: string): H?
 ---@field isDisposed fun(value: unknown, operation: string): boolean
 ---@field member fun(value: unknown): H|false|nil
@@ -28,11 +28,8 @@ function Handle.new(class, name, options)
     local members = setmetatable({}, {__mode = 'k'})
     local registry = {name = name}
     class.__index = class
-    local function member(value, operation)
-        local raw = members[value]
-        if raw == nil then error('[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper', 3) end
-        return raw
-    end
+    local function expected(operation) return '[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper' end
+    local function disposed(operation) return '[wrappers] ' .. operation .. ': ' .. name .. ' is disposed' end
     function registry.member(value) return members[value] end
     function registry.wrap(raw)
         if raw == nil then return nil end
@@ -42,57 +39,72 @@ function Handle.new(class, name, options)
         members[value] = raw
         return value
     end
-    function registry.require(value, operation)
-        local raw = member(value, operation)
-        if raw == false then error('[wrappers] ' .. operation .. ': ' .. name .. ' is disposed', 3) end
-        return raw
+    ---One lookup on the happy path. Errors point at the caller of the public function that called this (level 3),
+    ---plus `depth` for helper frames in between.
+    function registry.require(value, operation, depth)
+        local raw = members[value]
+        if raw then return raw end
+        local level = 3 + (depth or 0)
+        if raw == false then error(disposed(operation), level) end
+        error(expected(operation), level)
     end
     function registry.dispose(value, operation)
-        local raw = member(value, operation)
+        local raw = members[value]
         if raw == false then return nil end
+        if raw == nil then error(expected(operation), 3) end
         members[value] = false
         byHandle[raw] = nil
         value.handle = nil
         return raw
     end
     function registry.isDisposed(value, operation)
-        return member(value, operation) == false
+        local raw = members[value]
+        if raw == nil then error(expected(operation), 3) end
+        return raw == false
     end
     loaded[name] = registry
     if options.widget then widgets[#widgets + 1] = registry end
     return registry
 end
 
----Converts a wrapper argument without importing its module: a caller holding one has loaded it.
+---Converts a wrapper argument without importing its module: a caller holding one has loaded it. Errors point at the
+---caller of the public function (level 3), plus `depth` for helper frames in between.
 ---@param value unknown
 ---@param name string
 ---@param operation string
+---@param depth integer?
 ---@return any
-function Handle.unwrap(value, name, operation)
+function Handle.unwrap(value, name, operation, depth)
     local registry = loaded[name]
-    if registry == nil then error('[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper', 2) end
-    return registry.require(value, operation)
+    local raw = registry and registry.member(value)
+    if raw then return raw end
+    local level = 3 + (depth or 0)
+    if raw == false then error('[wrappers] ' .. operation .. ': ' .. name .. ' is disposed', level) end
+    error('[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper', level)
 end
 
 ---Converts a Unit, Item or Destructable argument.
 ---@param value unknown
 ---@param operation string
+---@param depth integer?
 ---@return widget
-function Handle.unwrapWidget(value, operation)
+function Handle.unwrapWidget(value, operation, depth)
+    local level = 3 + (depth or 0)
     for _, registry in ipairs(widgets) do
         local raw = registry.member(value)
-        if raw == false then error('[wrappers] ' .. operation .. ': ' .. registry.name .. ' is disposed', 2) end
+        if raw == false then error('[wrappers] ' .. operation .. ': ' .. registry.name .. ' is disposed', level) end
         if raw ~= nil then return raw end
     end
-    error('[wrappers] ' .. operation .. ': expected Widget wrapper', 2)
+    error('[wrappers] ' .. operation .. ': expected Widget wrapper', level)
 end
 
 ---@generic H
 ---@param raw H?
 ---@param operation string
+---@param depth integer?
 ---@return H
-function Handle.created(raw, operation)
-    if raw == nil then error('[wrappers] ' .. operation .. ': native returned nil', 3) end
+function Handle.created(raw, operation, depth)
+    if raw == nil then error('[wrappers] ' .. operation .. ': native returned nil', 3 + (depth or 0)) end
     return raw
 end
 

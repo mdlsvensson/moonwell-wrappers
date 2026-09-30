@@ -22,17 +22,17 @@ function Unit.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Unit
 function Unit.create(owner, typeId, x, y, facing)
     local rawOwner = Handle.unwrap(owner, 'Player', 'Unit.create')
-    return Handle.created(Unit.fromHandle(CreateUnit(rawOwner, typeId, x, y, facing)), 'Unit.create')
+    return (Handle.created(Unit.fromHandle(CreateUnit(rawOwner, typeId, x, y, facing)), 'Unit.create'))
 end
 ---@return unit
-function Unit:getHandle() return registry.require(self, 'Unit.getHandle') end
+function Unit:getHandle() return (registry.require(self, 'Unit.getHandle')) end
 ---@return boolean
-function Unit:isDisposed() return registry.isDisposed(self, 'Unit.isDisposed') end
+function Unit:isDisposed() return (registry.isDisposed(self, 'Unit.isDisposed')) end
 ---@return integer
 function Unit:getTypeId() return GetUnitTypeId(registry.require(self, 'Unit.getTypeId')) end
 ---@return MoonwellWrappers.Player
 function Unit:getOwner()
-    return Handle.created(PlayerWrapper.fromHandle(GetOwningPlayer(registry.require(self, 'Unit.getOwner'))), 'Unit.getOwner')
+    return (Handle.created(PlayerWrapper.fromHandle(GetOwningPlayer(registry.require(self, 'Unit.getOwner'))), 'Unit.getOwner'))
 end
 ---@param owner MoonwellWrappers.Player
 ---@param changeColor boolean

@@ -15,9 +15,9 @@ local timers = setmetatable({}, {__mode = 'k'})
 ---@param operation string
 ---@return timerdialog
 local function live(dialog, operation)
-    local raw = registry.require(dialog, operation)
+    local raw = registry.require(dialog, operation, 1)
     local timer = timers[dialog]
-    if timer ~= nil then Handle.unwrap(timer, 'Timer', operation) end
+    if timer ~= nil then Handle.unwrap(timer, 'Timer', operation, 1) end
     return raw
 end
 
@@ -37,9 +37,9 @@ function TimerDialog.create(timer, title)
     return dialog
 end
 ---@return timerdialog
-function TimerDialog:getHandle() return live(self, 'TimerDialog.getHandle') end
+function TimerDialog:getHandle() return (live(self, 'TimerDialog.getHandle')) end
 ---@return boolean
-function TimerDialog:isDisposed() return registry.isDisposed(self, 'TimerDialog.isDisposed') end
+function TimerDialog:isDisposed() return (registry.isDisposed(self, 'TimerDialog.isDisposed')) end
 ---@param text string
 function TimerDialog:setTitle(text) TimerDialogSetTitle(live(self, 'TimerDialog.setTitle'), text) end
 ---@param r integer 0-255

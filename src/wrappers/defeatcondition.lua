@@ -20,9 +20,9 @@ function DefeatCondition.create(description)
     return condition
 end
 ---@return defeatcondition
-function DefeatCondition:getHandle() return registry.require(self, 'DefeatCondition.getHandle') end
+function DefeatCondition:getHandle() return (registry.require(self, 'DefeatCondition.getHandle')) end
 ---@return boolean
-function DefeatCondition:isDisposed() return registry.isDisposed(self, 'DefeatCondition.isDisposed') end
+function DefeatCondition:isDisposed() return (registry.isDisposed(self, 'DefeatCondition.isDisposed')) end
 ---@param text string
 function DefeatCondition:setDescription(text)
     DefeatConditionSetDescription(registry.require(self, 'DefeatCondition.setDescription'), text)

@@ -36,9 +36,9 @@ function Ubersplat.create(name, x, y, options)
     return splat
 end
 ---@return ubersplat
-function Ubersplat:getHandle() return registry.require(self, 'Ubersplat.getHandle') end
+function Ubersplat:getHandle() return (registry.require(self, 'Ubersplat.getHandle')) end
 ---@return boolean
-function Ubersplat:isDisposed() return registry.isDisposed(self, 'Ubersplat.isDisposed') end
+function Ubersplat:isDisposed() return (registry.isDisposed(self, 'Ubersplat.isDisposed')) end
 ---@param flag boolean
 function Ubersplat:show(flag) ShowUbersplat(registry.require(self, 'Ubersplat.show'), flag) end
 ---Shows the splat on that player's machine only. Only local visuals differ.

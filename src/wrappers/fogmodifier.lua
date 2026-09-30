@@ -22,7 +22,7 @@ function FogModifier.fromHandle(raw) return registry.wrap(raw) end
 function FogModifier.radius(player, state, x, y, radius, useSharedVision, afterUnits)
     local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.radius')
     local raw = CreateFogModifierRadius(rawPlayer, state, x, y, radius, useSharedVision, afterUnits)
-    return Handle.created(FogModifier.fromHandle(raw), 'FogModifier.radius')
+    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.radius'))
 end
 ---Creates a stopped modifier; call start(). The modifier does not own the rect.
 ---@param player MoonwellWrappers.Player
@@ -35,12 +35,12 @@ function FogModifier.rect(player, state, rect, useSharedVision, afterUnits)
     local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.rect')
     local rawRect = Handle.unwrap(rect, 'Rect', 'FogModifier.rect')
     local raw = CreateFogModifierRect(rawPlayer, state, rawRect, useSharedVision, afterUnits)
-    return Handle.created(FogModifier.fromHandle(raw), 'FogModifier.rect')
+    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.rect'))
 end
 ---@return fogmodifier
-function FogModifier:getHandle() return registry.require(self, 'FogModifier.getHandle') end
+function FogModifier:getHandle() return (registry.require(self, 'FogModifier.getHandle')) end
 ---@return boolean
-function FogModifier:isDisposed() return registry.isDisposed(self, 'FogModifier.isDisposed') end
+function FogModifier:isDisposed() return (registry.isDisposed(self, 'FogModifier.isDisposed')) end
 function FogModifier:start() FogModifierStart(registry.require(self, 'FogModifier.start')) end
 function FogModifier:stop() FogModifierStop(registry.require(self, 'FogModifier.stop')) end
 function FogModifier:destroy()

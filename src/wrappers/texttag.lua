@@ -63,9 +63,9 @@ function TextTag.float(text, x, y, options)
     SetTextTagVisibility(raw, o.player == nil or o.player == GetLocalPlayer())
 end
 ---@return texttag
-function TextTag:getHandle() return registry.require(self, 'TextTag.getHandle') end
+function TextTag:getHandle() return (registry.require(self, 'TextTag.getHandle')) end
 ---@return boolean
-function TextTag:isDisposed() return registry.isDisposed(self, 'TextTag.isDisposed') end
+function TextTag:isDisposed() return (registry.isDisposed(self, 'TextTag.isDisposed')) end
 ---@param text string
 ---@param size number Font size, as in World Editor.
 function TextTag:setText(text, size) SetTextTagText(registry.require(self, 'TextTag.setText'), text, height(size)) end

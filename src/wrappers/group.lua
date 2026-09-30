@@ -54,11 +54,11 @@ end
 ---@overload fun(raw: nil): nil
 function Group.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Group
-function Group.create() return Handle.created(Group.fromHandle(CreateGroup()), 'Group.create') end
+function Group.create() return (Handle.created(Group.fromHandle(CreateGroup()), 'Group.create')) end
 ---@return group
-function Group:getHandle() return registry.require(self, 'Group.getHandle') end
+function Group:getHandle() return (registry.require(self, 'Group.getHandle')) end
 ---@return boolean
-function Group:isDisposed() return registry.isDisposed(self, 'Group.isDisposed') end
+function Group:isDisposed() return (registry.isDisposed(self, 'Group.isDisposed')) end
 ---@param unit MoonwellWrappers.Unit
 function Group:add(unit)
     local raw = registry.require(self, 'Group.add')

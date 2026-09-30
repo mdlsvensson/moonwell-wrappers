@@ -14,11 +14,11 @@ local states = {}
 ---@overload fun(raw: nil): nil
 function Timer.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Timer
-function Timer.create() return Handle.created(Timer.fromHandle(CreateTimer()), 'Timer.create') end
+function Timer.create() return (Handle.created(Timer.fromHandle(CreateTimer()), 'Timer.create')) end
 ---@return timer
-function Timer:getHandle() return registry.require(self, 'Timer.getHandle') end
+function Timer:getHandle() return (registry.require(self, 'Timer.getHandle')) end
 ---@return boolean
-function Timer:isDisposed() return registry.isDisposed(self, 'Timer.isDisposed') end
+function Timer:isDisposed() return (registry.isDisposed(self, 'Timer.isDisposed')) end
 
 ---One-shot delivery releases its callback but keeps the timer for restart or explicit destruction.
 ---@param timeout number

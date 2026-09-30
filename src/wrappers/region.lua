@@ -11,11 +11,11 @@ local registry = Handle.new(Region, 'Region')
 ---@overload fun(raw: nil): nil
 function Region.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Region
-function Region.create() return Handle.created(Region.fromHandle(CreateRegion()), 'Region.create') end
+function Region.create() return (Handle.created(Region.fromHandle(CreateRegion()), 'Region.create')) end
 ---@return region
-function Region:getHandle() return registry.require(self, 'Region.getHandle') end
+function Region:getHandle() return (registry.require(self, 'Region.getHandle')) end
 ---@return boolean
-function Region:isDisposed() return registry.isDisposed(self, 'Region.isDisposed') end
+function Region:isDisposed() return (registry.isDisposed(self, 'Region.isDisposed')) end
 ---@param rect MoonwellWrappers.Rect
 function Region:addRect(rect)
     local raw = registry.require(self, 'Region.addRect')

@@ -55,9 +55,9 @@ function Quest.flashButton() FlashQuestDialogButton() end
 ---Updates an open quest log.
 function Quest.refresh() ForceQuestDialogUpdate() end
 ---@return quest
-function Quest:getHandle() return registry.require(self, 'Quest.getHandle') end
+function Quest:getHandle() return (registry.require(self, 'Quest.getHandle')) end
 ---@return boolean
-function Quest:isDisposed() return registry.isDisposed(self, 'Quest.isDisposed') end
+function Quest:isDisposed() return (registry.isDisposed(self, 'Quest.isDisposed')) end
 ---@param text string
 function Quest:setTitle(text) QuestSetTitle(registry.require(self, 'Quest.setTitle'), text) end
 ---@param text string
@@ -107,9 +107,9 @@ function Quest:destroy()
 end
 
 ---@return questitem
-function QuestItem:getHandle() return itemRegistry.require(self, 'QuestItem.getHandle') end
+function QuestItem:getHandle() return (itemRegistry.require(self, 'QuestItem.getHandle')) end
 ---@return boolean
-function QuestItem:isDisposed() return itemRegistry.isDisposed(self, 'QuestItem.isDisposed') end
+function QuestItem:isDisposed() return (itemRegistry.isDisposed(self, 'QuestItem.isDisposed')) end
 ---@param text string
 function QuestItem:setDescription(text)
     QuestItemSetDescription(itemRegistry.require(self, 'QuestItem.setDescription'), text)

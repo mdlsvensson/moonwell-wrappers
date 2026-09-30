@@ -13,6 +13,16 @@ function fails(fn, fragment)
     assert(tostring(err):find(fragment, 1, true), tostring(err))
 end
 
+---Like fails, and the error must point at a line in a test file: wrapper errors blame their caller (spec 2026-09-30
+---§2). `fn` must call the wrapper as a statement: `return wrapper(...)` is a tail call and hides the position.
+function failsAt(fn, fragment)
+    local ok, err = pcall(fn)
+    assert(not ok, 'expected failure')
+    local message = tostring(err)
+    assert(message:find(fragment, 1, true), message)
+    assert(message:find('^%./tests/[%w_]+%.lua:%d+: '), 'expected the calling test line in: ' .. message)
+end
+
 function native(name, implementation)
     implementations[name] = implementation
     _G[name] = function(...)

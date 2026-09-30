@@ -21,12 +21,12 @@ function Destructable.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Destructable
 function Destructable.create(typeId, x, y, facing, scale, variation)
     local raw = CreateDestructable(typeId, x, y, facing, scale, variation)
-    return Handle.created(Destructable.fromHandle(raw), 'Destructable.create')
+    return (Handle.created(Destructable.fromHandle(raw), 'Destructable.create'))
 end
 ---@return destructable
-function Destructable:getHandle() return registry.require(self, 'Destructable.getHandle') end
+function Destructable:getHandle() return (registry.require(self, 'Destructable.getHandle')) end
 ---@return boolean
-function Destructable:isDisposed() return registry.isDisposed(self, 'Destructable.isDisposed') end
+function Destructable:isDisposed() return (registry.isDisposed(self, 'Destructable.isDisposed')) end
 ---@return integer
 function Destructable:getTypeId() return GetDestructableTypeId(registry.require(self, 'Destructable.getTypeId')) end
 ---@return string

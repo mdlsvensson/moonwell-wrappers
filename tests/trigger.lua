@@ -242,3 +242,12 @@ test('destroy clears conditions, destroys boolexprs, then the trigger', function
         'registerGameEvent', 'addCondition', 'removeAction', 'removeCondition', 'clearActions', 'clearConditions',
         'evaluate', 'execute'})
 end)
+
+test('token and callback errors point at the caller', function()
+    local trigger, other = Trigger.create(), Trigger.create()
+    local token = other:addAction(function() end)
+    failsAt(function() trigger:removeAction({}) end, 'Trigger.removeAction: expected TriggerAction token')
+    failsAt(function() trigger:removeAction(token) end, 'Trigger.removeAction: token belongs to another trigger')
+    failsAt(function() trigger:addAction(nil) end, 'Trigger.addAction: expected a callback function')
+    failsAt(function() trigger:registerTimerEvent(-1, false) end, 'expected a finite non-negative number')
+end)

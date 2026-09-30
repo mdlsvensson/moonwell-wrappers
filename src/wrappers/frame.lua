@@ -208,9 +208,9 @@ function Frame.hideOrigin(flag) BlzHideOriginFrames(flag) end
 function Frame.enableAutoPosition(flag) BlzEnableUIAutoPosition(flag) end
 
 ---@return framehandle
-function Frame:getHandle() return registry.require(self, 'Frame.getHandle') end
+function Frame:getHandle() return (registry.require(self, 'Frame.getHandle')) end
 ---@return boolean
-function Frame:isDisposed() return registry.isDisposed(self, 'Frame.isDisposed') end
+function Frame:isDisposed() return (registry.isDisposed(self, 'Frame.isDisposed')) end
 ---@return string
 function Frame:getName() return BlzFrameGetName(registry.require(self, 'Frame.getName')) end
 ---@return MoonwellWrappers.Frame?

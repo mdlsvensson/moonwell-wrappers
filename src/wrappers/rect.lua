@@ -16,17 +16,17 @@ function RectWrapper.fromHandle(raw) return registry.wrap(raw) end
 ---@param maxY number
 ---@return MoonwellWrappers.Rect
 function RectWrapper.create(minX, minY, maxX, maxY)
-    return Handle.created(RectWrapper.fromHandle(Rect(minX, minY, maxX, maxY)), 'Rect.create')
+    return (Handle.created(RectWrapper.fromHandle(Rect(minX, minY, maxX, maxY)), 'Rect.create'))
 end
 ---GetWorldBounds allocates a new rect on every call: the result is owned; destroy it.
 ---@return MoonwellWrappers.Rect
 function RectWrapper.worldBounds()
-    return Handle.created(RectWrapper.fromHandle(GetWorldBounds()), 'Rect.worldBounds')
+    return (Handle.created(RectWrapper.fromHandle(GetWorldBounds()), 'Rect.worldBounds'))
 end
 ---@return rect
-function RectWrapper:getHandle() return registry.require(self, 'Rect.getHandle') end
+function RectWrapper:getHandle() return (registry.require(self, 'Rect.getHandle')) end
 ---@return boolean
-function RectWrapper:isDisposed() return registry.isDisposed(self, 'Rect.isDisposed') end
+function RectWrapper:isDisposed() return (registry.isDisposed(self, 'Rect.isDisposed')) end
 ---@return number
 function RectWrapper:getMinX() return GetRectMinX(registry.require(self, 'Rect.getMinX')) end
 ---@return number

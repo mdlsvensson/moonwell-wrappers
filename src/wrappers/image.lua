@@ -36,9 +36,9 @@ function Image.create(path, width, height, x, y, imageType)
     return image
 end
 ---@return image
-function Image:getHandle() return registry.require(self, 'Image.getHandle') end
+function Image:getHandle() return (registry.require(self, 'Image.getHandle')) end
 ---@return boolean
-function Image:isDisposed() return registry.isDisposed(self, 'Image.isDisposed') end
+function Image:isDisposed() return (registry.isDisposed(self, 'Image.isDisposed')) end
 ---Centers the image on x, y. Fails for an image wrapped with fromHandle, whose size is unknown.
 ---@param x number
 ---@param y number

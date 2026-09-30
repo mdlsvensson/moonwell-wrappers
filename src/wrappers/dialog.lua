@@ -74,11 +74,11 @@ end
 ---@overload fun(raw: nil): nil
 function Dialog.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Dialog
-function Dialog.create() return Handle.created(Dialog.fromHandle(DialogCreate()), 'Dialog.create') end
+function Dialog.create() return (Handle.created(Dialog.fromHandle(DialogCreate()), 'Dialog.create')) end
 ---@return dialog
-function Dialog:getHandle() return registry.require(self, 'Dialog.getHandle') end
+function Dialog:getHandle() return (registry.require(self, 'Dialog.getHandle')) end
 ---@return boolean
-function Dialog:isDisposed() return registry.isDisposed(self, 'Dialog.isDisposed') end
+function Dialog:isDisposed() return (registry.isDisposed(self, 'Dialog.isDisposed')) end
 ---@param text string
 function Dialog:setMessage(text) DialogSetMessage(registry.require(self, 'Dialog.setMessage'), text) end
 
@@ -156,9 +156,9 @@ function Dialog:destroy()
 end
 
 ---@return button
-function DialogButton:getHandle() return buttonRegistry.require(self, 'DialogButton.getHandle') end
+function DialogButton:getHandle() return (buttonRegistry.require(self, 'DialogButton.getHandle')) end
 ---@return boolean
-function DialogButton:isDisposed() return buttonRegistry.isDisposed(self, 'DialogButton.isDisposed') end
+function DialogButton:isDisposed() return (buttonRegistry.isDisposed(self, 'DialogButton.isDisposed')) end
 ---The dialog that made this button; still answers after the button is disposed.
 ---@return MoonwellWrappers.Dialog
 function DialogButton:getDialog()

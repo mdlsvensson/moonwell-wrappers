@@ -12,11 +12,11 @@ local registry = Handle.new(Force, 'Force')
 ---@overload fun(raw: nil): nil
 function Force.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Force
-function Force.create() return Handle.created(Force.fromHandle(CreateForce()), 'Force.create') end
+function Force.create() return (Handle.created(Force.fromHandle(CreateForce()), 'Force.create')) end
 ---@return force
-function Force:getHandle() return registry.require(self, 'Force.getHandle') end
+function Force:getHandle() return (registry.require(self, 'Force.getHandle')) end
 ---@return boolean
-function Force:isDisposed() return registry.isDisposed(self, 'Force.isDisposed') end
+function Force:isDisposed() return (registry.isDisposed(self, 'Force.isDisposed')) end
 ---@param player MoonwellWrappers.Player
 function Force:add(player)
     local raw = registry.require(self, 'Force.add')

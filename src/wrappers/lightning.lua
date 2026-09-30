@@ -21,12 +21,12 @@ function Lightning.fromHandle(raw) return registry.wrap(raw) end
 ---@return MoonwellWrappers.Lightning
 function Lightning.create(code, x1, y1, z1, x2, y2, z2, checkVisibility)
     local raw = AddLightningEx(code, checkVisibility or false, x1, y1, z1, x2, y2, z2)
-    return Handle.created(Lightning.fromHandle(raw), 'Lightning.create')
+    return (Handle.created(Lightning.fromHandle(raw), 'Lightning.create'))
 end
 ---@return lightning
-function Lightning:getHandle() return registry.require(self, 'Lightning.getHandle') end
+function Lightning:getHandle() return (registry.require(self, 'Lightning.getHandle')) end
 ---@return boolean
-function Lightning:isDisposed() return registry.isDisposed(self, 'Lightning.isDisposed') end
+function Lightning:isDisposed() return (registry.isDisposed(self, 'Lightning.isDisposed')) end
 ---@param x1 number
 ---@param y1 number
 ---@param z1 number
