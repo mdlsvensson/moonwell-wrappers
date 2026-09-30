@@ -222,14 +222,15 @@ test('state and presentation methods', function()
     u:remove()
 end)
 
-test('isAlive combines the dead type and the removed type id', function()
-    local u, dead, typeId = Unit.fromHandle({}), false, 1
-    native('IsUnitType', function(_, kind) eq(kind, UNIT_TYPE_DEAD); return dead end)
+test('isAlive asks UnitAlive; exists asks for a type id', function()
+    local u, alive, typeId = Unit.fromHandle({}), true, 1
+    native('UnitAlive', function(raw) eq(raw, u.handle); return alive end)
     native('GetUnitTypeId', function() return typeId end)
-    eq(u:isAlive(), true)
-    dead = true; eq(u:isAlive(), false)
-    dead, typeId = false, 0; eq(u:isAlive(), false)
+    eq(u:isAlive(), true); eq(u:exists(), true)
+    alive = false; eq(u:isAlive(), false); eq(u:exists(), true)
+    typeId = 0; eq(u:exists(), false)
     u:remove()
+    failsAt(function() u:exists() end, 'Unit.exists: Unit is disposed')
 end)
 
 test('orders and damage accept any widget target', function()
@@ -263,7 +264,7 @@ test('new unit methods reject a removed receiver', function()
         'addItem', 'addItemById', 'removeItem', 'removeItemFromSlot', 'hasItem', 'dropItemAt', 'dropItemToSlot',
         'useItem', 'getMana', 'setMana', 'getMaxMana', 'setMaxMana', 'setMaxLife', 'getMoveSpeed', 'setMoveSpeed',
         'setX', 'setY', 'setScale', 'setVertexColor', 'setAnimation', 'pause', 'isPaused', 'setInvulnerable',
-        'isInvulnerable', 'show', 'isHidden', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder', 'isAlive',
+        'isInvulnerable', 'show', 'isHidden', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder', 'isAlive', 'exists',
         'damageTarget', 'applyTimedLife', 'issueOrderById', 'issuePointOrderById', 'issueTargetOrderById'})
 end)
 

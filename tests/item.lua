@@ -91,3 +91,11 @@ test('enumInRect validates its rect and filter before the native', function()
     fails(function() Item.enumInRect(Rect.fromHandle({}), 'all') end, 'Item.enumInRect: expected a callback function')
     eq(callCount('EnumItemsInRect'), 0)
 end)
+
+test('exists asks for a type id', function()
+    local typeId = 1
+    native('GetItemTypeId', function() return typeId end)
+    local wrapper = Item.fromHandle({})
+    eq(wrapper:exists(), true)
+    typeId = 0; eq(wrapper:exists(), false)
+end)

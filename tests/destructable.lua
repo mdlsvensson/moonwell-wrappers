@@ -74,3 +74,11 @@ test('enumInRect validates its rect and filter before the native', function()
         'Destructable.enumInRect: expected a callback function')
     eq(callCount('EnumDestructablesInRect'), 0)
 end)
+
+test('exists asks for a type id', function()
+    local typeId = 1
+    native('GetDestructableTypeId', function() return typeId end)
+    local wrapper = Destructable.fromHandle({})
+    eq(wrapper:exists(), true)
+    typeId = 0; eq(wrapper:exists(), false)
+end)

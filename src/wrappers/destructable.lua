@@ -27,6 +27,10 @@ end
 function Destructable:getHandle() return (registry.require(self, 'Destructable.getHandle')) end
 ---@return boolean
 function Destructable:isDisposed() return (registry.isDisposed(self, 'Destructable.isDisposed')) end
+---True while the game still has the destructable, dead or alive; false once it was removed by code that bypassed this
+---wrapper. A disposed wrapper raises, like every method.
+---@return boolean
+function Destructable:exists() return GetDestructableTypeId(registry.require(self, 'Destructable.exists')) ~= 0 end
 ---@return integer
 function Destructable:getTypeId() return GetDestructableTypeId(registry.require(self, 'Destructable.getTypeId')) end
 ---@return string

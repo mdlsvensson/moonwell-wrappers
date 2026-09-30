@@ -122,13 +122,13 @@ end
 function Unit:getName() return GetUnitName(registry.require(self, 'Unit.getName')) end
 ---@return integer
 function Unit:getCurrentOrder() return GetUnitCurrentOrder(registry.require(self, 'Unit.getCurrentOrder')) end
----Not dead and not removed. Moonwell 0.5.1 knows the common.ai native UnitAlive; this avoids it so the library still
----works with Moonwell 0.5.0.
+---Not dead and not removed, by the UnitAlive native (known to Moonwell since 0.5.1).
 ---@return boolean
-function Unit:isAlive()
-    local raw = registry.require(self, 'Unit.isAlive')
-    return not IsUnitType(raw, UNIT_TYPE_DEAD) and GetUnitTypeId(raw) ~= 0
-end
+function Unit:isAlive() return UnitAlive(registry.require(self, 'Unit.isAlive')) end
+---True while the game still has the unit, dead or alive; false once the game has removed it (decay, or removal by code
+---that bypassed this wrapper). A disposed wrapper raises, like every method.
+---@return boolean
+function Unit:exists() return GetUnitTypeId(registry.require(self, 'Unit.exists')) ~= 0 end
 function Unit:kill() KillUnit(registry.require(self, 'Unit.kill')) end
 function Unit:remove()
     local raw = registry.dispose(self, 'Unit.remove')

@@ -60,6 +60,7 @@ region:addRect(area)
 trigger:registerEnterRegion(region)
 local action = trigger:addAction(function(self) self:disable() end)
 local condition = trigger:addCondition(function() return unit:isAlive() end)
+if unit:exists() and item:exists() and tree:exists() then print('present') end
 trigger:removeAction(action)
 trigger:removeCondition(condition)
 group:enumInRect(area, function(member) return member:getTypeId() == unit:getTypeId() end)
