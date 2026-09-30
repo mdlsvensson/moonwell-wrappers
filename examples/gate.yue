@@ -178,6 +178,23 @@ broadGate = (owner) ->
     probe\registerTimerEvent 1, false
     probe\addCondition -> error "intentional condition probe"
     probe\addAction -> print "ERROR condition probe action ran"
+    -- v0.6.0: exists() after removal that bypasses the wrapper, and where a wrapper error points. The failing call is
+    -- an argument, evaluated in the closure's own frame: as the closure's last expression it would be a tail call,
+    -- which hides the position.
+    gone = Unit.create owner, $FourCC("hfoo"), -700, -700, 0
+    RemoveUnit gone\getHandle!
+    corpse = Unit.create owner, $FourCC("hfoo"), -700, -600, 0
+    corpse\kill!
+    potion = Item.create $FourCC("phea"), -700, -500
+    RemoveItem potion\getHandle!
+    stump = Destructable.create $FourCC("LTlt"), -704, -384, 270, 1, 0
+    RemoveDestructable stump\getHandle!
+    print "Wrapper exists after raw removal", gone\exists!, potion\exists!, stump\exists!
+    print "Wrapper killed unit alive, exists", corpse\isAlive!, corpse\exists!
+    discarded = Unit.create owner, $FourCC("hfoo"), -700, -400, 0
+    discarded\remove!
+    _, located = pcall -> print "ERROR no error for a removed target", hero\issueTargetOrder "smart", discarded
+    print "Wrapper error location", located
   heroes = Group.create!
   heroes\enumInRange(-300, 0, 800, (unit) -> unit\isHero!)
   print "Wrapper filtered heroes", heroes\getSize!
