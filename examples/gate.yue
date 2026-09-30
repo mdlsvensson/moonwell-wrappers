@@ -190,6 +190,13 @@ broadGate = (owner) ->
     stump = Destructable.create $FourCC("LTlt"), -704, -384, 270, 1, 0
     RemoveDestructable stump\getHandle!
     print "Wrapper exists after raw removal", gone\exists!, potion\exists!, stump\exists!
+    -- The unit's type id did not read 0 in the same instant (v0.6.0 gate): check it a frame later and after 1 s.
+    later = Timer.create!
+    later\start 0, false, ->
+      print "Wrapper unit exists after 0 s", gone\exists!
+      later\start 1, false, (self) ->
+        print "Wrapper unit exists after 1 s", gone\exists!
+        self\destroy!
     print "Wrapper killed unit alive, exists", corpse\isAlive!, corpse\exists!
     discarded = Unit.create owner, $FourCC("hfoo"), -700, -400, 0
     discarded\remove!

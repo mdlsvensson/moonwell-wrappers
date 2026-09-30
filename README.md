@@ -112,7 +112,9 @@ handle. There is no generic native liveness or handle-type check. Do not modify 
 
 A widget the game removes by itself (decay, a used powerup, removal by code that bypassed the wrapper) leaves a wrapper
 that is not disposed: `exists()` tells you it is gone (its type id reads 0), while `isAlive()` on a unit uses the
-`UnitAlive` native, which needs Moonwell 0.5.1 or later. Both raise for a disposed wrapper, like every method.
+`UnitAlive` native, which needs Moonwell 0.5.1 or later. Both raise for a disposed wrapper, like every method. Measured
+on 3.0.0.24268 (v0.6.0 gate): an item or destructable removed with the raw native reads `false` at once; a unit reads
+`true` in the same instant as `RemoveUnit` and `false` from the next frame (a zero-second timer).
 
 Unit, Item and Destructable are widgets (`MoonwellWrappers.Widget` in the editor). All three have `getLife()`,
 `setLife(value)`, `getX()` and `getY()`. Parameters typed Widget accept any of them: `unit:issueTargetOrder`,

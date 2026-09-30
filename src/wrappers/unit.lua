@@ -126,7 +126,8 @@ function Unit:getCurrentOrder() return GetUnitCurrentOrder(registry.require(self
 ---@return boolean
 function Unit:isAlive() return UnitAlive(registry.require(self, 'Unit.isAlive')) end
 ---True while the game still has the unit, dead or alive; false once the game has removed it (decay, or removal by code
----that bypassed this wrapper). A disposed wrapper raises, like every method.
+---that bypassed this wrapper). A removal shows from the next frame: in the same instant as RemoveUnit it still reads
+---true (v0.6.0 gate, 3.0.0.24268). A disposed wrapper raises, like every method.
 ---@return boolean
 function Unit:exists() return GetUnitTypeId(registry.require(self, 'Unit.exists')) ~= 0 end
 function Unit:kill() KillUnit(registry.require(self, 'Unit.kill')) end

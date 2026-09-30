@@ -9,7 +9,8 @@
 - Group enumeration (`getUnits`, `forEach` and filtered enumerations) builds one table instead of two, with the same
   snapshot semantics.
 - `unit:isAlive()` uses the `UnitAlive` native. The library now needs Moonwell 0.5.1 or later.
-- New `exists()` on Unit, Item and Destructable: false once the game has removed the object (its type id reads 0).
+- New `exists()` on Unit, Item and Destructable: false once the game has removed the object (its type id reads 0). A
+  unit reads false from the frame after its removal; in the same instant it still reads true (measured in game).
 - When several options are wrong, the first in sorted order is reported, the same on every machine.
 - README: an API reference section per module, the callback rule in one place, and a conventions table (colours, angles,
   visibility, time units).

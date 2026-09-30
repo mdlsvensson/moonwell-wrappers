@@ -100,12 +100,17 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    (`[wrappers] Timer callback failed: ... intentional timer probe` and
    `[wrappers] Trigger callback failed: ... intentional trigger probe`) and both callbacks continue;
    `[wrappers] Trigger condition failed: ... intentional condition probe` prints, and the action behind that condition
-   never runs (no `ERROR condition probe action ran`). Since v0.6.0 the probes run also prints
-   `Wrapper exists after raw removal false false false` (a unit, an item and a destructable removed with the raw
-   natives; an item or destructable printing `true` means its `exists()` must be dropped before release),
-   `Wrapper killed unit alive, exists false true`, and
-   `Wrapper error location <gate file>:<line>: [wrappers] Unit.issueTargetOrder: Unit is disposed`, where the file is
-   the gate's own source, not a `wrappers/*.lua` file. Restore `probes = false`.
+   never runs (no `ERROR condition probe action ran`). Since v0.6.0 the probes run also prints:
+   - `Wrapper exists after raw removal true false false`: a unit, an item and a destructable removed with the raw
+     natives; the unit still reads `true` in that instant. Then `Wrapper unit exists after 0 s false` and
+     `Wrapper unit exists after 1 s false`. An item or destructable printing `true`, or the unit still `true` a frame
+     later, means that class's `exists()` must be dropped before release.
+   - `Wrapper killed unit alive, exists false true`.
+   - `Wrapper error location war3map.lua:<line>: [wrappers] Unit.issueTargetOrder: Unit is disposed`. Moonwell bundles
+     one chunk, so check the line in the built `dist/stage/map.w3x/war3map.lua`: it must be the gate's own `pcall` line,
+     not a line of the wrappers.
+
+   Restore `probes = false`.
 7. Presentation (v0.3.0): set `presentation = true` and run again; only the presentation gate runs, around the map
    centre, and a fog modifier reveals that area. At start `Wrapper presentation started; sound duration <n>` prints
    (record `n`; 0 can mean the file was not loaded yet), then `Wrapper enumerated potions 2` and
