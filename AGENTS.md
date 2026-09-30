@@ -21,8 +21,8 @@ The approved design and implementation history live in the sibling Moonwell repo
 README documents the complete public API. CONTRIBUTING documents tool versions, checks and the manual release gate.
 v0.2.0 adds broad gameplay coverage; v0.3.0 adds presentation (text tags, sounds, lightning, images, ubersplats, fog
 modifiers), deeper effects and item/destructable enumeration; v0.4.0 adds classic UI (dialogs, multiboards,
-leaderboards, quests, defeat conditions, timer dialogs). v0.5.0 adds frames. v0.7.0 adds damage events and sync, for
-the wc3-lib port, on a shared internal listener list (`internal/listeners.lua`). Do not add gameplay systems, implicit
+leaderboards, quests, defeat conditions, timer dialogs). v0.5.0 adds frames. v0.7.0 adds damage events and sync, for the
+wc3-lib port, on a shared internal listener list (`internal/listeners.lua`). Do not add gameplay systems, implicit
 cleanup or a w3ts compatibility layer without a new design.
 
 ## Rules

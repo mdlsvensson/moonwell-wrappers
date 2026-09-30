@@ -522,9 +522,9 @@ and `destroy` or `remove`).
 - DAMAGING events: `setAmount(n)`, `setAttackType(t)`, `setDamageType(t)`, `setWeaponType(t)`; DAMAGED events:
   `setAmount(n)`
 
-Every listener of one hit gets the same event, so a change is visible to the listeners after it. Setters work only
-while the hit's listeners run; afterwards (for example from a timer) they raise `the damage event is over`. Each phase
-has one shared trigger, created by the first listener and disabled while the phase has none.
+Every listener of one hit gets the same event, so a change is visible to the listeners after it. Setters work only while
+the hit's listeners run; afterwards (for example from a timer) they raise `the damage event is over`. Each phase has one
+shared trigger, created by the first listener and disabled while the phase has none.
 
 ```yue
 import "wrappers.damage" as Damage
