@@ -29,3 +29,22 @@ test('every function given a wrong wrapper points at its caller', function()
     table.sort(wrong)
     assert(#wrong == 0, #wrong .. ' misplaced errors:\n' .. table.concat(wrong, '\n'))
 end)
+
+test('damage and sync functions given wrong arguments point at their caller', function()
+    local wrong, checked = {}, 0
+    for _, name in ipairs({'damage', 'sync'}) do
+        for key, fn in pairs(require('wrappers.' .. name)) do
+            if type(fn) == 'function' then
+                local ok, err = pcall(function() fn({}) end)
+                assert(not ok, name .. '.' .. key .. ' accepted a table')
+                checked = checked + 1
+                if not tostring(err):find('^%./tests/blame%.lua:%d+: ') then
+                    wrong[#wrong + 1] = name .. '.' .. key .. ' -> ' .. tostring(err)
+                end
+            end
+        end
+    end
+    eq(checked, 6)
+    table.sort(wrong)
+    assert(#wrong == 0, #wrong .. ' misplaced errors:\n' .. table.concat(wrong, '\n'))
+end)

@@ -41,4 +41,9 @@ Dialog.create():addButton('x', nil, function(player) Group.create():add(player) 
 Multiboard.create(1, 1):setVisibleFor(unit) -- EXPECT param-type-mismatch
 Frame.create('EscMenuBackdrop', unit) -- EXPECT param-type-mismatch
 Frame.origin(ORIGIN_FRAME_GAME_UI):on(FRAMEEVENT_CONTROL_CLICK, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
+local Damage = require('wrappers.damage')
+local Sync = require('wrappers.sync')
+Damage.onDamaged(function(event) event:setDamageType(DAMAGE_TYPE_UNIVERSAL) end) -- EXPECT undefined-field
+Sync.on('load', function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
+Damage.off(Sync.on('load', function() end)) -- EXPECT param-type-mismatch
 return true

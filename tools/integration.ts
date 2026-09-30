@@ -114,6 +114,8 @@ for (
     "defeatcondition",
     "timerdialog",
     "frame",
+    "damage",
+    "sync",
   ]
 ) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
@@ -159,9 +161,19 @@ const publicModules = [
   "defeatcondition",
   "timerdialog",
   "frame",
+  "damage",
+  "sync",
 ];
 const soloEntries: Record<string, { source: string; allowed: string[] }> = {
   trigger: { source: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n', allowed: [] },
+  damage: {
+    source: 'import "wrappers.damage" as Damage\nt = Damage.onDamaged (event) -> event\\setAmount 0\nDamage.off t\n',
+    allowed: ["unit", "player", "item"],
+  },
+  sync: {
+    source: 'import "wrappers.sync" as Sync\nt = Sync.on "load", (player, data) -> print data\nSync.off t\n',
+    allowed: ["player"],
+  },
   texttag: {
     source: 'import "wrappers.texttag" as TextTag\nt = TextTag.create!\nt\\destroy!\nTextTag.float "+1", 0, 0\n',
     allowed: [],
@@ -191,7 +203,9 @@ for (const [entry, { source, allowed }] of Object.entries(soloEntries)) {
     }
   }
 }
-console.log("Moonwell: Trigger-, TextTag-, Multiboard-, Dialog- and Frame-only maps bundle only what they import");
+console.log(
+  "Moonwell: Trigger-, TextTag-, Multiboard-, Dialog-, Frame-, Damage- and Sync-only maps bundle only what they import",
+);
 
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));
 await moonwell(["check"]);

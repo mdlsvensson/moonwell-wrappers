@@ -155,5 +155,20 @@ item:remove()
 effect:destroy()
 group:destroy()
 trigger:destroy()
+local Damage = require('wrappers.damage')
+local Sync = require('wrappers.sync')
+local damaging = Damage.onDamaging(function(event)
+    event:setAmount(event.amount * 2)
+    event:setDamageType(DAMAGE_TYPE_UNIVERSAL)
+    local source = event.source
+    if source then print(source:getName(), event.target:getName()) end
+end)
+Damage.off(damaging)
+Damage.off(Damage.onDamaged(function(event) event:setAmount(event.amount + 1) end))
+local synced = Sync.on('load', function(player, data) print(player:getName(), data) end)
+Sync.off(synced)
+if Sync.send('load', 'code') then print('sent') end
+print(unit:getCollisionSize())
+unit:setPathing(true)
 unit:remove()
 return true
