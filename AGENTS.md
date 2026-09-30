@@ -80,4 +80,6 @@ consumption passed the same day: a fresh map locked `v0.4.0` to `7e8ef13`. v0.5.
 (`../wrappers-gate/src/probe_frame.yue`, `deno task gate frame-init`) and the runs `frames` and `frames-min`; the frames
 gate loads `war3mapImported\wrappers-gate.toc` from the gate map's assets (the probe found the game's templates need no
 TOC; results in `PROBE-FRAME-RESULTS.md`). The probe and the frames gate passed on 2026-09-29, normal and minified
-(CONTRIBUTING records it). Tag consumption passed the same day: a fresh map locked `v0.5.0` to `b91ffd4`.
+(CONTRIBUTING records it). Tag consumption passed the same day: a fresh map locked `v0.5.0` to `b91ffd4`. v0.5.1
+(2026-09-30): `Effect.attach` and `Effect.flashOn` take a Unit in the editor; runtime unchanged, so the in-game gate was
+not re-run. Tag consumption passed the same day with Moonwell 0.5.1: a fresh map locked `v0.5.1` to `af9961e`.
