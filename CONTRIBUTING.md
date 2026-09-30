@@ -306,3 +306,8 @@ v0.5.1: Passed 2026-09-30 for `v0.5.1` with Moonwell 0.5.1 (`c883e4c`), in a map
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
 `af9961eb399dc00c3b2c95c0a60a612cbc315e19`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
+
+v0.6.0: Passed 2026-09-30 for `v0.6.0` with Moonwell 0.5.2 (`main`), in a map made fresh with `init --link`: check,
+normal and minified builds of the gate example; `moonwell.lock` recorded commit
+`933b58093ad5357aeefbbb5acb241a876cf1c1f1`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
+stayed unchanged after removing the map's `.moonwell/` and checking again.

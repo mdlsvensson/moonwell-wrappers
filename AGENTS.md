@@ -98,4 +98,5 @@ and plan `2026-09-30-moonwell-wrappers-refactor`).
 - Sorted options errors, and the per-module README API reference.
 
 The in-game gate passed for `core`, `probes`, `presentation`, `ui` and `perf`. Frames and the minified runs were not
-re-run. The performance probe is `../wrappers-gate/src/probe_perf.yue` (`deno task gate perf`).
+re-run. The performance probe is `../wrappers-gate/src/probe_perf.yue` (`deno task gate perf`). Tag consumption passed
+the same day: a fresh map locked `v0.6.0` to `933b580`.
