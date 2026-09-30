@@ -103,6 +103,12 @@ function Unit:isInvulnerable() return BlzIsUnitInvulnerable(registry.require(sel
 function Unit:show(visible) ShowUnit(registry.require(self, 'Unit.show'), visible) end
 ---@return boolean
 function Unit:isHidden() return IsUnitHidden(registry.require(self, 'Unit.isHidden')) end
+---The unit's collision radius, as the game uses it for pathing.
+---@return number
+function Unit:getCollisionSize() return BlzGetUnitCollisionSize(registry.require(self, 'Unit.getCollisionSize')) end
+---With false the unit ignores pathing: it walks through units, trees and cliffs until set back to true.
+---@param flag boolean
+function Unit:setPathing(flag) SetUnitPathing(registry.require(self, 'Unit.setPathing'), flag) end
 ---@param kind unittype
 ---@return boolean
 function Unit:isType(kind) return IsUnitType(registry.require(self, 'Unit.isType'), kind) end

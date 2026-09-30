@@ -206,12 +206,13 @@ test('state and presentation methods', function()
     checkGetters(u, {{'BlzGetUnitMaxMana', 'getMaxMana', 100}, {'GetUnitMoveSpeed', 'getMoveSpeed', 270},
         {'IsUnitPaused', 'isPaused', false}, {'BlzIsUnitInvulnerable', 'isInvulnerable', true},
         {'IsUnitHidden', 'isHidden', false}, {'GetUnitName', 'getName', 'Footman'},
-        {'GetUnitCurrentOrder', 'getCurrentOrder', 851983}, {'IsUnitType', 'isType', true, kind}})
+        {'GetUnitCurrentOrder', 'getCurrentOrder', 851983}, {'IsUnitType', 'isType', true, kind},
+        {'BlzGetUnitCollisionSize', 'getCollisionSize', 16}})
     checkSetters(u, {{'BlzSetUnitMaxMana', 'setMaxMana', 150}, {'BlzSetUnitMaxHP', 'setMaxLife', 500},
         {'SetUnitMoveSpeed', 'setMoveSpeed', 300}, {'SetUnitX', 'setX', 5}, {'SetUnitY', 'setY', 6},
         {'SetUnitVertexColor', 'setVertexColor', 255, 128, 0, 200}, {'SetUnitAnimation', 'setAnimation', 'attack'},
         {'PauseUnit', 'pause', true}, {'SetUnitInvulnerable', 'setInvulnerable', false}, {'ShowUnit', 'show', false},
-        {'UnitApplyTimedLife', 'applyTimedLife', 1112045413, 5}})
+        {'UnitApplyTimedLife', 'applyTimedLife', 1112045413, 5}, {'SetUnitPathing', 'setPathing', false}})
     native('SetUnitScale', function() end)
     u:setScale(1.5); expectCall('SetUnitScale', u.handle, 1.5, 1.5, 1.5)
     native('IsUnitAlly', function() return true end)
