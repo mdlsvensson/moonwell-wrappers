@@ -2,7 +2,8 @@
 
 Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Destructable, Rect, Region, Force, Timer,
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
-Quest, DefeatCondition, TimerDialog and Frame wrappers, editor completion, stable handle identity and explicit cleanup.
+Quest, DefeatCondition, TimerDialog and Frame wrappers, Damage and Sync modules, editor completion, stable handle
+identity and explicit cleanup.
 
 **Status:** `v0.6.0` (2026-09-30): the refactor after the review. Errors point at the calling line, methods and group
 enumeration are cheaper, `isAlive()` uses `UnitAlive` (Moonwell 0.5.1 or later), and `exists()` is new. It builds on
@@ -340,7 +341,7 @@ and `destroy` or `remove`).
 - `getLife()`, `setLife(v)`, `getMaxLife()`, `setMaxLife(n)`, `getMana()`, `setMana(v)`, `getMaxMana()`,
   `setMaxMana(n)`, `getMoveSpeed()`, `setMoveSpeed(v)`
 - `setColor(playercolor)`, `setScale(s)`, `setVertexColor(r,g,b,a)`, `setAnimation(name)`, `pause(flag)`, `isPaused()`,
-  `setInvulnerable(flag)`, `isInvulnerable()`, `show(flag)`, `isHidden()`
+  `setInvulnerable(flag)`, `isInvulnerable()`, `show(flag)`, `isHidden()`, `getCollisionSize()`, `setPathing(flag)`
 - `isType(unittype)`, `isAlly(Player)`, `isEnemy(Player)`, `isAlive()`, `exists()`, `getCurrentOrder()`
 - `kill()`, `remove()`, `applyTimedLife(buffId, seconds)`,
   `damageTarget(Widget, amount, attack, ranged, attacktype, damagetype, weapontype)`
@@ -512,6 +513,42 @@ and `destroy` or `remove`).
   `setModel(path, cameraIndex?)`, `setSpriteAnimate(primaryProp, flags)`, `setAutoScroll(flag)`, `setValue(value)`,
   `setMinMaxValue(min, max)`, `setStepSize(step)`, `setAlpha(alpha)`, `setEnabled(flag)`, `setTooltip(Frame)`,
   `show(flag)`, `setVisibleFor(Player)`, `releaseFocusFor(Player)`, `on(eventType, callback)`, `off(token)`, `destroy()`
+
+### `wrappers.damage`
+
+- `onDamaging(callback)` (before armor) and `onDamaged(callback)` (after armor) return a token for `off(token)`
+- the event: `source` (a Unit, or nil when the game gives none), `target`, `amount`, `isAttack`, `attackType`,
+  `damageType`, `weaponType`
+- DAMAGING events: `setAmount(n)`, `setAttackType(t)`, `setDamageType(t)`, `setWeaponType(t)`; DAMAGED events:
+  `setAmount(n)`
+
+Every listener of one hit gets the same event, so a change is visible to the listeners after it. Setters work only
+while the hit's listeners run; afterwards (for example from a timer) they raise `the damage event is over`. Each phase
+has one shared trigger, created by the first listener and disabled while the phase has none.
+
+```yue
+import "wrappers.damage" as Damage
+
+Damage.onDamaging (event) ->
+  if event.isAttack
+    event\setAmount event.amount * 1.5
+```
+
+### `wrappers.sync`
+
+- `send(prefix, data)` returns what `BlzSendSyncData` returns; `data` is at most 255 bytes
+- `on(prefix, callback)` returns a token for `off(token)`; the callback gets `(Player, data)`
+
+Call `send` for the local player only, inside a local-player branch; the listeners run on every machine, in the same
+order, some frames later (about 0.09 s on one machine). The game cuts longer messages to 255 bytes and still reports
+success, so `send` raises instead. Split longer data yourself.
+
+```yue
+import "wrappers.sync" as Sync
+
+Sync.on "load", (player, data) -> print player\getName!, data
+Sync.send "load", code if Player.fromIndex(0)\isLocal!
+```
 
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
 method. `setPosition` uses SetUnitPosition, which respects pathing; `setX`/`setY` use SetUnitX/SetUnitY, which do not.

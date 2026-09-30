@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- New `unit:getCollisionSize()` and `unit:setPathing(flag)`.
+- New `wrappers.damage`: listeners before armor (`onDamaging`) and after armor (`onDamaged`), removable with
+  `Damage.off`. One event per hit, shared by its listeners, with the source, target, amount, attack flag and types.
+  DAMAGING events can change the amount and the three types; DAMAGED events only the amount. Setters raise once the
+  hit's listeners have run.
+- New `wrappers.sync`: `Sync.send` raises for data over 255 bytes (the game cuts it silently) and for an empty prefix;
+  `Sync.on` and `Sync.off` manage listeners per prefix.
+- Nothing existing changes; there are no migrations.
+
 ## 0.6.0 (2026-09-30)
 
 - Errors point at the line that called the wrapper. Before, a wrong or disposed argument and a wrong receiver pointed at
