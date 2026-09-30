@@ -9,7 +9,8 @@ raises contextual Lua errors. Review each task and the final change. Work on mai
 - Deno 2.x.
 - YueScript 0.34.2, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
 - Pkl 0.32.1, on PATH (or set `MOONWELL_PKL` to its executable).
-- A sibling Moonwell checkout at 0.5.0 (or `MOONWELL_REPO` pointing to that checkout).
+- A sibling Moonwell checkout at 0.5.1 or later (or `MOONWELL_REPO` pointing to that checkout). The library itself needs
+  Moonwell 0.5.1 or later, which knows the `UnitAlive` native.
 - LuaLS 3.19.1 (or `MOONWELL_LUALS` pointing to the Lua extension's `server/bin/lua-language-server.exe`).
 - Lua 5.3.6 `luac` (or `MOONWELL_LUAC` pointing to it).
 

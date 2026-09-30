@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Errors point at the line that called the wrapper. Before, a wrong or disposed argument and a wrong receiver pointed at
+  a line inside the library, and `getHandle`, `isDisposed` and factories lost the position entirely (a tail call).
+  Messages are unchanged. A new sweep test checks every class.
+- Methods are cheaper: the check that a receiver is a live wrapper is one lookup instead of two calls.
+- Group enumeration (`getUnits`, `forEach` and filtered enumerations) builds one table instead of two, with the same
+  snapshot semantics.
+- `unit:isAlive()` uses the `UnitAlive` native. The library now needs Moonwell 0.5.1 or later.
+- New `exists()` on Unit, Item and Destructable: false once the game has removed the object (its type id reads 0).
+- When several options are wrong, the first in sorted order is reported, the same on every machine.
+- README: an API reference section per module, the callback rule in one place, and a conventions table (colours, angles,
+  visibility, time units).
+
 ## 0.5.1 (2026-09-30)
 
 - `Effect.attach` and `Effect.flashOn` take a Unit in the editor, so LuaLS flags an Item or a Destructable: Warcraft

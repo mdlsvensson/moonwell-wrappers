@@ -43,6 +43,10 @@ cleanup or a w3ts compatibility layer without a new design.
   tags with a lifespan, sounds released when done) goes through a helper that returns nothing. Local visibility helpers
   pass a machine-local boolean to the same native on every machine; the one exception is `sound:playFor`, which calls
   `StartSound` only on that player's machine (spec §4). No getters for machine-local values.
+- Every wrapper error points at the line that called the public function. Raise at level 3 from registry, Handle and
+  checker helpers (4 in `Options.read`), pass `depth` when a local helper sits in between, and never tail-call a raising
+  helper from a public function: write `return (helper(...))`, since a tail call drops the position. `tests/blame.lua`
+  sweeps every class; use `failsAt` in new tests of error paths.
 - Options tables go through `internal/options.lua`: unknown keys and wrong types fail before any native.
 - Children that die with their parent (dialog buttons, quest items) are wrappers owned by the parent: its `clear()` or
   `destroy()` disposes them, and they have no `destroy()` or `fromHandle`. Native handles that must be released
