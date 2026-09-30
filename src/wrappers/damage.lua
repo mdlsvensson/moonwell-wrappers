@@ -33,6 +33,55 @@ DamagedEvent.__index = DamagedEvent
 ---@type table<table, true>
 local live = setmetatable({}, {__mode = 'k'})
 
+---@param event table
+---@param amount unknown
+---@param operation string
+local function setAmount(event, amount, operation)
+    if not live[event] then error('[wrappers] ' .. operation .. ': the damage event is over', 3) end
+    if type(amount) ~= 'number' or amount ~= amount or amount == math.huge or amount == -math.huge then
+        error('[wrappers] ' .. operation .. ': expected a finite number', 3)
+    end
+    BlzSetEventDamage(amount)
+    event.amount = amount
+end
+
+---@param event table
+---@param value unknown
+---@param operation string
+---@param what string For the error, e.g. 'an attack type'.
+local function checkType(event, value, operation, what)
+    if not live[event] then error('[wrappers] ' .. operation .. ': the damage event is over', 3) end
+    if value == nil then error('[wrappers] ' .. operation .. ': expected ' .. what, 3) end
+end
+
+---Sets the hit's amount (BlzSetEventDamage). Negative amounts are passed to the native unchanged.
+---@param amount number
+function DamagingEvent:setAmount(amount) setAmount(self, amount, 'DamagingEvent.setAmount') end
+---Sets the attack type, which picks the armor table (BlzSetEventAttackType).
+---@param attackType attacktype
+function DamagingEvent:setAttackType(attackType)
+    checkType(self, attackType, 'DamagingEvent.setAttackType', 'an attack type')
+    BlzSetEventAttackType(attackType)
+    self.attackType = attackType
+end
+---Sets the damage type, which decides immunity and spell reduction (BlzSetEventDamageType).
+---@param damageType damagetype
+function DamagingEvent:setDamageType(damageType)
+    checkType(self, damageType, 'DamagingEvent.setDamageType', 'a damage type')
+    BlzSetEventDamageType(damageType)
+    self.damageType = damageType
+end
+---Sets the weapon type, which decides the impact sound (BlzSetEventWeaponType).
+---@param weaponType weapontype
+function DamagingEvent:setWeaponType(weaponType)
+    checkType(self, weaponType, 'DamagingEvent.setWeaponType', 'a weapon type')
+    BlzSetEventWeaponType(weaponType)
+    self.weaponType = weaponType
+end
+---Sets the hit's amount after armor (BlzSetEventDamage). Negative amounts are passed to the native unchanged.
+---@param amount number
+function DamagedEvent:setAmount(amount) setAmount(self, amount, 'DamagedEvent.setAmount') end
+
 ---@param trigger trigger
 ---@param class table DamagingEvent or DamagedEvent.
 local function register(trigger, class)

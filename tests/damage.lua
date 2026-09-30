@@ -122,3 +122,91 @@ test('module functions check their arguments at the caller', function()
     Damage.off(token); Damage.off(token)
     eq(callCount('CreateTrigger'), 0)
 end)
+
+test('setAmount changes the hit and the shared event', function()
+    local seen
+    local a = Damage.onDamaging(function(event) event:setAmount(event.amount * 2) end)
+    local b = Damage.onDamaging(function(event) seen = event.amount end)
+    local result = fire(EVENT_PLAYER_UNIT_DAMAGING)
+    eq(seen, 20); eq(result.amount, 20); expectCall('BlzSetEventDamage', 20)
+    Damage.off(a); Damage.off(b)
+    local c = Damage.onDamaged(function(event) event:setAmount(3); seen = event end)
+    result = fire(EVENT_PLAYER_UNIT_DAMAGED)
+    eq(result.amount, 3); eq(seen.amount, 3)
+    eq(#PRINTED, 0)
+    Damage.off(c)
+end)
+
+test('a DAMAGING event changes the types; a DAMAGED event has no type setters', function()
+    local seen
+    local a = Damage.onDamaging(function(event)
+        event:setAttackType(ATTACK_CHAOS); event:setDamageType(DAMAGE_UNIVERSAL); event:setWeaponType(WEAPON_METAL)
+        seen = event
+    end)
+    local result = fire(EVENT_PLAYER_UNIT_DAMAGING)
+    eq(result.attackType, ATTACK_CHAOS); eq(result.damageType, DAMAGE_UNIVERSAL); eq(result.weaponType, WEAPON_METAL)
+    eq(seen.attackType, ATTACK_CHAOS); eq(seen.damageType, DAMAGE_UNIVERSAL); eq(seen.weaponType, WEAPON_METAL)
+    Damage.off(a)
+    local b = Damage.onDamaged(function(event) seen = event end)
+    fire(EVENT_PLAYER_UNIT_DAMAGED)
+    eq(seen.setAttackType, nil); eq(seen.setDamageType, nil); eq(seen.setWeaponType, nil)
+    eq(#PRINTED, 0)
+    Damage.off(b)
+end)
+
+test('setters check their arguments at the caller', function()
+    local ran = false
+    local token = Damage.onDamaging(function(event)
+        failsAt(function() event:setAmount('1') end, 'DamagingEvent.setAmount: expected a finite number')
+        failsAt(function() event:setAmount(0 / 0) end, 'DamagingEvent.setAmount: expected a finite number')
+        failsAt(function() event:setAmount(math.huge) end, 'DamagingEvent.setAmount: expected a finite number')
+        failsAt(function() event:setAmount(-math.huge) end, 'DamagingEvent.setAmount: expected a finite number')
+        failsAt(function() event:setAttackType(nil) end, 'DamagingEvent.setAttackType: expected an attack type')
+        failsAt(function() event:setDamageType(nil) end, 'DamagingEvent.setDamageType: expected a damage type')
+        failsAt(function() event:setWeaponType(nil) end, 'DamagingEvent.setWeaponType: expected a weapon type')
+        event:setAmount(-5)
+        ran = true
+    end)
+    fire(EVENT_PLAYER_UNIT_DAMAGING)
+    eq(#PRINTED, 0); eq(ran, true)
+    eq(callCount('BlzSetEventDamage'), 1); expectCall('BlzSetEventDamage', -5)
+    eq(callCount('BlzSetEventAttackType') + callCount('BlzSetEventDamageType') + callCount('BlzSetEventWeaponType'), 0)
+    Damage.off(token)
+end)
+
+test('setters raise once the firing is over', function()
+    local damaging, damaged
+    local a = Damage.onDamaging(function(event) damaging = event end)
+    local b = Damage.onDamaged(function(event) damaged = event end)
+    fire(EVENT_PLAYER_UNIT_DAMAGING); fire(EVENT_PLAYER_UNIT_DAMAGED)
+    Damage.off(a); Damage.off(b)
+    resetCalls()
+    failsAt(function() damaging:setAmount(1) end, 'DamagingEvent.setAmount: the damage event is over')
+    failsAt(function() damaging:setAttackType(ATTACK_CHAOS) end, 'DamagingEvent.setAttackType: the damage event is over')
+    failsAt(function() damaging:setDamageType(DAMAGE_UNIVERSAL) end,
+        'DamagingEvent.setDamageType: the damage event is over')
+    failsAt(function() damaging:setWeaponType(WEAPON_METAL) end, 'DamagingEvent.setWeaponType: the damage event is over')
+    failsAt(function() damaged:setAmount(1) end, 'DamagedEvent.setAmount: the damage event is over')
+    eq(totalCalls(), 0)
+end)
+
+test('a nested hit gets its own event and the outer one stays live', function()
+    local outer, inner, depth = nil, nil, 0
+    local token = Damage.onDamaging(function(event)
+        depth = depth + 1
+        if depth == 1 then
+            outer = event
+            local saved = hit
+            fire(EVENT_PLAYER_UNIT_DAMAGING, {amount = 1})
+            hit = saved
+            event:setAmount(7)
+        else
+            inner = event
+        end
+    end)
+    local result = fire(EVENT_PLAYER_UNIT_DAMAGING)
+    eq(#PRINTED, 0)
+    eq(outer ~= inner, true); eq(inner.amount, 1); eq(outer.amount, 7); eq(result.amount, 7)
+    failsAt(function() inner:setAmount(2) end, 'DamagingEvent.setAmount: the damage event is over')
+    Damage.off(token)
+end)
