@@ -54,7 +54,11 @@ deno task test:integration
 
 Tests use real wrappers and stand-ins for unavailable Warcraft natives, checking arguments, return values and callback
 lifecycle. Integration checks both Lua and compiled Yue with LuaLS, requires intentional negative diagnostics at exact
-locations, builds normal/minified maps, excludes unused modules and executes a real bundle with native stand-ins.
+locations, builds normal/minified maps, excludes unused modules and executes a real bundle with native stand-ins. It
+also checks `src/wrappers` on its own against Moonwell's native declarations (native names, argument counts and types):
+every library file must be clean, and `tests/natives-negative.lua` must report exactly its planted mistakes. This
+replaces the manual direct LuaLS run of earlier releases. The consumer's positive run diagnoses the library's copies in
+`.moonwell/lua/` too (planted checks, 2026-09-30); the separate check proves detection and does not depend on that view.
 
 The line-local LuaLS suppressions on native calls that pass a null boolexpr filter document a mismatch in Moonwell's
 generated JASS signatures; each carries the same comment. Do not suppress diagnostics broadly. fromHandle is

@@ -54,7 +54,9 @@ cleanup or a w3ts compatibility layer without a new design.
 ## Verification
 
 Run every command in CONTRIBUTING before committing. `deno task test` covers Warcraft boundary behavior with native
-doubles; `check:lua` uses actual Lua 5.3.6 syntax; `test:integration` uses a fresh real Moonwell consumer and LuaLS.
+doubles; `check:lua` uses actual Lua 5.3.6 syntax; `test:integration` uses a fresh real Moonwell consumer and LuaLS, and
+checks `src/wrappers` against Moonwell's native declarations with planted mistakes in `tests/natives-negative.lua` (no
+manual LuaLS run is needed). LuaLS paths must not contain `--`: 3.19.1 mangles them, so keep its work in `.test-work/`.
 Test outputs remain in ignored `.test-work/`; downloaded verification tools remain in ignored `.tools/`.
 
 v0.1.0: the maintainer passed the in-game gate on 2026-09-28: normal gameplay/cleanup, intentional callback-error

@@ -1,5 +1,5 @@
 import { join, resolve } from "@std/path";
-import { diagnose, root, run, yue, yueOverride } from "./run.ts";
+import { diagnose, expectMarked, root, run, yue, yueOverride } from "./run.ts";
 
 const repo = resolve(Deno.env.get("MOONWELL_REPO") ?? "../moonwell");
 const cli = join(repo, "cli/src/main.ts");
@@ -11,6 +11,13 @@ console.log(`Consumer: ${consumer}`);
 async function moonwell(args: string[], cwd = consumer) {
   const result = await run(Deno.execPath(), ["run", "-A", cli, ...args], cwd);
   console.log(result.output.trim());
+}
+async function copyTree(from: string, to: string) {
+  await Deno.mkdir(to, { recursive: true });
+  for await (const entry of Deno.readDir(from)) {
+    if (entry.isDirectory) await copyTree(join(from, entry.name), join(to, entry.name));
+    else if (entry.isFile) await Deno.copyFile(join(from, entry.name), join(to, entry.name));
+  }
 }
 async function compileEditor() {
   await run(yue, [
@@ -44,22 +51,37 @@ if (Object.values(positive).some((entries) => entries.length)) {
 console.log("LuaLS: positive Lua and compiled Yue fixtures clean");
 await Deno.copyFile("tests/editor-negative.lua", join(consumer, "lua/negative.lua"));
 const negative = await diagnose(consumer, "negative");
-const expected = (await Deno.readTextFile("tests/editor-negative.lua")).split("\n")
-  .flatMap((line, index) => {
-    const code = line.match(/-- EXPECT ([\w-]+)/)?.[1];
-    return code ? [`${index}:${code}`] : [];
-  }).sort();
-const actual = Object.entries(negative).flatMap(([file, diagnostics]) =>
-  diagnostics.map((d) => {
-    if (!file.endsWith("/negative.lua")) throw new Error(`Unexpected diagnostic in ${file}: ${d.message}`);
-    return `${d.range.start.line}:${d.code}`;
-  })
-).sort();
-if (JSON.stringify(expected) !== JSON.stringify(actual)) {
-  throw new Error(`Editor negative fixture: expected ${expected}; got ${actual}\n${JSON.stringify(negative)}`);
-}
-console.log(`LuaLS: ${actual.length} intentional type errors detected at the expected lines`);
+const intended = await expectMarked("tests/editor-negative.lua", negative, "negative.lua", "Editor negative fixture");
+console.log(`LuaLS: ${intended} intentional type errors detected at the expected lines`);
 await Deno.remove(join(consumer, "lua/negative.lua"));
+
+// The library's own files against Moonwell's native declarations: native names, argument counts and argument types.
+// The consumer runs above never diagnose library files, and the planted fixture proves this check reports each kind.
+const source = join(work, "source");
+await copyTree("src/wrappers", join(source, "wrappers"));
+await Deno.mkdir(join(source, "types"));
+for (const name of ["natives.d.lua", "moonwell.d.lua"]) {
+  await Deno.copyFile(join(consumer, ".moonwell/types", name), join(source, "types", name));
+}
+await Deno.copyFile("tests/natives-negative.lua", join(source, "natives-negative.lua"));
+await Deno.writeTextFile(
+  join(source, ".luarc.json"),
+  JSON.stringify({
+    "runtime.version": "Lua 5.3",
+    "runtime.path": ["?.lua", "?/init.lua"],
+    "runtime.builtin": { io: "disable", debug: "disable", package: "disable" },
+    "workspace.library": ["types"],
+    "workspace.useGitIgnore": false,
+    "workspace.checkThirdParty": false,
+  }),
+);
+const planted = await expectMarked(
+  "tests/natives-negative.lua",
+  await diagnose(source, "natives"),
+  "natives-negative.lua",
+  "Native-call check",
+);
+console.log(`LuaLS: src/wrappers is clean against Moonwell's natives; ${planted} planted mistakes detected`);
 
 // Use a Unit-only entry to exercise reachability without an umbrella import.
 await Deno.writeTextFile(

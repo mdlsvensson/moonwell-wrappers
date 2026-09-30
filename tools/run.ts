@@ -47,3 +47,30 @@ export async function diagnose(project: string, name: string): Promise<Record<st
     throw new Error(`LuaLS did not write a valid report (exit ${result.code}): ${result.output}`);
   }
 }
+
+/**
+ * Compares a LuaLS report with the `-- EXPECT <code>` markers of a fixture reported as `reportedName`. A diagnostic in
+ * any other file fails, so the rest of the checked project must be clean. Returns the number of expected diagnostics.
+ */
+export async function expectMarked(
+  fixture: string,
+  report: Record<string, Diagnostic[]>,
+  reportedName: string,
+  label: string,
+): Promise<number> {
+  const expected = (await Deno.readTextFile(fixture)).split("\n")
+    .flatMap((line, index) => {
+      const code = line.match(/-- EXPECT ([\w-]+)/)?.[1];
+      return code ? [`${index}:${code}`] : [];
+    }).sort();
+  const actual = Object.entries(report).flatMap(([file, diagnostics]) =>
+    diagnostics.map((d) => {
+      if (!file.endsWith(`/${reportedName}`)) throw new Error(`Unexpected diagnostic in ${file}: ${d.message}`);
+      return `${d.range.start.line}:${d.code}`;
+    })
+  ).sort();
+  if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+    throw new Error(`${label}: expected ${expected}; got ${actual}\n${JSON.stringify(report)}`);
+  }
+  return actual.length;
+}
