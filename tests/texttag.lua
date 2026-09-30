@@ -109,3 +109,10 @@ test('float does nothing without a free text tag and rejects bad options first',
     fails(function() TextTag.float('x', 0, 0, {player = {}}) end, 'TextTag.float: expected Player wrapper')
     eq(callCount('CreateTextTag'), 1)
 end)
+
+test('option errors point at the caller', function()
+    failsAt(function() TextTag.float('x', 0, 0, {size = 'big'}) end, "TextTag.float: option 'size' expected a number")
+    failsAt(function() TextTag.float('x', 0, 0, {bogus = 1}) end, "TextTag.float: unknown option 'bogus'")
+    failsAt(function() TextTag.float('x', 0, 0, {color = {1}}) end, "option 'color' expected {r, g, b, a?} integers")
+    failsAt(function() TextTag.float('x', 0, 0, {player = {}}) end, 'TextTag.float: expected Player wrapper')
+end)

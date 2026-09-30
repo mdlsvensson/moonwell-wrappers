@@ -41,3 +41,8 @@ test('invalid options fail with the operation name before any native', function(
     fails(function() Options.read({player = {}}, fields, 'Test.op') end, 'Test.op: expected Player wrapper')
     eq(totalCalls(), 0)
 end)
+
+test('several errors report the first in sorted order', function()
+    fails(function() Options.read({zeta = 1, alpha = 2}, fields, 'Test.op') end, "unknown option 'alpha'")
+    fails(function() Options.read({size = 'a', name = 1}, fields, 'Test.op') end, "option 'name' expected a string")
+end)

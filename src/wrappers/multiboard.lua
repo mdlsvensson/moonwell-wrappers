@@ -27,7 +27,7 @@ local cellFields = {
 ---@param operation string
 ---@return table<string, any>
 local function cellOptions(options, operation)
-    local o = Options.read(options, cellFields, operation)
+    local o = Options.read(options, cellFields, operation, 1)
     if o.value == nil and o.color == nil and o.icon == nil and o.showValue == nil and o.showIcon == nil
         and o.width == nil then
         error('[wrappers] ' .. operation .. ': expected at least one option', 3)

@@ -22,48 +22,74 @@ local expected = {
     nonnegative = 'a finite non-negative number',
 }
 
----Level 4 blames the caller of the public function that called Options.read.
 ---@param operation string
 ---@param message string
-local function fail(operation, message) error('[wrappers] ' .. operation .. ': ' .. message, 4) end
+---@param level integer Counted from fail.
+local function fail(operation, message, level) error('[wrappers] ' .. operation .. ': ' .. message, level) end
 
 ---@param value unknown
 ---@param name string
 ---@param operation string
+---@param level integer The level that points at the caller from Options.read; this frame adds one.
 ---@return integer[]
-local function color(value, name, operation)
-    if type(value) ~= 'table' or (#value ~= 3 and #value ~= 4) then
-        fail(operation, "option '" .. name .. "' expected {r, g, b, a?} integers")
-    end
+local function color(value, name, operation, level)
+    local message = "option '" .. name .. "' expected {r, g, b, a?} integers"
+    if type(value) ~= 'table' or (#value ~= 3 and #value ~= 4) then fail(operation, message, level + 1) end
     for index = 1, #value do
-        if not isInteger(value[index]) then fail(operation, "option '" .. name .. "' expected {r, g, b, a?} integers") end
+        if not isInteger(value[index]) then fail(operation, message, level + 1) end
     end
     return {value[1], value[2], value[3], value[4] or 255}
 end
 
+---Field names in sorted order, once per field table, so every machine reports the same first error.
+local orders = setmetatable({}, {__mode = 'k'})
+---@param fields MoonwellWrappers.OptionFields
+---@return string[]
+local function namesOf(fields)
+    local names = orders[fields]
+    if names == nil then
+        names = {}
+        for name in pairs(fields) do names[#names + 1] = name end
+        table.sort(names)
+        orders[fields] = names
+    end
+    return names
+end
+
 ---Validates an options table and returns a fresh table with every declared field, defaults filled in. Never modifies
----`options`. Colors come back as fresh {r, g, b, a}; Player options come back as raw player handles.
+---`options`. Colors come back as fresh {r, g, b, a}; Player options come back as raw player handles. Errors point at
+---the caller of the public function (plus `depth` for helper frames in between), and several errors report the first
+---in sorted order.
 ---@param options unknown
 ---@param fields MoonwellWrappers.OptionFields
 ---@param operation string
+---@param depth integer?
 ---@return table<string, any>
-function Options.read(options, fields, operation)
-    if options ~= nil and type(options) ~= 'table' then fail(operation, 'expected an options table') end
+function Options.read(options, fields, operation, depth)
+    depth = depth or 0
+    local level = 4 + depth
+    if options ~= nil and type(options) ~= 'table' then fail(operation, 'expected an options table', level) end
     local given = options or {}
+    local unknown = {}
     for key in pairs(given) do
-        if fields[key] == nil then fail(operation, "unknown option '" .. tostring(key) .. "'") end
+        if fields[key] == nil then unknown[#unknown + 1] = tostring(key) end
+    end
+    if #unknown > 0 then
+        table.sort(unknown)
+        fail(operation, "unknown option '" .. unknown[1] .. "'", level)
     end
     local result = {}
-    for name, field in pairs(fields) do
+    for _, name in ipairs(namesOf(fields)) do
+        local field = fields[name]
         local kind, value = field[1], given[name]
         if value == nil then value = field[2] end
         if value ~= nil then
             if kind == 'color' then
-                value = color(value, name, operation)
+                value = color(value, name, operation, level)
             elseif kind == 'Player' then
-                value = Handle.unwrap(value, 'Player', operation)
+                value = Handle.unwrap(value, 'Player', operation, depth + 1)
             elseif not checks[kind](value) then
-                fail(operation, "option '" .. name .. "' expected " .. expected[kind])
+                fail(operation, "option '" .. name .. "' expected " .. expected[kind], level)
             end
         end
         result[name] = value
