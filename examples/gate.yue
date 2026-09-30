@@ -4,6 +4,7 @@
 -- Set presentation = true for a separate run of the v0.3.0 presentation gate only.
 -- Set ui = true for a separate run of the v0.4.0 classic UI gate only.
 -- Set frames = true for a separate run of the v0.5.0 frames gate only; it loads war3mapImported\wrappers-gate.toc.
+-- Set port = true for a separate run of the v0.7.0 port prerequisites gate only (damage, pathing, sync).
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -30,11 +31,14 @@ import "wrappers.quest" as Quest
 import "wrappers.defeatcondition" as DefeatCondition
 import "wrappers.timerdialog" as TimerDialog
 import "wrappers.frame" as Frame
+import "wrappers.damage" as Damage
+import "wrappers.sync" as Sync
 
 probes = false
 presentation = false
 ui = false
 frames = false
+port = false
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -540,13 +544,96 @@ uiGate = (owner) ->
   dialog\show owner
   print "Wrapper dialog shown: press K, click Plain, Rebuild, After clear, then Destroy dialog"
 
+-- v0.7.0 port prerequisites. Run with port = true: one step per second. CONTRIBUTING step 13 lists every message.
+portGate = (owner) ->
+  hostile = Player.fromIndex 12
+  striker = Unit.create owner, $FourCC("hfoo"), -200, 0, 0
+  dummy = Unit.create hostile, $FourCC("hfoo"), 0, 0, 180
+  striker\pause true
+  dummy\pause true
+  dummy\setMaxLife 5000
+  dummy\setLife 5000
+  print "Wrapper collision size", striker\getCollisionSize!
+  for row = -4, 4
+    Destructable.create $FourCC("LTlt"), 448, row * 128, 270, 1, 0
+  step = 0
+  nestedDone = false
+  storedEvent = nil
+  damaging = Damage.onDamaging (event) ->
+    if event.target == dummy
+      if step == 2
+        before = event.amount
+        event\setAmount before * 2
+        source = event.source
+        sourceName = source and source\getName! or "none"
+        print "Wrapper damaging", sourceName, event.target\getName!, event.isAttack, before, event.amount
+      elseif step == 3
+        event\setAttackType ATTACK_TYPE_MAGIC
+      elseif step == 5 and not nestedDone
+        nestedDone = true
+        storedEvent = event
+        striker\damageTarget dummy, 10, false, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS
+        event\setAmount 0
+  damaged = Damage.onDamaged (event) ->
+    if event.target == dummy
+      BlzSetEventAttackType ATTACK_TYPE_MAGIC if step == 4
+      print "Wrapper damaged step", step, "amount", event.amount
+  strike = ->
+    lifeBefore = dummy\getLife!
+    striker\damageTarget dummy, 100, true, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS
+    print "Wrapper life loss step", step, lifeBefore - dummy\getLife!
+  walker = nil
+  longest = string.rep "s", 255
+  Sync.on "wgate", (player, data) ->
+    print "Wrapper sync received from", player\getName!, #data, data == longest
+  Sync.on string.rep("p", 16), (_, data) -> print "Wrapper sync prefix 16 arrived", data
+  Sync.on string.rep("q", 17), (_, data) -> print "Wrapper sync prefix 17 arrived whole", data
+  Sync.on string.rep("q", 16), (_, data) -> print "Wrapper sync prefix 17 arrived cut to 16", data
+  Sync.on string.rep("r", 32), (_, data) -> print "Wrapper sync prefix 32 arrived whole", data
+  Sync.on string.rep("r", 16), (_, data) -> print "Wrapper sync prefix 32 arrived cut to 16", data
+  steps = Timer.create!
+  steps\start 1, true, (self) ->
+    step += 1
+    if step <= 5
+      strike!
+    elseif step == 6
+      if storedEvent
+        staleOk, staleMessage = pcall storedEvent.setAmount, storedEvent, 1
+        print "Wrapper stale damage event", staleOk, staleMessage
+      Damage.off damaging
+      Damage.off damaged
+    elseif step == 7
+      strike!
+      print "Wrapper damage listeners removed"
+    elseif step == 8
+      walker = Unit.create owner, $FourCC("hfoo"), 250, 0, 0
+      walker\setPathing false
+      walker\issuePointOrder "move", 650, 0
+      print "Wrapper pathing walker ordered through the trees"
+    elseif step == 12
+      print "Wrapper pathing walker x", walker and walker\getX! or "none"
+    elseif step == 13
+      if owner\isLocal!
+        print "Wrapper sync sent", Sync.send "wgate", longest
+        rejectedOk, rejectedMessage = pcall Sync.send, "wgate", longest .. "s"
+        print "Wrapper sync 256 bytes rejected", not rejectedOk, rejectedMessage
+        Sync.send string.rep("p", 16), "sixteen"
+        Sync.send string.rep("q", 17), "seventeen"
+        Sync.send string.rep("r", 32), "thirty-two"
+    elseif step == 15
+      self\destroy!
+      print "Wrapper port gate done"
+  print "Wrapper port gate started: watch steps 1 to 15, one per second"
+
 -- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
 mw.on_main ->
   start = Timer.create!
   start\start 0, false, (self) ->
     self\destroy!
     owner = Player.fromIndex 0
-    if frames
+    if port
+      portGate owner
+    elseif frames
       framesGate!
     elseif ui
       uiGate owner

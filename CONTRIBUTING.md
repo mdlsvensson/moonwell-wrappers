@@ -192,6 +192,29 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
     occurs. Then stop and apply it.
+13. Port prerequisites (v0.7.0): in the gate map, `deno task gate port` (normal build only). Only the port gate runs; a
+    footman stands at the centre with another one to its left, and a line of trees runs north–south to their right.
+    Messages, one step per second:
+    - at start: `Wrapper collision size <n>` (record it) and `Wrapper port gate started`;
+    - step 1: `Wrapper damaged step 1 amount <X>` and `Wrapper life loss step 1 <X>`: the baseline, 100 reduced by
+      armor;
+    - step 2: `Wrapper damaging Footman Footman true 100.0 200.0`, then `Wrapper damaged step 2 amount <Y>` and
+      `Wrapper life loss step 2 <Y>`, with Y about twice X;
+    - step 3: the attack type changed to magic before armor: `Wrapper damaged step 3 amount <Z>` with Z different from X
+      (record it);
+    - step 4: the attack type changed with the raw native after armor: `Wrapper life loss step 4 <X>`, unchanged, which
+      confirms that type changes after armor do nothing;
+    - step 5: a nested 10-damage hit inside the outer hit's DAMAGING listener, then `setAmount 0` on the outer event.
+      Record every `Wrapper damaged step 5` line and the life loss: if the outer line reads amount 0 and the life loss
+      is only the nested hit's, the outer setter still works after a nested hit;
+    - step 6: `Wrapper stale damage event false <…>DamagingEvent.setAmount: the damage event is over`;
+    - step 7: `Wrapper life loss step 7 <X>` with no `Wrapper damaged` line, then `Wrapper damage listeners removed`;
+    - step 8: a third footman appears left of the trees and walks straight through them; at step 12
+      `Wrapper pathing walker x <n>` with n over 448;
+    - step 13: `Wrapper sync sent true`, `Wrapper sync 256 bytes rejected true <…>over the 255-byte limit`, then shortly
+      `Wrapper sync received from <your name> 255 true` and the prefix lines: record which of `prefix 16 arrived`,
+      `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
+    - step 15: `Wrapper port gate done`, and no `[wrappers] ... failed` line at any point.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor
