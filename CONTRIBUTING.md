@@ -230,6 +230,9 @@ found by name; after clicking a plain button Enter did not open the chat box, af
 its minified run (step 10) passed the same day, as the maintainer reported. Steps 2–8 were not re-run (their code is
 unchanged since v0.4.0). Step 11 is deferred.
 
+v0.5.1: Not re-run (maintainer's decision, 2026-09-30). The release changes LuaLS annotations (`Effect.attach` and
+`Effect.flashOn` take a Unit), a comment, fixtures and documentation; runtime code is that of v0.5.0.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

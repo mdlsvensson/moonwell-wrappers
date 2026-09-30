@@ -4,8 +4,9 @@ Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Dest
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
 Quest, DefeatCondition, TimerDialog and Frame wrappers, editor completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.5.0` (2026-09-29): frames (the `BlzFrame` API with an owned frame tree and event callbacks), on top of
-v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed, normal and minified, after a probe of the
+**Status:** `v0.5.1` (2026-09-30): the editor flags an Item or a Destructable passed to `Effect.attach` and
+`Effect.flashOn`. It builds on v0.5.0's frames (the `BlzFrame` API with an owned frame tree and event callbacks), v0.4's
+classic UI and v0.3's presentation wrappers. v0.5.0's in-game gate passed, normal and minified, after a probe of the
 frame behaviour it relies on. Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
@@ -26,13 +27,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.5.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.5.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.5.0"
+    tag = "v0.5.1"
     dir = "src"
   }
 }

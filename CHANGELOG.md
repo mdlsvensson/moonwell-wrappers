@@ -1,9 +1,20 @@
 # Changelog
 
-## 0.5.1 (unreleased)
+## 0.5.1 (2026-09-30)
 
 - `Effect.attach` and `Effect.flashOn` take a Unit in the editor, so LuaLS flags an Item or a Destructable: Warcraft
   drew no effect attached to them in the v0.3.0 gate. The runtime still accepts any widget, for custom models.
+- `unit:isAlive()`'s comment: Moonwell 0.5.1 knows `UnitAlive`; the method still avoids it, so the library keeps working
+  with Moonwell 0.5.0.
+
+### Release gate
+
+Automated checks passed 2026-09-30 on Windows: 167 behavior tests in 29 suites with YueScript 0.34.2; Lua 5.3.6 syntax
+checks (60 files); Moonwell normal/minified builds, unused-module exclusion, Trigger-, TextTag-, Multiboard-, Dialog-
+and Frame-only bundles and bundled execution; LuaLS 3.19.1 positive fixtures (an effect now attaches to a unit) and 17
+expected negative diagnostics, including an Item passed to `Effect.attach` and a Destructable passed to
+`Effect.flashOn`; a direct LuaLS check of `src/wrappers` with the native declarations, no problems; the gate example
+builds with clean editor diagnostics. The in-game gate was not re-run: only annotations and comments changed.
 
 ## 0.5.0 (2026-09-29)
 
