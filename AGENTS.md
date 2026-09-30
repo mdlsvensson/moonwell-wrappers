@@ -3,7 +3,7 @@
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
 remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1`,
-`v0.4.0`, `v0.5.0` and `v0.5.1` on the commits that record their gates. Tags must never be moved.
+`v0.4.0`, `v0.5.0`, `v0.5.1` and `v0.6.0` on the commits that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -88,4 +88,14 @@ gate loads `war3mapImported\wrappers-gate.toc` from the gate map's assets (the p
 TOC; results in `PROBE-FRAME-RESULTS.md`). The probe and the frames gate passed on 2026-09-29, normal and minified
 (CONTRIBUTING records it). Tag consumption passed the same day: a fresh map locked `v0.5.0` to `b91ffd4`. v0.5.1
 (2026-09-30): `Effect.attach` and `Effect.flashOn` take a Unit in the editor; runtime unchanged, so the in-game gate was
-not re-run. Tag consumption passed the same day with Moonwell 0.5.1: a fresh map locked `v0.5.1` to `af9961e`.
+not re-run. Tag consumption passed the same day with Moonwell 0.5.1: a fresh map locked `v0.5.1` to `af9961e`. v0.6.0
+(2026-09-30): the refactor after the review (Moonwell's `docs/superpowers/research/2026-09-30-wrappers-review.md`, spec
+and plan `2026-09-30-moonwell-wrappers-refactor`).
+
+- Errors point at the caller; `tests/blame.lua` sweeps every class.
+- A one-lookup `require`, and one-table enumeration.
+- `isAlive` through `UnitAlive`, and `exists()`. A removed unit reads `false` only from the next frame.
+- Sorted options errors, and the per-module README API reference.
+
+The in-game gate passed for `core`, `probes`, `presentation`, `ui` and `perf`. Frames and the minified runs were not
+re-run. The performance probe is `../wrappers-gate/src/probe_perf.yue` (`deno task gate perf`).

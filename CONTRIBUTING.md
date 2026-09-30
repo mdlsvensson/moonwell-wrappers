@@ -248,6 +248,21 @@ unchanged since v0.4.0). Step 11 is deferred.
 v0.5.1: Not re-run (maintainer's decision, 2026-09-30). The release changes LuaLS annotations (`Effect.attach` and
 `Effect.flashOn` take a Unit), a comment, fixtures and documentation; runtime code is that of v0.5.0.
 
+v0.6.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, normal builds from the gate map
+(`deno task gate core`, `probes`, `presentation`, `ui`, `perf`). Steps 2–8 passed as described. The probes run was
+repeated once after adding the delayed `exists()` check.
+
+- `Wrapper exists after raw removal true false false`: the unit still reads `true` in that instant.
+- `Wrapper unit exists after 0 s false` and `after 1 s false`.
+- `Wrapper killed unit alive, exists false true`.
+- `Wrapper error location war3map.lua:4055: … Unit is disposed`: bundle line 4055 is the gate's own `pcall` line in
+  `gate_probes`.
+
+Step 9 (frames) and step 10 (minified) were not re-run, by the maintainer's decision. Frames changed only by the
+parentheses on raising returns and the shared `require`, which the unit tests and the sweep cover, and minified builds
+run the same code. Performance against v0.5.1 is recorded in the CHANGELOG and in
+`../wrappers-gate/PROBE-PERF-RESULTS.md`.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

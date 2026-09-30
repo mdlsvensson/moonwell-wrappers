@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-09-30)
 
 - Errors point at the line that called the wrapper. Before, a wrong or disposed argument and a wrong receiver pointed at
   a line inside the library, and `getHandle`, `isDisposed` and factories lost the position entirely (a tail call).
@@ -14,6 +14,40 @@
 - When several options are wrong, the first in sorted order is reported, the same on every machine.
 - README: an API reference section per module, the callback rule in one place, and a conventions table (colours, angles,
   visibility, time units).
+
+### Release gate
+
+Automated checks passed 2026-09-30 on Windows:
+
+- 30 suites with YueScript 0.34.2, including the new `blame` sweep, which found 380 misplaced errors before the fix;
+- Lua 5.3.6 syntax checks (62 files);
+- Moonwell normal and minified builds, the one-module bundles and bundled execution;
+- LuaLS 3.19.1 fixtures (17 expected negative diagnostics);
+- the native-call check of `src/wrappers` against Moonwell's declarations, now including `UnitAlive`;
+- the gate example builds with clean editor diagnostics.
+
+In-game gate, 2026-09-30, Warcraft III 3.0.0.24268, normal builds (the minified runs and the frames run were not re-run,
+by the maintainer's decision):
+
+- `core` passed: the chat condition that removes itself; `collected=true stale=true identity=true`.
+- `probes` passed. The timer, trigger and condition errors printed and play went on. The new wrong-argument error
+  printed `war3map.lua:<line>` at the gate's own `pcall` line in the bundle, not a wrappers line. `exists()`: a unit,
+  item and destructable removed with the raw natives read `true false false`, and the unit read `false` a frame later
+  and after 1 s. A killed unit read `isAlive false`, `exists true`.
+- `presentation` and `ui` passed. Every options table (text tags, sounds, splats, dialog buttons, multiboard cells)
+  validated.
+- Performance (`deno task gate perf`, against v0.5.1 the same day):
+
+  | Case                                  | v0.5.1           | v0.6.0           |
+  | ------------------------------------- | ---------------- | ---------------- |
+  | Wrapped `getX`, `setX`, `setPosition` | 440, 580, 590 ns | 390, 530, 550 ns |
+  | The fixed wrapper cost per method     | ~120 ns          | ~70 ns           |
+  | Wrapped enumeration of 20 units       | 29.2 µs          | 27.0 µs          |
+  | `Options.read`, three fields          | 950 ns           | 1,090 ns         |
+  | The 100-missile tick                  | 1.690 ms         | 1.680 ms         |
+
+  `Options.read` got slower (sorted checks). It runs only on creation paths. The missile tick is unchanged within noise:
+  natives dominate it.
 
 ## 0.5.1 (2026-09-30)
 
