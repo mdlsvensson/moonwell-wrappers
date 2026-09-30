@@ -106,4 +106,5 @@ v0.7.0 (2026-09-30): the port prerequisites (Moonwell spec and plan `2026-09-30-
 `wrappers.damage` and `wrappers.sync` share `internal/listeners.lua`: one trigger per key, disabled while empty and
 never destroyed. Damage events are live only while their listeners run (a weak set), and DAMAGED events have no type
 setters. `Sync.send` checks 255 bytes. The gate map's `port` run (`deno task gate port`, CONTRIBUTING step 13) passed;
-it found that `isAttack` is false for `damageTarget` and that `setPathing(false)` does not make orders cross trees.
+it found that `isAttack` is false for `damageTarget` and that `setPathing(false)` does not make orders cross trees. Tag
+consumption passed the same day: a fresh map locked `v0.7.0` to `e9c2880`.
