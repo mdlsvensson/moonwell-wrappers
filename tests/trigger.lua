@@ -251,3 +251,35 @@ test('token and callback errors point at the caller', function()
     failsAt(function() trigger:addAction(nil) end, 'Trigger.addAction: expected a callback function')
     failsAt(function() trigger:registerTimerEvent(-1, false) end, 'expected a finite non-negative number')
 end)
+
+test('player state, alliance, game state and timer expiry registrations forward exact arguments', function()
+    for _, name in ipairs({'TriggerRegisterPlayerStateEvent', 'TriggerRegisterPlayerAllianceChange',
+        'TriggerRegisterGameStateEvent', 'TriggerRegisterTimerExpireEvent', 'PauseTimer', 'DestroyTimer'}) do
+        native(name, function() end)
+    end
+    local Timer = require('wrappers.timer')
+    local t, p, timer = Trigger.create(), Player.fromHandle({}), Timer.fromHandle({})
+    local state, op, alliance = {}, {}, {}
+    t:registerPlayerStateEvent(p, state, op, 1000)
+    expectCall('TriggerRegisterPlayerStateEvent', t.handle, p.handle, state, op, 1000)
+    t:registerPlayerAllianceChange(p, alliance)
+    expectCall('TriggerRegisterPlayerAllianceChange', t.handle, p.handle, alliance)
+    t:registerGameStateEvent(state, op, 12.5)
+    expectCall('TriggerRegisterGameStateEvent', t.handle, state, op, 12.5)
+    t:registerTimerExpireEvent(timer)
+    expectCall('TriggerRegisterTimerExpireEvent', t.handle, timer.handle)
+    failsAt(function() t:registerPlayerStateEvent(timer, state, op, 1) end,
+        'Trigger.registerPlayerStateEvent: expected Player wrapper')
+    failsAt(function() t:registerPlayerAllianceChange(timer, alliance) end,
+        'Trigger.registerPlayerAllianceChange: expected Player wrapper')
+    failsAt(function() t:registerTimerExpireEvent(p) end, 'Trigger.registerTimerExpireEvent: expected Timer wrapper')
+    local raw = timer.handle
+    timer:destroy()
+    failsAt(function() t:registerTimerExpireEvent(timer) end, 'Trigger.registerTimerExpireEvent: Timer is disposed')
+    eq(callCount('TriggerRegisterPlayerStateEvent'), 1); eq(callCount('TriggerRegisterPlayerAllianceChange'), 1)
+    eq(callCount('TriggerRegisterTimerExpireEvent'), 1); expectCall('DestroyTimer', raw)
+    t:destroy()
+    checkDisposed(t, {'registerPlayerStateEvent', 'registerPlayerAllianceChange', 'registerGameStateEvent',
+        'registerTimerExpireEvent'})
+    eq(callCount('TriggerRegisterGameStateEvent'), 1)
+end)

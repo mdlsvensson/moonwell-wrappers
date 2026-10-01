@@ -180,6 +180,40 @@ end
 function Trigger:registerGameEvent(event)
     TriggerRegisterGameEvent(registry.require(self, 'Trigger.registerGameEvent'), event)
 end
+---Fires inside SetPlayerState, at every change to a value that satisfies the comparison (measured on 3.0.0.24268).
+---@param player MoonwellWrappers.Player
+---@param state playerstate
+---@param op limitop
+---@param value number
+function Trigger:registerPlayerStateEvent(player, state, op, value)
+    local raw = registry.require(self, 'Trigger.registerPlayerStateEvent')
+    local rawPlayer = Handle.unwrap(player, 'Player', 'Trigger.registerPlayerStateEvent')
+    TriggerRegisterPlayerStateEvent(raw, rawPlayer, state, op, value)
+end
+---Fires inside SetPlayerAlliance when this player's setting of this kind toward any player really changes. The event
+---names no player: GetTriggerPlayer() is nil (measured on 3.0.0.24268).
+---@param player MoonwellWrappers.Player
+---@param alliance alliancetype
+function Trigger:registerPlayerAllianceChange(player, alliance)
+    local raw = registry.require(self, 'Trigger.registerPlayerAllianceChange')
+    local rawPlayer = Handle.unwrap(player, 'Player', 'Trigger.registerPlayerAllianceChange')
+    TriggerRegisterPlayerAllianceChange(raw, rawPlayer, alliance)
+end
+---Fires when the comparison becomes true, by a set or by the game's clock (measured for GAME_STATE_TIME_OF_DAY on
+---3.0.0.24268).
+---@param state gamestate
+---@param op limitop
+---@param value number
+function Trigger:registerGameStateEvent(state, op, value)
+    TriggerRegisterGameStateEvent(registry.require(self, 'Trigger.registerGameStateEvent'), state, op, value)
+end
+---Fires at every expiry of the timer, before the timer's own callback (measured on 3.0.0.24268). The trigger does not
+---own the timer.
+---@param timer MoonwellWrappers.Timer
+function Trigger:registerTimerExpireEvent(timer)
+    local raw = registry.require(self, 'Trigger.registerTimerExpireEvent')
+    TriggerRegisterTimerExpireEvent(raw, Handle.unwrap(timer, 'Timer', 'Trigger.registerTimerExpireEvent'))
+end
 
 ---@param callback fun(trigger: MoonwellWrappers.Trigger): ...
 ---@return MoonwellWrappers.TriggerAction
