@@ -229,15 +229,14 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
         `art: a missing art refused true [wrappers] Effect.create: expected a model path`;
       - `player state: gold 1000 and the event's player is the owner: true`, and the same line for 1001;
       - `alliance change: firings after the same value 0 and after two changes 2`;
-      - `event: the dying unit is the footman: true`, `event: picked up Claws of Attack +3 by the hero: true`,
-        `event: the dying destructable is the tree: true` and
-        `event: the entered region is the zone: true by the hero: true`;
+      - `event: the dying unit is the footman: true`, `event: picked up Claws of Attack +12 by the hero: true` and
+        `event: the dying destructable is the tree: true`;
       - `weather ids created: 21 <the ids>` and `weather ids refused: 0`. If an id is refused, take it out of the
         README's table before the release;
       - `weather: an unknown id refused true [wrappers] WeatherEffect.create: unknown weather effect id: 2054847098`;
       - `rain: created and its rect destroyed. Not enabled: no rain yet` and `gate started`;
-      - within a second: `game state: the time of day reached 12.00` and
-        `timer expiry: trigger for this timer true, then callback`.
+      - within a second: `event: the entered region is the zone: true by the hero: true`,
+        `game state: the time of day reached 12.00` and `timer expiry: trigger for this timer true, then callback`.
     - Rain, in the middle of the screen. It takes a second or two to start and to stop:
       - no rain until `rain 1: enabled for everyone NOW` (4 s), then rain;
       - after `rain 2: enabled for another player only NOW` (10 s) the rain stops;
@@ -330,6 +329,16 @@ reads false for `damageTarget` (the native's value), and the footman with pathin
 through it (`Wrapper pathing walker x 563.7461`). Collision size 31.0; step 3 gave 178.5714 (magic against heavy armor
 doubles); the nested hit's outer `setAmount 0` took effect; prefixes of 16, 17 and 32 characters arrived whole. Steps
 2–10 were not re-run: this release adds modules and two Unit methods and changes no existing code path.
+
+v0.8.0: run 2026-10-01 by the maintainer on Warcraft III Reforged 3.0.0.24268, `deno task gate additions` (step 14),
+normal build, one machine. Every line printed as described, read from the gate's file, with two corrections now written
+into step 14: the Claws of Attack read `+12`, and the region line arrives a moment after the start, not with the first
+lines. All 21 weather ids were created. The maintainer saw the rain start, stop, start and stop at the four lines, and
+the Thunder Clap. The input steps read: one down and one up for a tap; one down against 60 with repeats (59 repeated)
+for a held key; `meta 1` with Shift; one click `left at -109 133` with one release; 1041 mouse moves in step 5; and
+nothing after the listeners were removed. Steps 2–10 and 13 were not re-run: the release adds modules and functions, and
+its one change to existing code is a type check in front of four natives. Two probes came before the design
+(`../wrappers-gate/PROBE-EXTRAS-RESULTS.md`).
 
 ## First publication and tag gate (maintainer)
 

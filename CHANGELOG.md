@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 (2026-10-01)
 
 - New `wrappers.input`: `onKeyDown`, `onKeyUp`, `onMouseDown`, `onMouseUp` and `onMouseMove` listeners for one player,
   removable with `Input.off`. Key listeners run whatever modifier keys are held and get them as `meta`; `onKeyDown` runs
@@ -16,6 +16,49 @@
 - **Changed:** `Effect.create`, `Effect.attach`, `Effect.flash` and `Effect.flashOn` raise `expected a model path` for a
   model that is not a string; before, the value went to the game. Migration: pass a string, and check the result of
   `Effect.abilityArt` for nil first.
+
+### Release gate
+
+Automated checks passed 2026-10-01 on Windows:
+
+- 34 suites (218 tests) with YueScript 0.34.2, including the new `input` (7 tests) and `weathereffect` (5 tests) suites
+  and the sweep of every input function;
+- Lua 5.3.6 syntax checks (71 files);
+- Moonwell normal and minified builds, the one-module bundles (now also Input-only and WeatherEffect-only) and bundled
+  execution;
+- LuaLS 3.19.1 fixtures (27 expected negative diagnostics, among them a missing ability art passed to `Effect.flash` and
+  an unchecked `Unit.fromEvent()`);
+- the native-call check of `src/wrappers` against Moonwell's declarations;
+- the gate example builds with clean editor diagnostics;
+- 66 mutations of the new code, each caught by a test.
+
+Two probes came before the design, on 2026-10-01, Warcraft III 3.0.0.24268 (`../wrappers-gate/PROBE-EXTRAS-RESULTS.md`).
+They measured what the README now records: a held key repeats; the game matches modifier keys exactly; typing in chat
+fires no key event; mouse move fires 150 to 190 times a second; an unknown weather id gives a handle with id -1; art
+read from ability data draws the same effect as `AddSpellEffectById`; and when each of the four trigger events fires.
+
+In-game gate, 2026-10-01, Warcraft III 3.0.0.24268, the new `additions` run, normal build, one machine (the other runs
+were not re-run: the release's one change to existing code is a type check in front of four natives):
+
+- **Art:** Thunder Clap's caster art, Flame Strike's third special entry and Chain Lightning's lightning code (`CLPB`)
+  read as expected; Thunder Clap's missing missile art read nil, and `Effect.create` refused it with
+  `expected a model path`. A Thunder Clap made from the art's path played at the centre.
+- **Trigger events:** the player state event fired for gold 1000 and 1001 with `Player.fromEvent()` the owner; the
+  alliance event fired for two real changes and not for the same value; the time-of-day event fired at 12.00; the timer
+  expiry trigger ran before the timer's callback, with `Timer.fromEvent()` the timer.
+- **`fromEvent()`:** the dying footman, the picked-up item with its hero, the dying tree, and the entered region with
+  the entering hero were each the expected wrapper.
+- **Weather:** all 21 ids of the README's table were created, and an unknown id was refused. Rain fell only after
+  `enable(true)`, stopped after `enableFor` another player, fell again after `enableFor` the maintainer's player, and
+  stopped after `destroy()`; its rect had been destroyed right after creation.
+- **Input:** a tap of Q gave one down and one up; Q held for two seconds gave one down for the default listener and 60
+  for the `repeats` listener, 59 of them repeated; Shift with Q arrived with `meta` 1; a left click gave one down with
+  its world point and one up; two seconds of mouse movement gave 1041 move events; after `Input.off` on every listener,
+  a key press and a click counted nothing.
+- No `[wrappers] ... failed` line printed.
+
+Two machines are not part of this gate: the online checks before Moonwell 1.0 cover `wrappers.input` and
+`weather:enableFor`.
 
 ## 0.7.0 (2026-09-30)
 

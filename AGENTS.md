@@ -3,7 +3,8 @@
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
 `src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
 remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1`,
-`v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0` and `v0.7.0` on the commits that record their gates. Tags must never be moved.
+`v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0` and `v0.8.0` on the commits that record their gates. Tags must never be
+moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -125,4 +126,5 @@ v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
   `wrappers.event` module was rejected because it would bundle every widget class.
 - The gate map's `additions` run (`deno task gate additions`, CONTRIBUTING step 14) writes its lines to
   `CustomMapData\moonwell-wrappers-additions.pld`. `.test-work/dry_gate_additions.lua` runs the compiled gate on stub
-  natives; run it before handing a gate run to the maintainer.
+  natives; run it before handing a gate run to the maintainer. The run passed on 2026-10-01: all 21 weather ids of the
+  README were created, and a held key gave one down against 60 with repeats.

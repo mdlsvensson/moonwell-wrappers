@@ -5,10 +5,11 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.7.0` (2026-09-30): the prerequisites for the wc3-lib port. Damage events (`wrappers.damage`), checked
-sync messages (`wrappers.sync`), `unit:getCollisionSize()` and `unit:setPathing(flag)`. It builds on v0.6's refactor
-(errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames, v0.4's classic UI and v0.3's presentation
-wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks are deferred until before Moonwell 1.0.
+**Status:** `v0.8.0` (2026-10-01): keyboard and mouse listeners (`wrappers.input`), weather effects
+(`wrappers.weathereffect`), `Effect.abilityArt`, four more Trigger registrations and `fromEvent()`. It builds on v0.7's
+damage events and sync, v0.6's refactor (errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames,
+v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks
+are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -28,13 +29,13 @@ libraries {
 Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.7.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.8.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.7.0"
+    tag = "v0.8.0"
     dir = "src"
   }
 }
