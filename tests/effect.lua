@@ -85,3 +85,35 @@ test('flash creates and destroys at once without a wrapper', function()
     native('AddSpecialEffectTarget', function() return {} end)
     u:remove()
 end)
+
+test('abilityArt reads one entry of the art list, and nil for none', function()
+    local caster, art = {}, {'first.mdl', 'second.mdl'}
+    native('GetAbilityEffectById', function(_, _, index) return art[index + 1] or '' end)
+    eq(Effect.abilityArt(1095267427, caster), 'first.mdl'); expectCall('GetAbilityEffectById', 1095267427, caster, 0)
+    eq(Effect.abilityArt(1095267427, caster, 2), 'second.mdl')
+    expectCall('GetAbilityEffectById', 1095267427, caster, 1)
+    eq(Effect.abilityArt(1095267427, caster, 3), nil)
+    native('GetAbilityEffectById', function() return nil end)
+    eq(Effect.abilityArt(1095267427, caster), nil)
+    resetCalls()
+    for _, bad in ipairs({0, -1, 1.5, '1', 0/0}) do
+        failsAt(function() Effect.abilityArt(1095267427, caster, bad) end,
+            'Effect.abilityArt: expected a positive integer index')
+    end
+    eq(totalCalls(), 0)
+end)
+
+test('a model that is not a string fails at the caller, before any native', function()
+    local u = Unit.fromHandle({})
+    for _, bad in ipairs({false, 7, {}}) do
+        failsAt(function() Effect.create(bad, 0, 0) end, 'Effect.create: expected a model path')
+        failsAt(function() Effect.attach(bad, u, 'origin') end, 'Effect.attach: expected a model path')
+        failsAt(function() Effect.flash(bad, 0, 0) end, 'Effect.flash: expected a model path')
+        failsAt(function() Effect.flashOn(bad, u, 'origin') end, 'Effect.flashOn: expected a model path')
+    end
+    failsAt(function() Effect.create(nil, 0, 0) end, 'Effect.create: expected a model path')
+    failsAt(function() Effect.flash(Effect.abilityArt(1, {}), 0, 0) end, 'Effect.flash: expected a model path')
+    eq(callCount('AddSpecialEffect'), 0); eq(callCount('AddSpecialEffectTarget'), 0)
+    Effect.create('', 0, 0):destroy(); expectCall('AddSpecialEffect', '', 0, 0)
+    u:remove()
+end)

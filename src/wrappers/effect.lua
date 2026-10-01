@@ -6,15 +6,38 @@ local Effect = {}
 ---@type MoonwellWrappers.Registry<MoonwellWrappers.Effect, effect>
 local registry = Handle.new(Effect, 'Effect')
 
+---A model that is not a string, such as a missing Effect.abilityArt, fails at the caller instead of drawing nothing.
+---@param model unknown
+---@param operation string
+local function checkModel(model, operation)
+    if type(model) ~= 'string' then error('[wrappers] ' .. operation .. ': expected a model path', 3) end
+end
+
 ---@param raw effect?
 ---@return MoonwellWrappers.Effect?
 ---@overload fun(raw: nil): nil
 function Effect.fromHandle(raw) return registry.wrap(raw) end
+---The art an ability's data names for an effect type: a model path, or a lightning code for EFFECT_TYPE_LIGHTNING.
+---Returns nil when the ability has none. Past the last entry of a list the game reads the last entry.
+---@param abilityId integer
+---@param effectType effecttype
+---@param index integer? Which entry of a list, from 1. Default 1.
+---@return string?
+function Effect.abilityArt(abilityId, effectType, index)
+    if index == nil then index = 1 end
+    if type(index) ~= 'number' or index % 1 ~= 0 or index < 1 then
+        error('[wrappers] Effect.abilityArt: expected a positive integer index', 2)
+    end
+    local art = GetAbilityEffectById(abilityId, effectType, index - 1)
+    if art == '' then return nil end
+    return art
+end
 ---@param model string
 ---@param x number
 ---@param y number
 ---@return MoonwellWrappers.Effect
 function Effect.create(model, x, y)
+    checkModel(model, 'Effect.create')
     return (Handle.created(Effect.fromHandle(AddSpecialEffect(model, x, y)), 'Effect.create'))
 end
 ---Takes a Unit in the editor: Warcraft draws no effect attached to an item or a destructable (v0.3.0 gate). The
@@ -24,6 +47,7 @@ end
 ---@param attachmentPoint string
 ---@return MoonwellWrappers.Effect
 function Effect.attach(model, target, attachmentPoint)
+    checkModel(model, 'Effect.attach')
     local raw = Handle.unwrapWidget(target, 'Effect.attach')
     return (Handle.created(Effect.fromHandle(AddSpecialEffectTarget(model, raw, attachmentPoint)), 'Effect.attach'))
 end
@@ -32,6 +56,7 @@ end
 ---@param x number
 ---@param y number
 function Effect.flash(model, x, y)
+    checkModel(model, 'Effect.flash')
     DestroyEffect(Handle.created(AddSpecialEffect(model, x, y), 'Effect.flash'))
 end
 ---Attaches and destroys an effect at once, which plays its death animation. Returns nothing. Takes a Unit in the
@@ -40,6 +65,7 @@ end
 ---@param target MoonwellWrappers.Unit
 ---@param attachmentPoint string
 function Effect.flashOn(model, target, attachmentPoint)
+    checkModel(model, 'Effect.flashOn')
     local raw = Handle.unwrapWidget(target, 'Effect.flashOn')
     DestroyEffect(Handle.created(AddSpecialEffectTarget(model, raw, attachmentPoint), 'Effect.flashOn'))
 end
