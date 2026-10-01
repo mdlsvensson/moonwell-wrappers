@@ -13,6 +13,9 @@ local states = {}
 ---@return MoonwellWrappers.Timer?
 ---@overload fun(raw: nil): nil
 function Timer.fromHandle(raw) return registry.wrap(raw) end
+---The timer whose expiry is running (GetExpiredTimer), or nil outside one.
+---@return MoonwellWrappers.Timer?
+function Timer.fromEvent() return registry.wrap(GetExpiredTimer()) end
 ---@return MoonwellWrappers.Timer
 function Timer.create() return (Handle.created(Timer.fromHandle(CreateTimer()), 'Timer.create')) end
 ---@return timer

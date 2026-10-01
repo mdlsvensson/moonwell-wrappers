@@ -93,3 +93,12 @@ test('destroy invalidates callbacks before native reentry', function()
     eq(hits, 0); t:destroy(); eq(callCount('DestroyTimer'), 1)
     native('PauseTimer', function() end); native('DestroyTimer', function() end)
 end)
+
+test('fromEvent wraps the timer of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetExpiredTimer', function() return raw end)
+    local found = Timer.fromEvent()
+    eq(found, Timer.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetExpiredTimer'), 1)
+    native('GetExpiredTimer', function() return nil end)
+    eq(Timer.fromEvent(), nil)
+end)

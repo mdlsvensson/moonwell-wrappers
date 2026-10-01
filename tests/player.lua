@@ -52,3 +52,12 @@ test('isLocal compares with the local player without a local factory', function(
     eq(p:isLocal(), true); eq(other:isLocal(), false); eq(callCount('GetLocalPlayer'), 2)
     eq(rawget(Player, 'local'), nil)
 end)
+
+test('fromEvent wraps the player of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetTriggerPlayer', function() return raw end)
+    local found = Player.fromEvent()
+    eq(found, Player.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetTriggerPlayer'), 1)
+    native('GetTriggerPlayer', function() return nil end)
+    eq(Player.fromEvent(), nil)
+end)

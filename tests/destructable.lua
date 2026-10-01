@@ -82,3 +82,12 @@ test('exists asks for a type id', function()
     eq(wrapper:exists(), true)
     typeId = 0; eq(wrapper:exists(), false)
 end)
+
+test('fromEvent wraps the destructable of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetTriggerDestructable', function() return raw end)
+    local found = Destructable.fromEvent()
+    eq(found, Destructable.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetTriggerDestructable'), 1)
+    native('GetTriggerDestructable', function() return nil end)
+    eq(Destructable.fromEvent(), nil)
+end)

@@ -10,6 +10,9 @@ local registry = Handle.new(PlayerWrapper, 'Player')
 ---@return MoonwellWrappers.Player?
 ---@overload fun(raw: nil): nil
 function PlayerWrapper.fromHandle(raw) return registry.wrap(raw) end
+---The player the running event is about (GetTriggerPlayer), or nil when it has none.
+---@return MoonwellWrappers.Player?
+function PlayerWrapper.fromEvent() return registry.wrap(GetTriggerPlayer()) end
 
 ---@param index integer Zero-based, including neutral player slots.
 ---@return MoonwellWrappers.Player

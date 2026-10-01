@@ -12,6 +12,9 @@ local registry = Handle.new(Destructable, 'Destructable', {weak = true, widget =
 ---@return MoonwellWrappers.Destructable?
 ---@overload fun(raw: nil): nil
 function Destructable.fromHandle(raw) return registry.wrap(raw) end
+---The destructable the running event is about (GetTriggerDestructable), or nil when it has none.
+---@return MoonwellWrappers.Destructable?
+function Destructable.fromEvent() return registry.wrap(GetTriggerDestructable()) end
 ---@param typeId integer
 ---@param x number
 ---@param y number

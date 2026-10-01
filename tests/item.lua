@@ -99,3 +99,12 @@ test('exists asks for a type id', function()
     eq(wrapper:exists(), true)
     typeId = 0; eq(wrapper:exists(), false)
 end)
+
+test('fromEvent wraps the item of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetManipulatedItem', function() return raw end)
+    local found = Item.fromEvent()
+    eq(found, Item.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetManipulatedItem'), 1)
+    native('GetManipulatedItem', function() return nil end)
+    eq(Item.fromEvent(), nil)
+end)

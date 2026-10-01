@@ -284,3 +284,12 @@ test('errors point at the caller: disposed receiver, arguments, factories and sl
     failsAt(function() Unit.create(p, 1, 0, 0, 0) end, 'Unit.create: native returned nil')
     native('CreateUnit', function() return {} end)
 end)
+
+test('fromEvent wraps the unit of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetTriggerUnit', function() return raw end)
+    local found = Unit.fromEvent()
+    eq(found, Unit.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetTriggerUnit'), 1)
+    native('GetTriggerUnit', function() return nil end)
+    eq(Unit.fromEvent(), nil)
+end)

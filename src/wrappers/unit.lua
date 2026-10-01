@@ -13,6 +13,9 @@ local registry = Handle.new(Unit, 'Unit', {weak = true, widget = true})
 ---@return MoonwellWrappers.Unit?
 ---@overload fun(raw: nil): nil
 function Unit.fromHandle(raw) return registry.wrap(raw) end
+---The unit the running event is about (GetTriggerUnit), or nil when it has none.
+---@return MoonwellWrappers.Unit?
+function Unit.fromEvent() return registry.wrap(GetTriggerUnit()) end
 
 ---@param owner MoonwellWrappers.Player
 ---@param typeId integer

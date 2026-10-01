@@ -10,6 +10,9 @@ local registry = Handle.new(Region, 'Region')
 ---@return MoonwellWrappers.Region?
 ---@overload fun(raw: nil): nil
 function Region.fromHandle(raw) return registry.wrap(raw) end
+---The region the running event is about (GetTriggeringRegion), or nil when it has none.
+---@return MoonwellWrappers.Region?
+function Region.fromEvent() return registry.wrap(GetTriggeringRegion()) end
 ---@return MoonwellWrappers.Region
 function Region.create() return (Handle.created(Region.fromHandle(CreateRegion()), 'Region.create')) end
 ---@return region

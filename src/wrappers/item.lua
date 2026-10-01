@@ -13,6 +13,9 @@ local registry = Handle.new(Item, 'Item', {weak = true, widget = true})
 ---@return MoonwellWrappers.Item?
 ---@overload fun(raw: nil): nil
 function Item.fromHandle(raw) return registry.wrap(raw) end
+---The item the running event is about (GetManipulatedItem), or nil when it has none.
+---@return MoonwellWrappers.Item?
+function Item.fromEvent() return registry.wrap(GetManipulatedItem()) end
 ---@param typeId integer
 ---@param x number
 ---@param y number

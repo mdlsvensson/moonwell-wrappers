@@ -32,3 +32,12 @@ test('region areas and queries forward wrapped arguments', function()
     native('CreateRegion', function() return nil end); fails(Region.create, 'Region.create')
     native('CreateRegion', function() return {} end)
 end)
+
+test('fromEvent wraps the region of the running event, and nil when it has none', function()
+    local raw = {}
+    native('GetTriggeringRegion', function() return raw end)
+    local found = Region.fromEvent()
+    eq(found, Region.fromHandle(raw)); eq(found.handle, raw); eq(callCount('GetTriggeringRegion'), 1)
+    native('GetTriggeringRegion', function() return nil end)
+    eq(Region.fromEvent(), nil)
+end)
