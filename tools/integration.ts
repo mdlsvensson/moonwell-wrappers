@@ -116,6 +116,8 @@ for (
     "frame",
     "damage",
     "sync",
+    "input",
+    "weathereffect",
   ]
 ) {
   if (bundle.includes(`wrappers.${unused}`)) throw new Error(`Unused wrapper bundled: ${unused}`);
@@ -163,6 +165,8 @@ const publicModules = [
   "frame",
   "damage",
   "sync",
+  "input",
+  "weathereffect",
 ];
 const soloEntries: Record<string, { source: string; allowed: string[] }> = {
   trigger: { source: 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n', allowed: [] },
@@ -173,6 +177,16 @@ const soloEntries: Record<string, { source: string; allowed: string[] }> = {
   sync: {
     source: 'import "wrappers.sync" as Sync\nt = Sync.on "load", (player, data) -> print data\nSync.off t\n',
     allowed: ["player"],
+  },
+  input: {
+    source: 'import "wrappers.input" as Input\nimport "wrappers.player" as Player\n' +
+      "t = Input.onMouseMove Player.fromIndex(0), (player, x, y) -> print x, y\nInput.off t\n",
+    allowed: ["player"],
+  },
+  weathereffect: {
+    source: 'import "wrappers.weathereffect" as WeatherEffect\n' +
+      "w = WeatherEffect.fromHandle AddWeatherEffect GetWorldBounds!, 1380018290\nw\\destroy! if w\n",
+    allowed: [],
   },
   texttag: {
     source: 'import "wrappers.texttag" as TextTag\nt = TextTag.create!\nt\\destroy!\nTextTag.float "+1", 0, 0\n',
@@ -204,7 +218,8 @@ for (const [entry, { source, allowed }] of Object.entries(soloEntries)) {
   }
 }
 console.log(
-  "Moonwell: Trigger-, TextTag-, Multiboard-, Dialog-, Frame-, Damage- and Sync-only maps bundle only what they import",
+  "Moonwell: Trigger-, Damage-, Sync-, Input-, WeatherEffect-, TextTag-, Multiboard-, Dialog- and Frame-only maps " +
+    "bundle only what they import",
 );
 
 await Deno.copyFile("examples/gate.yue", join(consumer, "src/main.yue"));

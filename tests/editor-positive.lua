@@ -170,5 +170,46 @@ Sync.off(synced)
 if Sync.send('load', 'code') then print('sent') end
 print(unit:getCollisionSize())
 unit:setPathing(true)
+local Input = require('wrappers.input')
+local WeatherEffect = require('wrappers.weathereffect')
+local pressed = Input.onKeyDown(PlayerWrapper.fromIndex(0), OSKEY_Q, function(player, meta, repeated)
+    if meta == METAKEY_SHIFT and not repeated then player:addGold(1) end
+end, {repeats = true})
+Input.off(pressed)
+Input.off(Input.onKeyUp(PlayerWrapper.fromIndex(0), OSKEY_Q, function(player, meta) print(player:getName(), meta) end))
+local clicked = Input.onMouseDown(PlayerWrapper.fromIndex(0), function(player, x, y, button)
+    if button == MOUSE_BUTTON_TYPE_LEFT then print(player:getName(), x + y) end
+end)
+Input.off(clicked)
+Input.off(Input.onMouseUp(PlayerWrapper.fromIndex(0), function(_, x, y, button) print(x, y, button) end))
+Input.off(Input.onMouseMove(PlayerWrapper.fromIndex(0), function(player, x, y) print(player:getId(), x, y) end))
+local weatherArea = Rect.create(-512, -512, 512, 512)
+local rain = WeatherEffect.create(weatherArea, 1380018290)
+rain:enable(true)
+rain:enableFor(PlayerWrapper.fromIndex(0))
+local maybeRain = WeatherEffect.fromHandle(rain.handle)
+if maybeRain then maybeRain:enable(false) end
+rain:destroy()
+weatherArea:destroy()
+local clap = Effect.abilityArt(1095267427, EFFECT_TYPE_CASTER)
+if clap then Effect.flash(clap, 0, 0) end
+local third = Effect.abilityArt(1095263859, EFFECT_TYPE_SPECIAL, 3)
+if third then Effect.create(third, 0, 0):destroy() end
+local events = Trigger.create()
+events:registerPlayerStateEvent(PlayerWrapper.fromIndex(0), PLAYER_STATE_RESOURCE_GOLD, GREATER_THAN_OR_EQUAL, 1000)
+events:registerPlayerAllianceChange(PlayerWrapper.fromIndex(0), ALLIANCE_SHARED_VISION)
+events:registerGameStateEvent(GAME_STATE_TIME_OF_DAY, GREATER_THAN_OR_EQUAL, 18)
+events:registerTimerExpireEvent(Timer.create())
+events:addAction(function()
+    local eventUnit, eventPlayer, eventItem = Unit.fromEvent(), PlayerWrapper.fromEvent(), Item.fromEvent()
+    if eventUnit and eventPlayer and eventItem then
+        print(eventUnit:getName(), eventPlayer:getName(), eventItem:getName())
+    end
+    local eventTree, eventTimer, eventRegion = Destructable.fromEvent(), Timer.fromEvent(), Region.fromEvent()
+    if eventTree and eventTimer and eventRegion then
+        print(eventTree:getName(), eventTimer:getTimeout(), eventRegion:containsPoint(0, 0))
+    end
+end)
+events:destroy()
 unit:remove()
 return true

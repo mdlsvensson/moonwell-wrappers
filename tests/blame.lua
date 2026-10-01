@@ -4,7 +4,7 @@
 local modules = {
     'defeatcondition', 'destructable', 'dialog', 'effect', 'fogmodifier', 'force', 'frame', 'group', 'image', 'item',
     'leaderboard', 'lightning', 'multiboard', 'player', 'quest', 'rect', 'region', 'sound', 'texttag', 'timer',
-    'timerdialog', 'trigger', 'ubersplat', 'unit',
+    'timerdialog', 'trigger', 'ubersplat', 'unit', 'weathereffect',
 }
 
 test('every function given a wrong wrapper points at its caller', function()
@@ -30,9 +30,9 @@ test('every function given a wrong wrapper points at its caller', function()
     assert(#wrong == 0, #wrong .. ' misplaced errors:\n' .. table.concat(wrong, '\n'))
 end)
 
-test('damage and sync functions given wrong arguments point at their caller', function()
+test('damage, sync and input functions given wrong arguments point at their caller', function()
     local wrong, checked = {}, 0
-    for _, name in ipairs({'damage', 'sync'}) do
+    for _, name in ipairs({'damage', 'sync', 'input'}) do
         for key, fn in pairs(require('wrappers.' .. name)) do
             if type(fn) == 'function' then
                 local ok, err = pcall(function() fn({}) end)
@@ -44,7 +44,7 @@ test('damage and sync functions given wrong arguments point at their caller', fu
             end
         end
     end
-    eq(checked, 6)
+    eq(checked, 12)
     table.sort(wrong)
     assert(#wrong == 0, #wrong .. ' misplaced errors:\n' .. table.concat(wrong, '\n'))
 end)

@@ -1,5 +1,6 @@
 for _, name in ipairs({'trigger', 'effect', 'timer', 'destructable', 'rect', 'region', 'texttag', 'sound', 'lightning',
-    'image', 'ubersplat', 'fogmodifier', 'multiboard', 'leaderboard', 'quest', 'defeatcondition', 'timerdialog'}) do
+    'image', 'ubersplat', 'fogmodifier', 'multiboard', 'leaderboard', 'quest', 'defeatcondition', 'timerdialog',
+    'weathereffect'}) do
     require('wrappers.' .. name)
 end
 eq(totalCalls(), 0)
@@ -24,6 +25,13 @@ end)
 
 test('the sync module loads the Player module and no other', function()
     require('wrappers.sync')
+    eq(totalCalls(), 0)
+    eq(package.loaded['wrappers.player'] ~= nil, true)
+    for _, name in ipairs({'unit', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
+end)
+
+test('the input module loads the Player module and no other', function()
+    require('wrappers.input')
     eq(totalCalls(), 0)
     eq(package.loaded['wrappers.player'] ~= nil, true)
     for _, name in ipairs({'unit', 'group', 'item', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end

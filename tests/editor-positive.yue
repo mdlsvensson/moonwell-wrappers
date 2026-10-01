@@ -7,6 +7,11 @@ import "wrappers.texttag" as TextTag
 import "wrappers.dialog" as Dialog
 import "wrappers.damage" as Damage
 import "wrappers.sync" as Sync
+import "wrappers.input" as Input
+import "wrappers.weathereffect" as WeatherEffect
+import "wrappers.rect" as Rect
+import "wrappers.effect" as Effect
+import "wrappers.trigger" as Trigger
 
 mw.on_main ->
   unit = Unit.create Player.fromIndex(0), 1751543663, 0, 0, 270
@@ -28,3 +33,17 @@ mw.on_main ->
   Sync.on "load", (player, data) -> print player\getName!, data
   print unit\getCollisionSize!
   unit\setPathing false
+  cast = Input.onKeyDown Player.fromIndex(0), OSKEY_Q, (player, meta) ->
+    player\addGold 1 if meta == METAKEY_NONE
+  Input.off cast
+  Input.onMouseDown Player.fromIndex(0), (player, x, y, button) ->
+    print player\getName!, x, y if button == MOUSE_BUTTON_TYPE_LEFT
+  rain = WeatherEffect.create Rect.create(-512, -512, 512, 512), 1380018290
+  rain\enable true
+  clap = Effect.abilityArt 1095267427, EFFECT_TYPE_CASTER
+  Effect.flash clap, 0, 0 if clap
+  gold = Trigger.create!
+  gold\registerPlayerStateEvent Player.fromIndex(0), PLAYER_STATE_RESOURCE_GOLD, GREATER_THAN_OR_EQUAL, 1000
+  gold\addAction ->
+    rich = Player.fromEvent!
+    print rich\getName! if rich
