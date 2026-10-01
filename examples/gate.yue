@@ -5,6 +5,7 @@
 -- Set ui = true for a separate run of the v0.4.0 classic UI gate only.
 -- Set frames = true for a separate run of the v0.5.0 frames gate only; it loads war3mapImported\wrappers-gate.toc.
 -- Set port = true for a separate run of the v0.7.0 port prerequisites gate only (damage, pathing, sync).
+-- Set additions = true for a separate run of the v0.8.0 additions gate only (art, events, weather, input).
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -33,12 +34,15 @@ import "wrappers.timerdialog" as TimerDialog
 import "wrappers.frame" as Frame
 import "wrappers.damage" as Damage
 import "wrappers.sync" as Sync
+import "wrappers.input" as Input
+import "wrappers.weathereffect" as WeatherEffect
 
 probes = false
 presentation = false
 ui = false
 frames = false
 port = false
+additions = false
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -625,13 +629,223 @@ portGate = (owner) ->
       print "Wrapper port gate done"
   print "Wrapper port gate started: watch steps 1 to 15, one per second"
 
+-- v0.8.0 additions. Run with additions = true. CONTRIBUTING step 14 lists every message; they are also written to
+-- CustomMapData\moonwell-wrappers-additions.pld. First lines to read, then rain, one effect, and six input steps that
+-- the game shows one at a time.
+ADDITIONS_WEATHER = {
+  "RAhr", "RAlr", "RLhr", "RLlr", "SNbs", "SNhs", "SNls", "WOcw", "WOlw", "WNcw", "LRaa", "LRma", "MEds", "FDbh"
+  "FDbl", "FDgh", "FDgl", "FDrh", "FDrl", "FDwh", "FDwl"
+}
+ADDITIONS_INPUT = {
+  "tap Q once"
+  "hold Q down for about two seconds, then let go"
+  "hold Shift, tap Q once, then let go of Shift"
+  "left-click the ground once"
+  "move the mouse over the ground for about two seconds"
+  "tap Q once and left-click the ground once (the listeners are removed now)"
+}
+additionsGate = (owner) ->
+  lines = {}
+  say = (...) ->
+    parts = {"Wrapper additions"}
+    for index = 1, select "#", ...
+      parts[#parts + 1] = tostring (select index, ...)
+    line = table.concat parts, " "
+    print line
+    lines[#lines + 1] = line
+    line
+  save = ->
+    PreloadGenClear!
+    PreloadGenStart!
+    for line in *lines
+      -- A Preload line keeps 259 characters: longer lines continue on the next.
+      for at = 1, #line, 200
+        Preload (line\sub(at, at + 199)\gsub "\"", "'")
+    PreloadGenEnd "moonwell-wrappers-additions.pld"
+    PreloadGenClear!
+
+  -- Art from ability data.
+  clapId = $FourCC "AHtc"
+  clap = assert Effect.abilityArt(clapId, EFFECT_TYPE_CASTER), "Thunder Clap has no caster art"
+  say "art: Thunder Clap caster", clap
+  say "art: Thunder Clap missile", Effect.abilityArt clapId, EFFECT_TYPE_MISSILE
+  say "art: Flame Strike special, third entry", Effect.abilityArt $FourCC("AHfs"), EFFECT_TYPE_SPECIAL, 3
+  say "art: Chain Lightning lightning", Effect.abilityArt $FourCC("AOcl"), EFFECT_TYPE_LIGHTNING
+  missingOk, missingMessage = pcall Effect.create, Effect.abilityArt(clapId, EFFECT_TYPE_MISSILE), 0, 0
+  say "art: a missing art refused", not missingOk, missingMessage
+
+  -- The four registrations, with fromEvent.
+  rich = Trigger.create!
+  rich\registerPlayerStateEvent owner, PLAYER_STATE_RESOURCE_GOLD, GREATER_THAN_OR_EQUAL, 1000
+  rich\addAction ->
+    say "player state: gold", owner\getGold!, "and the event's player is the owner:", Player.fromEvent! == owner
+  owner\setGold 500
+  owner\setGold 1000
+  owner\setGold 1001
+  rich\destroy!
+  other = Player.fromIndex 1
+  shared = owner\getAlliance other, ALLIANCE_SHARED_VISION
+  changes = 0
+  allied = Trigger.create!
+  allied\registerPlayerAllianceChange owner, ALLIANCE_SHARED_VISION
+  allied\addAction -> changes += 1
+  owner\setAlliance other, ALLIANCE_SHARED_VISION, shared
+  same = changes
+  owner\setAlliance other, ALLIANCE_SHARED_VISION, not shared
+  owner\setAlliance other, ALLIANCE_SHARED_VISION, shared
+  say "alliance change: firings after the same value", same, "and after two changes", changes
+  allied\destroy!
+  noon = Trigger.create!
+  noon\registerGameStateEvent GAME_STATE_TIME_OF_DAY, GREATER_THAN_OR_EQUAL, 12
+  noon\addAction (self) ->
+    say "game state: the time of day reached", string.format("%.2f", GetFloatGameState GAME_STATE_TIME_OF_DAY)
+    self\destroy!
+  SuspendTimeOfDay false
+  SetFloatGameState GAME_STATE_TIME_OF_DAY, 11.99
+  order = {}
+  ticker = Timer.create!
+  expiry = Trigger.create!
+  expiry\registerTimerExpireEvent ticker
+  expiry\addAction -> order[#order + 1] = "trigger for this timer " .. tostring(Timer.fromEvent! == ticker)
+  ticker\start 0.5, false, (self) ->
+    order[#order + 1] = "callback"
+    say "timer expiry:", table.concat order, ", then "
+    expiry\destroy!
+    self\destroy!
+
+  -- fromEvent for a unit, an item, a destructable and a region.
+  footman = Unit.create owner, $FourCC("hfoo"), -700, -500, 0
+  fallen = Trigger.create!
+  fallen\registerUnitEvent footman, EVENT_UNIT_DEATH
+  fallen\addAction -> say "event: the dying unit is the footman:", Unit.fromEvent! == footman
+  footman\kill!
+  hero = Unit.create owner, $FourCC("Hpal"), -700, -300, 0
+  pickups = Trigger.create!
+  pickups\registerUnitEvent hero, EVENT_UNIT_PICKUP_ITEM
+  pickups\addAction ->
+    picked = Item.fromEvent!
+    say "event: picked up", picked and picked\getName!, "by the hero:", Unit.fromEvent! == hero
+  assert hero\addItemById($FourCC("ratc")), "no item added"
+  tree = Destructable.create $FourCC("LTlt"), -704, -704, 270, 1, 0
+  felled = Trigger.create!
+  felled\registerDeathEvent tree
+  felled\addAction -> say "event: the dying destructable is the tree:", Destructable.fromEvent! == tree
+  tree\kill!
+  area = Rect.create -1000, 200, -800, 400
+  zone = Region.create!
+  zone\addRect area
+  entered = Trigger.create!
+  entered\registerEnterRegion zone
+  entered\addAction ->
+    say "event: the entered region is the zone:", Region.fromEvent! == zone, "by the hero:", Unit.fromEvent! == hero
+  hero\setPosition -900, 300
+
+  -- Weather: which of the game's ids exist, and an unknown one.
+  field = Rect.create -1024, -1024, 1024, 1024
+  created, refused = {}, {}
+  for code in *ADDITIONS_WEATHER
+    ok, made = pcall WeatherEffect.create, field, FourCC code
+    if ok
+      made\destroy!
+      created[#created + 1] = code
+    else
+      refused[#refused + 1] = code
+  say "weather ids created:", #created, table.concat created, " "
+  say "weather ids refused:", #refused, table.concat refused, " "
+  unknownOk, unknownMessage = pcall WeatherEffect.create, field, FourCC "zzzz"
+  say "weather: an unknown id refused", not unknownOk, unknownMessage
+  rain = WeatherEffect.create field, $FourCC "RAhr"
+  field\destroy!
+  say "rain: created and its rect destroyed. Not enabled: no rain yet"
+  save!
+
+  -- The six input steps; Esc ends each one.
+  inputGate = ->
+    counts = {}
+    reset = ->
+      counts = {
+        downs: 0, every: 0, repeated: 0, ups: 0, meta: "-", clicks: 0, click: "-", releases: 0, moves: 0
+      }
+    reset!
+    tokens = {}
+    listen = (token) -> tokens[#tokens + 1] = token
+    listen Input.onKeyDown owner, OSKEY_Q, (player, meta) ->
+      counts.downs += 1
+      counts.meta = meta .. (player == owner and "" or " from another player")
+    every = (_, _, repeated) ->
+      counts.every += 1
+      counts.repeated += 1 if repeated
+    listen Input.onKeyDown owner, OSKEY_Q, every, repeats: true
+    listen Input.onKeyUp owner, OSKEY_Q, -> counts.ups += 1
+    listen Input.onMouseDown owner, (_, x, y, button) ->
+      counts.clicks += 1
+      name = button == MOUSE_BUTTON_TYPE_LEFT and "left" or button == MOUSE_BUTTON_TYPE_RIGHT and "right" or "other"
+      counts.click = name .. string.format(" at %.0f %.0f", x, y)
+    listen Input.onMouseUp owner, -> counts.releases += 1
+    listen Input.onMouseMove owner, -> counts.moves += 1
+    step = 1
+    prompt = (result) ->
+      ClearTextMessages!
+      DisplayTimedTextToPlayer GetLocalPlayer!, 0, 0, 600, result if result
+      text = "Wrapper additions gate done. Say so."
+      if ADDITIONS_INPUT[step]
+        text = "Step " .. step .. " of " .. #ADDITIONS_INPUT .. ": " .. ADDITIONS_INPUT[step] .. ". Then press Esc."
+      DisplayTimedTextToPlayer GetLocalPlayer!, 0, 0, 600, text
+    escape = Trigger.create!
+    escape\registerPlayerEvent owner, EVENT_PLAYER_END_CINEMATIC
+    escape\addAction (self) ->
+      result = say "input " .. step .. ": downs", counts.downs, "with repeats", counts.every, "of which repeated",
+        counts.repeated, "ups", counts.ups, "meta", counts.meta, "clicks", counts.clicks, "(" .. counts.click .. ")",
+        "releases", counts.releases, "moves", counts.moves
+      reset!
+      step += 1
+      if step == #ADDITIONS_INPUT
+        for token in *tokens
+          Input.off token
+        say "input: every listener removed"
+      if step > #ADDITIONS_INPUT
+        self\destroy!
+        say "gate done"
+      save!
+      prompt result
+    prompt!
+
+  local thunder
+  tick = 0
+  steps = Timer.create!
+  steps\start 1, true, (self) ->
+    tick += 1
+    if tick == 4
+      rain\enable true
+      say "rain 1: enabled for everyone NOW"
+    elseif tick == 10
+      rain\enableFor other
+      say "rain 2: enabled for another player only NOW"
+    elseif tick == 16
+      rain\enableFor owner
+      say "rain 3: enabled for you only NOW"
+    elseif tick == 22
+      rain\destroy!
+      say "rain 4: destroyed NOW"
+    elseif tick == 27
+      thunder = Effect.create clap, 0, 0
+      say "art: a Thunder Clap appears NOW in the middle"
+    elseif tick == 30
+      thunder\destroy!
+      self\destroy!
+      save!
+      inputGate!
+  say "gate started: lines to read first, then watch the middle of the screen"
+
 -- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
 mw.on_main ->
   start = Timer.create!
   start\start 0, false, (self) ->
     self\destroy!
     owner = Player.fromIndex 0
-    if port
+    if additions
+      additionsGate owner
+    elseif port
       portGate owner
     elseif frames
       framesGate!
