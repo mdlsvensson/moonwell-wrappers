@@ -22,7 +22,8 @@ README documents the complete public API. CONTRIBUTING documents tool versions, 
 v0.2.0 adds broad gameplay coverage; v0.3.0 adds presentation (text tags, sounds, lightning, images, ubersplats, fog
 modifiers), deeper effects and item/destructable enumeration; v0.4.0 adds classic UI (dialogs, multiboards,
 leaderboards, quests, defeat conditions, timer dialogs). v0.5.0 adds frames. v0.7.0 adds damage events and sync, for the
-wc3-lib port, on a shared internal listener list (`internal/listeners.lua`). Do not add gameplay systems, implicit
+wc3-lib port, on a shared internal listener list (`internal/listeners.lua`). v0.8.0 adds input listeners, weather
+effects, art from ability data, four Trigger registrations and `fromEvent()`. Do not add gameplay systems, implicit
 cleanup or a w3ts compatibility layer without a new design.
 
 ## Rules
@@ -108,3 +109,20 @@ never destroyed. Damage events are live only while their listeners run (a weak s
 setters. `Sync.send` checks 255 bytes. The gate map's `port` run (`deno task gate port`, CONTRIBUTING step 13) passed;
 it found that `isAttack` is false for `damageTarget` and that `setPathing(false)` does not make orders cross trees. Tag
 consumption passed the same day: a fresh map locked `v0.7.0` to `e9c2880`.
+
+v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
+`2026-10-01-moonwell-wrappers-additions`; probes `../wrappers-gate/PROBE-EXTRAS-RESULTS.md`).
+
+- `wrappers.input` is the third user of `internal/listeners.lua`. Its listener keys are strings: `k<id>:<code>`, from
+  the player id and the key code, for a key (one trigger, registered for all 16 modifier values, down and up, because
+  the game matches modifiers exactly), and `d`, `u`, `m` plus the player id for mouse down, up and move. The held state
+  that tells a press from a repeat lives per key and changes only in the synced events and in `Input.off`.
+- `wrappers.weathereffect`: an unknown id gives a handle with id -1, which `create` removes and raises for, like
+  `Image.create`. Weather handles are used again by the game after removal.
+- `Effect.abilityArt` reads `GetAbilityEffectById` (index from 1 in the wrapper, 0 in the native; `""` becomes nil). The
+  four Effect constructors check that the model is a string: the release's one change to existing behavior.
+- `fromEvent()` is `fromHandle` of one native per class. Other event responses stay `fromHandle(GetKillingUnit())`; a
+  `wrappers.event` module was rejected because it would bundle every widget class.
+- The gate map's `additions` run (`deno task gate additions`, CONTRIBUTING step 14) writes its lines to
+  `CustomMapData\moonwell-wrappers-additions.pld`. `.test-work/dry_gate_additions.lua` runs the compiled gate on stub
+  natives; run it before handing a gate run to the maintainer.

@@ -187,7 +187,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     only for that player; `leaderboard:assign` and a dialog shown to one player appear only on that player's screen; a
     dialog click by the second player prints that player's name on both machines; no desync. It also covers v0.5.0:
     frames created in the same order on both machines, `setVisibleFor` and `releaseFocusFor` acting only for that
-    player, and frame events from the second player printing that player's name on both machines; no desync.
+    player, and frame events from the second player printing that player's name on both machines; no desync. It also
+    covers v0.8.0: `wrappers.input` listeners running on both machines for the second player's keys and mouse, and
+    `weather:enableFor` drawing only for that player; no desync.
 12. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
@@ -217,6 +219,40 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       `Wrapper sync received from <your name> 255 true` and the prefix lines: record which of `prefix 16 arrived`,
       `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
     - step 15: `Wrapper port gate done`, and no `[wrappers] ... failed` line at any point.
+14. Additions (v0.8.0): in the gate map, `deno task gate additions` (normal build only). Only the additions gate runs.
+    Every line starts with `Wrapper additions` and is also written to
+    `Documents\Warcraft III\CustomMapData\moonwell-wrappers-additions.pld`.
+    - Printed at once, nothing to watch:
+      - `art: Thunder Clap caster <a path ending in ThunderClapCaster.mdl>`, `art: Thunder Clap missile nil`,
+        `art: Flame Strike special, third entry <a path ending in FlameStrike.mdl>`,
+        `art: Chain Lightning lightning CLPB` and
+        `art: a missing art refused true [wrappers] Effect.create: expected a model path`;
+      - `player state: gold 1000 and the event's player is the owner: true`, and the same line for 1001;
+      - `alliance change: firings after the same value 0 and after two changes 2`;
+      - `event: the dying unit is the footman: true`, `event: picked up Claws of Attack +3 by the hero: true`,
+        `event: the dying destructable is the tree: true` and
+        `event: the entered region is the zone: true by the hero: true`;
+      - `weather ids created: 21 <the ids>` and `weather ids refused: 0`. If an id is refused, take it out of the
+        README's table before the release;
+      - `weather: an unknown id refused true [wrappers] WeatherEffect.create: unknown weather effect id: 2054847098`;
+      - `rain: created and its rect destroyed. Not enabled: no rain yet` and `gate started`;
+      - within a second: `game state: the time of day reached 12.00` and
+        `timer expiry: trigger for this timer true, then callback`.
+    - Rain, in the middle of the screen. It takes a second or two to start and to stop:
+      - no rain until `rain 1: enabled for everyone NOW` (4 s), then rain;
+      - after `rain 2: enabled for another player only NOW` (10 s) the rain stops;
+      - after `rain 3: enabled for you only NOW` (16 s) it falls again;
+      - after `rain 4: destroyed NOW` (22 s) it stops.
+    - At 27 s, `art: a Thunder Clap appears NOW in the middle`: the effect plays at the centre.
+    - From 30 s the game shows six input steps, one at a time; do each, then press Esc. After each Esc one line prints:
+      1. tap Q once: `input 1: downs 1 with repeats 1 of which repeated 0 ups 1 meta 0`;
+      2. hold Q for about two seconds: `input 2: downs 1 with repeats <many> of which repeated <one fewer> ups 1`;
+      3. Shift with Q: `input 3: downs 1 … ups 1 meta 1`;
+      4. a left click on the ground: `input 4: … clicks 1 (left at <x> <y>) releases 1`;
+      5. moving the mouse for two seconds: `input 5: … moves <over 100>`, then `input: every listener removed`;
+      6. Q and a click after the listeners are removed: every count is 0 (`input 6: downs 0 … moves 0`), then
+         `gate done`.
+    - No `[wrappers] ... failed` line at any point.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor

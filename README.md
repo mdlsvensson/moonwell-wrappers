@@ -2,8 +2,8 @@
 
 Annotated Lua 5.3 library for Warcraft III. It provides Player, Unit, Item, Destructable, Rect, Region, Force, Timer,
 Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier, Dialog, Multiboard, Leaderboard,
-Quest, DefeatCondition, TimerDialog and Frame wrappers, Damage and Sync modules, editor completion, stable handle
-identity and explicit cleanup.
+Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
+completion, stable handle identity and explicit cleanup.
 
 **Status:** `v0.7.0` (2026-09-30): the prerequisites for the wc3-lib port. Damage events (`wrappers.damage`), checked
 sync messages (`wrappers.sync`), `unit:getCollisionSize()` and `unit:setPathing(flag)`. It builds on v0.6's refactor
@@ -84,6 +84,10 @@ Mutating methods return no value unless the reference below says otherwise. Gett
 Each class has:
 
 - `fromHandle(raw)`: return the cached wrapper, or nil when passed nil. Never creates a game object.
+- `fromEvent()` (Unit, Player, Item, Destructable, Timer and Region only): return the wrapper of the object the running
+  event is about, or nil when it has none. It reads `GetTriggerUnit`, `GetTriggerPlayer`, `GetManipulatedItem`,
+  `GetTriggerDestructable`, `GetExpiredTimer` and `GetTriggeringRegion`. Wrap any other event response with
+  `fromHandle`, for example `Unit.fromHandle(GetKillingUnit())`.
 - `getHandle()`: return a live native handle, or error after disposal.
 - `isDisposed()`: return whether wrapper cleanup has occurred.
 - `.handle`: native handle while live; nil after disposal. Treat this field as read-only.
@@ -125,7 +129,7 @@ take a Unit in the editor: Warcraft drew no effect attached to an item or a dest
 Destructable there. At run time both still accept any widget, as the native does, for custom models that may draw; put
 `---@diagnostic disable-next-line: param-type-mismatch` above such a call. Otherwise attach to a unit, or create the
 effect at the object's position instead. There is no `Widget.fromHandle`: convert a raw widget with the class you know
-it is, for example `Item.fromHandle(GetManipulatedItem())`.
+it is, for example `Item.fromHandle(GetSoldItem())`.
 
 ## Presentation
 
@@ -279,11 +283,11 @@ Use Moonwell's normal YueScript + Lua extension setup and run the map's `deno ta
 types and the library view. Wrapper classes are named `MoonwellWrappers.Unit`, etc., separate from native `unit`. These
 are editor diagnostics, not a new Moonwell compile-time type checker.
 
-LuaLS 3.19.1 conservatively treats `fromHandle` results as nullable, including for a known non-null input. Narrow the
-result with an `if`, or use `assert` when the handle is known to exist:
+LuaLS 3.19.1 conservatively treats `fromHandle` results as nullable, including for a known non-null input, and
+`fromEvent` results are nullable too. Narrow the result with an `if`, or use `assert` when the handle is known to exist:
 
 ```lua
-local triggered = Unit.fromHandle(GetTriggerUnit())
+local triggered = Unit.fromEvent()
 if triggered then triggered:setLife(100) end
 local known = assert(Unit.fromHandle(existingUnit:getHandle()))
 ```
@@ -325,7 +329,7 @@ and `destroy` or `remove`).
 
 ### `wrappers.player`
 
-- `fromIndex(index)`
+- `fromIndex(index)`, `fromEvent()`
 - `getId()`, `getName()`, `getColor()`, `getState(playerstate)`, `setState(playerstate, integer)`
 - `getGold()`, `setGold(n)`, `addGold(n)`, `getLumber()`, `setLumber(n)`, `addLumber(n)`
 - `getAlliance(Player, alliancetype)`, `setAlliance(Player, alliancetype, flag)`, `isAlly(Player)`, `isEnemy(Player)`
@@ -335,7 +339,7 @@ and `destroy` or `remove`).
 
 ### `wrappers.unit`
 
-- `create(Player, typeId, x, y, facing)`
+- `create(Player, typeId, x, y, facing)`, `fromEvent()`
 - `getTypeId()`, `getName()`, `getOwner()`, `setOwner(Player, changeColor)`
 - `getX()`, `getY()`, `setPosition(x,y)`, `setX(x)`, `setY(y)`, `getFacing()`, `setFacing(degrees)`
 - `getLife()`, `setLife(v)`, `getMaxLife()`, `setMaxLife(n)`, `getMana()`, `setMana(v)`, `getMaxMana()`,
@@ -358,14 +362,14 @@ and `destroy` or `remove`).
 
 ### `wrappers.item`
 
-- `create(typeId, x, y)`, `enumInRect(Rect, filter?)`
+- `create(typeId, x, y)`, `enumInRect(Rect, filter?)`, `fromEvent()`
 - `getTypeId()`, `getName()`, `getLevel()`, `setPosition(x, y)`, `getCharges()`, `setCharges(n)`, `getOwner()`,
   `setOwner(Player, changeColor)`, `isOwned()`, `isPowerup()`, `isVisible()`, `setVisible(flag)`, `isInvulnerable()`,
   `setInvulnerable(flag)`, `setDroppable(flag)`, `setPawnable(flag)`, `exists()`, `remove()`
 
 ### `wrappers.destructable`
 
-- `create(typeId, x, y, facing, scale, variation)`, `enumInRect(Rect, filter?)`
+- `create(typeId, x, y, facing, scale, variation)`, `enumInRect(Rect, filter?)`, `fromEvent()`
 - `getTypeId()`, `getName()`, `getMaxLife()`, `setMaxLife(v)`, `kill()`, `restore(life, birth)`, `isInvulnerable()`,
   `setInvulnerable(flag)`, `show(flag)`, `setAnimation(name)`, `queueAnimation(name)`, `exists()`, `remove()`
 
@@ -377,7 +381,7 @@ and `destroy` or `remove`).
 
 ### `wrappers.region`
 
-- `create()`
+- `create()`, `fromEvent()`
 - `addRect(Rect)`, `clearRect(Rect)`, `addCell(x, y)`, `clearCell(x, y)`, `containsPoint(x, y)`, `containsUnit(Unit)`,
   `destroy()`
 
@@ -389,7 +393,7 @@ and `destroy` or `remove`).
 
 ### `wrappers.timer`
 
-- `create()`
+- `create()`, `fromEvent()`
 - `start(timeout, periodic, callback)`, `pause()`, `resume()`, `getElapsed()`, `getRemaining()`, `getTimeout()`,
   `destroy()`
 
@@ -402,10 +406,24 @@ and `destroy` or `remove`).
   `registerChatEvent(Player, text, exactMatch)`, `registerEnterRegion(Region)`, `registerLeaveRegion(Region)`,
   `registerDeathEvent(Widget)`, `registerUnitInRange(Unit, range)`,
   `registerUnitStateEvent(Unit, unitstate, limitop, value)`, `registerTimerEvent(timeout, periodic)`,
-  `registerGameEvent(gameevent)`
+  `registerGameEvent(gameevent)`, `registerPlayerStateEvent(Player, playerstate, limitop, value)`,
+  `registerPlayerAllianceChange(Player, alliancetype)`, `registerGameStateEvent(gamestate, limitop, value)`,
+  `registerTimerExpireEvent(Timer)`
 - `addAction(callback)` and `addCondition(predicate)` return tokens for `removeAction(token)` and
   `removeCondition(token)`
 - `clearActions()`, `clearConditions()`, `destroy()`
+
+Measured on 3.0.0.24268 (the v0.8.0 probes):
+
+- `registerPlayerStateEvent` fires inside `SetPlayerState` (so inside `player:setGold`), at every change to a value that
+  satisfies the comparison, not only when the limit is crossed. `Player.fromEvent()` is the player.
+- `registerPlayerAllianceChange` fires inside `SetPlayerAlliance` when that player's setting of that kind toward any
+  player really changes. The event names no player: `Player.fromEvent()` is nil. The generic
+  `registerPlayerEvent(Player, EVENT_PLAYER_ALLIANCE_CHANGED)` fired only for `ALLIANCE_PASSIVE`.
+- `registerGameStateEvent` with `GAME_STATE_TIME_OF_DAY` fires when the comparison becomes true, by a set or by the
+  game's clock, and not again while it stays true.
+- `registerTimerExpireEvent` fires at every expiry, before the timer's own callback, also when it is registered after
+  the timer started. `Timer.fromEvent()` is the timer. The trigger does not own the timer.
 
 ### `wrappers.group`
 
@@ -418,10 +436,22 @@ and `destroy` or `remove`).
 ### `wrappers.effect`
 
 - `create(model,x,y)`, `attach(model,Unit,attachmentPoint)`, `flash(model, x, y)`,
-  `flashOn(model, Unit, attachmentPoint)`
+  `flashOn(model, Unit, attachmentPoint)`, `abilityArt(abilityId, effecttype, index?)`
 - `setPosition(x,y,z)`, `setScale(scale)`, `setColor(r, g, b)`, `setAlpha(a)`, `setPlayerColor(Player)`,
   `setTimeScale(scale)`, `setOrientation(yaw, pitch, roll)`, `setHeight(height)`, `setZ(z)`, `playAnimation(animtype)`,
   `destroy()`
+
+`Effect.abilityArt(abilityId, effecttype, index?)` returns the art an ability's data names: a model path, for the
+constructors above or a missile's model, and for `EFFECT_TYPE_LIGHTNING` a lightning code for `Lightning.create`. It
+returns nil when the ability has none. `index` picks an entry of a list, from 1; past the last entry the game reads the
+last one, so the number of entries cannot be read. Abilities such as Blizzard keep their art on their buff and read nil.
+The four constructors raise `expected a model path` for a model that is not a string, so a missing art fails at the line
+that uses it; an empty string still gives an effect that draws nothing.
+
+```yue
+clap = Effect.abilityArt FourCC("AHtc"), EFFECT_TYPE_CASTER
+Effect.flash clap, x, y if clap
+```
 
 ### `wrappers.texttag`
 
@@ -458,6 +488,40 @@ and `destroy` or `remove`).
 - `radius(Player, fogstate, x, y, radius, useSharedVision, afterUnits)`,
   `rect(Player, fogstate, Rect, useSharedVision, afterUnits)`
 - `start()`, `stop()`, `destroy()`
+
+### `wrappers.weathereffect`
+
+- `create(Rect, effectId)`
+- `enable(flag)`, `enableFor(Player)`, `destroy()`
+
+A weather effect is not drawn until `enable(true)`. `enableFor(Player)` compares with the local player, as
+`setVisibleFor` does: the effect exists on every machine and is drawn on that player's only; `enable(flag)` afterwards
+applies to everyone. There is no getter for whether it is enabled. The effect reads its rect when it is created and does
+not own it, so the rect may be destroyed at once. `create` raises `unknown weather effect id` for an id the game does
+not know: Warcraft returns an invalid effect for one, not nil.
+
+The game's weather ids, each created by the v0.8.0 gate on 3.0.0.24268:
+
+| Ids                                                            | Weather                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------- |
+| `RAhr`, `RAlr`                                                 | Ashenvale rain, heavy and light                          |
+| `RLhr`, `RLlr`                                                 | Lordaeron rain, heavy and light                          |
+| `SNbs`, `SNhs`, `SNls`                                         | Northrend blizzard, and snow heavy and light             |
+| `WOcw`, `WOlw`                                                 | Outland wind, heavy and light                            |
+| `WNcw`                                                         | Wind, heavy                                              |
+| `LRaa`, `LRma`                                                 | Rays of light, rays of moonlight                         |
+| `MEds`                                                         | Dalaran shield                                           |
+| `FDbh`, `FDbl`, `FDgh`, `FDgl`, `FDrh`, `FDrl`, `FDwh`, `FDwl` | Dungeon fog: blue, green, red and white, heavy and light |
+
+```yue
+import "wrappers.weathereffect" as WeatherEffect
+import "wrappers.rect" as Rect
+
+area = Rect.create -1024, -1024, 1024, 1024
+rain = WeatherEffect.create area, FourCC "RAhr"
+area\destroy!
+rain\enable true
+```
 
 ### `wrappers.dialog`
 
@@ -560,6 +624,53 @@ Sync.on "load", (player, data) -> print player\getName!, data
 Sync.send "load", code if Player.fromIndex(0)\isLocal!
 ```
 
+### `wrappers.input`
+
+- `onKeyDown(Player, key, callback, options?)`: the callback gets `(Player, meta, repeated)`; the option `repeats`
+  (false) also passes the downs the game repeats while the key is held
+- `onKeyUp(Player, key, callback)`: the callback gets `(Player, meta)`
+- `onMouseDown(Player, callback)` and `onMouseUp(Player, callback)`: the callback gets `(Player, x, y, button)`
+- `onMouseMove(Player, callback)`: the callback gets `(Player, x, y)`
+- each returns a token for `off(token)`
+
+Listeners are for one player's keyboard and mouse. The events are synced: a listener runs on every machine, in the same
+order, some frames after the input, so it may change game state. Each player and key, and each player and kind of mouse
+event, has one shared trigger, created by its first listener and disabled while it has none.
+
+Keys are the `OSKEY_` constants. A key listener runs whatever modifier keys are held. `meta` is the sum of
+`METAKEY_SHIFT` (1), `METAKEY_CTRL` (2), `METAKEY_ALT` (4) and `METAKEY_WINKEYS` (8); compare it to ask for one
+combination, for example `meta == METAKEY_CTRL + METAKEY_SHIFT`. `button` is `MOUSE_BUTTON_TYPE_LEFT`, `_MIDDLE` or
+`_RIGHT`.
+
+`onKeyDown` runs once per press. The game repeats the down while a key stays held; those are skipped unless `repeats` is
+true, and `repeated` is true for them. The module tells a press from a repeat by remembering that the key is down until
+its release arrives. If a release never arrives, the next press of that key reads as a repeat, and its own release then
+clears the state. That is a possibility, not something measured.
+
+Measured on 3.0.0.24268 (the v0.8.0 probes):
+
+- A held key repeats: the first repeat after half a second, then about 30 a second.
+- The game matches the modifier keys exactly, which is why the module registers every combination: a raw
+  `BlzTriggerRegisterPlayerKeyEvent` for no modifier does not fire while Shift is held.
+- Shift is a key of its own (`OSKEY_LSHIFT`), with its bit already set in `meta` when it goes down.
+- Typing in the chat box runs no key listener.
+- Mouse points are world coordinates under the cursor. A click on the interface (the minimap) runs the listeners too.
+- A quick click delivers its down and its up at the same moment.
+- `onMouseMove` runs 150 to 190 times a second while the mouse moves, each a synced event. Add the listener only while
+  it is needed, and remove it afterwards.
+
+```yue
+import "wrappers.input" as Input
+
+cast = Input.onKeyDown player, OSKEY_Q, (player, meta) ->
+  castFor player if meta == METAKEY_NONE
+
+Input.onMouseDown player, (player, x, y, button) ->
+  print player\getName!, "clicked at", x, y if button == MOUSE_BUTTON_TYPE_LEFT
+
+Input.off cast
+```
+
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
 method. `setPosition` uses SetUnitPosition, which respects pathing; `setX`/`setY` use SetUnitX/SetUnitY, which do not.
 `setPathing(false)` does not let move orders cross trees: in the v0.7.0 gate a footman ordered across a tree line walked
@@ -587,18 +698,18 @@ sorting. Later group changes do not alter the array. `forEach` iterates the same
 There are two kinds of callback. Callbacks that run immediately let their errors propagate to your code: the filters of
 `enumInRange`, `enumInRect`, `enumOfPlayer` and `enumSelected`, `Group:forEach`, and the `Item.enumInRect` and
 `Destructable.enumInRect` filters. Event callbacks run later, from the game, behind a boundary: an error is printed with
-its label and nothing else is affected. The labels are `Timer`, `Trigger`, `Dialog button` and `Frame event`, printed as
-`[wrappers] <label> callback failed: …`, and `Trigger condition`, printed as `[wrappers] Trigger condition failed: …`
-(the condition then counts as false).
+its label and nothing else is affected. The labels are `Timer`, `Trigger`, `Dialog button`, `Frame event`,
+`Damage listener`, `Sync listener` and `Input listener`, printed as `[wrappers] <label> callback failed: …`, and
+`Trigger condition`, printed as `[wrappers] Trigger condition failed: …` (the condition then counts as false).
 
 Timer callbacks receive their Timer; trigger actions and conditions receive their Trigger. Read event context using
-ordinary natives, then convert handles with `fromHandle` as needed. Registrations pass no native filter; filter inside a
-condition or an action. Warcraft cannot unregister an event, so destroying the trigger is the only way to remove one.
-`addAction` and `addCondition` return tokens; removing a token takes effect at once, even during a firing, and removing
-it twice does nothing. A condition may remove its own token; the evaluation in progress still counts its result. A token
-from another trigger raises an error. A condition's result counts as truthy or falsy; if it raises, the error is printed
-with `[wrappers] Trigger condition failed:` and the condition counts as false. The trigger owns each condition's
-boolexpr and destroys it on removal, on `clearConditions()` and on `destroy()`.
+ordinary natives, then convert handles with `fromHandle` as needed, or use `fromEvent()`. Registrations pass no native
+filter; filter inside a condition or an action. Warcraft cannot unregister an event, so destroying the trigger is the
+only way to remove one. `addAction` and `addCondition` return tokens; removing a token takes effect at once, even during
+a firing, and removing it twice does nothing. A condition may remove its own token; the evaluation in progress still
+counts its result. A token from another trigger raises an error. A condition's result counts as truthy or falsy; if it
+raises, the error is printed with `[wrappers] Trigger condition failed:` and the condition counts as false. The trigger
+owns each condition's boolexpr and destroys it on removal, on `clearConditions()` and on `destroy()`.
 
 `start` replaces the timer's old schedule. Timeouts must be finite and nonnegative. One-shot timers remain allocated
 after firing: restart them or explicitly destroy them. A callback can restart or destroy its own timer. Stale callbacks

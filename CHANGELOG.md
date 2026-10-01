@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- New `wrappers.input`: `onKeyDown`, `onKeyUp`, `onMouseDown`, `onMouseUp` and `onMouseMove` listeners for one player,
+  removable with `Input.off`. Key listeners run whatever modifier keys are held and get them as `meta`; `onKeyDown` runs
+  once per press unless the option `repeats` is true.
+- New `wrappers.weathereffect`: `create(Rect, effectId)`, `enable(flag)`, `enableFor(Player)` and `destroy()`. An
+  unknown id raises.
+- New `Effect.abilityArt(abilityId, effecttype, index?)`: the model path or lightning code an ability's data names, or
+  nil.
+- New Trigger registrations: `registerPlayerStateEvent`, `registerPlayerAllianceChange`, `registerGameStateEvent` and
+  `registerTimerExpireEvent`.
+- New `fromEvent()` on Unit, Player, Item, Destructable, Timer and Region: the wrapper of the object the running event
+  is about, or nil.
+- **Changed:** `Effect.create`, `Effect.attach`, `Effect.flash` and `Effect.flashOn` raise `expected a model path` for a
+  model that is not a string; before, the value went to the game. Migration: pass a string, and check the result of
+  `Effect.abilityArt` for nil first.
+
 ## 0.7.0 (2026-09-30)
 
 - New `unit:getCollisionSize()` and `unit:setPathing(flag)`.
