@@ -127,4 +127,5 @@ v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
 - The gate map's `additions` run (`deno task gate additions`, CONTRIBUTING step 14) writes its lines to
   `CustomMapData\moonwell-wrappers-additions.pld`. `.test-work/dry_gate_additions.lua` runs the compiled gate on stub
   natives; run it before handing a gate run to the maintainer. The run passed on 2026-10-01: all 21 weather ids of the
-  README were created, and a held key gave one down against 60 with repeats.
+  README were created, and a held key gave one down against 60 with repeats. Tag consumption passed the same day: a
+  fresh map locked `v0.8.0` to `d823b1b`.
