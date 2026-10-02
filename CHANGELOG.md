@@ -4,6 +4,7 @@
 
 - The repository's tools are Lua run with `yue -e` (`tools/test.lua`, `tools/check.lua`, `tools/integration.lua`), and
   integration runs the `moonwell` program of Moonwell 0.8.0. Deno is no longer needed. No library code changed.
+- The tools need YueScript 0.34.3, the compiler Moonwell 0.8.1 pins, in place of 0.34.2.
 
 ## 0.8.0 (2026-10-01)
 

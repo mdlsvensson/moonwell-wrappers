@@ -6,7 +6,7 @@ local Lib = require('lib')
 
 local yue = Lib.quote(Lib.native(os.getenv('MOONWELL_YUE') or 'yue'))
 local version = Lib.must(yue .. ' -v')
-if not version:find('0.34.2', 1, true) then error('YueScript 0.34.2 is required, found: ' .. version, 0) end
+if not version:find('0.34.3', 1, true) then error('YueScript 0.34.3 is required, found: ' .. version, 0) end
 
 local suites = {...}
 if #suites == 0 then

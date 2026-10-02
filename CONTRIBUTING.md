@@ -8,7 +8,7 @@ raises contextual Lua errors. Review each task and the final change. Work on mai
 
 - The `moonwell` program, 0.8.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
   line). The tools themselves are Lua, run with `yue -e`: there is no Deno.
-- YueScript 0.34.2, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
+- YueScript 0.34.3, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
 - Pkl 0.32.1, on PATH (or set `MOONWELL_PKL` to its executable).
 - A sibling Moonwell checkout (or `MOONWELL_REPO` pointing to that checkout): integration links its consumer map to
   the checkout's Pkl schema, so the program and the checkout must have the same major and minor version. The library
