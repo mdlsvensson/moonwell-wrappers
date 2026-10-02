@@ -670,7 +670,8 @@ Sync.send "load", code if Player.fromIndex(0)\isLocal!
 
 Listeners are for one player's keyboard and mouse. The events are synced: a listener runs on every machine, in the same
 order, some frames after the input, so it may change game state. Each player and key, and each player and kind of mouse
-event, has one shared trigger, created by its first listener and disabled while it has none.
+event, has one shared trigger, created by its first listener and disabled while it has none. The first key listener
+also starts one game timer, which the module reads game time from.
 
 Keys are the `OSKEY_` constants. A key listener runs whatever modifier keys are held. `meta` is the sum of
 `METAKEY_SHIFT` (1), `METAKEY_CTRL` (2), `METAKEY_ALT` (4) and `METAKEY_WINKEYS` (8); compare it to ask for one
@@ -679,8 +680,19 @@ combination, for example `meta == METAKEY_CTRL + METAKEY_SHIFT`. `button` is `MO
 
 `onKeyDown` runs once per press. The game repeats the down while a key stays held; those are skipped unless `repeats` is
 true, and `repeated` is true for them. The module tells a press from a repeat by remembering that the key is down until
-its release arrives. If a release never arrives, the next press of that key reads as a repeat, and its own release then
-clears the state. That is a possibility, not something measured.
+its release arrives.
+
+**A release can be lost.** The game sends no release for a key that is let go while the game takes no keyboard input:
+another program in front (Alt+Tab, or a click on another window), the chat box open, or the menu open. Two things
+follow:
+
+- **`onKeyUp` does not run for that release,** and nothing in the game says so. A map that keeps its own "this key is
+  held" state, for movement on W, A, S and D for example, sees the key as held until it is pressed and let go again.
+  Make such a stuck key harmless, or give the player that way out.
+- **`onKeyDown` would take the next press for a repeat.** So a down that comes more than two seconds of game time
+  after the key's last down counts as a new press: no keyboard repeats that slowly. A press sooner than that after a
+  lost release is still skipped, and so is one after the single-player menu, which pauses game time. The skipped
+  press's own release then clears the state.
 
 Measured on 3.0.0.24268 (the v0.8.0 probes):
 

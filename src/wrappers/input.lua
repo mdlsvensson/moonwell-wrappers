@@ -20,10 +20,20 @@ local Input = {}
 ---What each listener key's trigger registers for; filled before the key's first listener is added.
 ---@type table<string, MoonwellWrappers.InputSource>
 local sources = {}
----The keys that are down, by listener key: a down while one is set is a repeat. Changed only inside the synced
----events and when a key's last listener is removed, so it is the same on every machine.
----@type table<string, boolean>
+---The keys that are down, by listener key, each with the game time of its last down: a down while one is set, and
+---within REPEAT_WINDOW of that time, is a repeat. Changed only inside the synced events and when a key's last listener
+---is removed, and game time is the same on every machine, so it is the same on every machine.
+---@type table<string, number>
 local held = {}
+---The game drops a key's release when the key is let go while the game takes no keyboard input: another program in
+---front, the chat or the menu open (measured on 3.0.0.24268). The next press then arrives with no release before it.
+---A repeat follows the previous down by the keyboard's repeat delay at most (0.5 seconds measured; Windows allows up
+---to 1 second and macOS up to 1.8), so a down later than this many seconds after the last one is a new press.
+local REPEAT_WINDOW = 2
+---Game time for that rule: one timer on one long run, started with the first key listener and never destroyed. It
+---is set before any key's trigger exists, so the code that reads it needs no check.
+---@type timer
+local clock
 local KEY_DOWN_OPTIONS = {repeats = {'boolean', false}}
 
 ---@param trigger trigger
@@ -51,8 +61,9 @@ local function route(id, cells)
     if source.key then
         local down, repeated = BlzGetTriggerPlayerIsKeyDown(), false
         if down then
-            repeated = held[id] == true
-            held[id] = true
+            local at, last = TimerGetElapsed(clock), held[id]
+            repeated = last ~= nil and at - last <= REPEAT_WINDOW
+            held[id] = at
         else
             held[id] = nil
         end
@@ -69,8 +80,13 @@ local listeners = Listeners.new('InputListener', register, route)
 
 ---@param player player
 ---@param key oskeytype
+---@param operation string
 ---@return string id The listener key of this player and key.
-local function keySource(player, key)
+local function keySource(player, key, operation)
+    if not clock then
+        clock = Handle.created(CreateTimer(), operation, 1)
+        TimerStart(clock, 1000000, false, function() end)
+    end
     local id = 'k' .. GetPlayerId(player) .. ':' .. GetHandleId(key)
     if not sources[id] then sources[id] = {player = player, key = key} end
     return id
@@ -100,7 +116,7 @@ function Input.onKeyDown(player, key, callback, options)
     if key == nil then error('[wrappers] Input.onKeyDown: expected a key, such as OSKEY_Q', 2) end
     Callback.check(callback, 'Input.onKeyDown')
     local repeats = Options.read(options, KEY_DOWN_OPTIONS, 'Input.onKeyDown').repeats
-    return (Listeners.add(listeners, keySource(rawPlayer, key), function(down, who, meta, repeated)
+    return (Listeners.add(listeners, keySource(rawPlayer, key, 'Input.onKeyDown'), function(down, who, meta, repeated)
         if down and (repeats or not repeated) then callback(who, meta, repeated) end
     end, 'Input.onKeyDown'))
 end
@@ -114,7 +130,7 @@ function Input.onKeyUp(player, key, callback)
     local rawPlayer = Handle.unwrap(player, 'Player', 'Input.onKeyUp')
     if key == nil then error('[wrappers] Input.onKeyUp: expected a key, such as OSKEY_Q', 2) end
     Callback.check(callback, 'Input.onKeyUp')
-    return (Listeners.add(listeners, keySource(rawPlayer, key), function(down, who, meta)
+    return (Listeners.add(listeners, keySource(rawPlayer, key, 'Input.onKeyUp'), function(down, who, meta)
         if not down then callback(who, meta) end
     end, 'Input.onKeyUp'))
 end

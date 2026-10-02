@@ -24,6 +24,11 @@ native('BlzGetTriggerPlayerMetaKey', function() return event.meta end)
 native('BlzGetTriggerPlayerMouseX', function() return event.x end)
 native('BlzGetTriggerPlayerMouseY', function() return event.y end)
 native('BlzGetTriggerPlayerMouseButton', function() return event.button end)
+-- Game time, as the module's clock timer reports it; a test moves it by hand.
+local gameTime, clocks = 0, {}
+native('CreateTimer', function() clocks[#clocks + 1] = {}; return clocks[#clocks] end)
+native('TimerStart', function() end)
+native('TimerGetElapsed', function(timer) eq(timer, clocks[1]); return gameTime end)
 local Input = require('wrappers.input')
 local Player = require('wrappers.player')
 eq(totalCalls(), 0)
@@ -52,6 +57,31 @@ local function deliver(who, what, data)
 end
 local function press(who, key, meta) deliver(who, key, {down = true, meta = meta or 0}) end
 local function release(who, key, meta) deliver(who, key, {down = false, meta = meta or 0}) end
+
+test('the game clock is one timer, started by the first key listener and by no mouse listener', function()
+    local who, q, w = newPlayer(), numbered(), numbered()
+    local mouse = {Input.onMouseDown(who, function() end), Input.onMouseUp(who, function() end),
+        Input.onMouseMove(who, function() end)}
+    eq(callCount('CreateTimer'), 0); eq(callCount('TimerStart'), 0)
+    native('CreateTimer', function() return nil end)
+    failsAt(function() Input.onKeyDown(who, q, function() end) end, 'Input.onKeyDown: native returned nil')
+    failsAt(function() Input.onKeyUp(who, q, function() end) end, 'Input.onKeyUp: native returned nil')
+    eq(callCount('CreateTrigger'), 3); eq(callCount('TimerStart'), 0)
+    native('CreateTimer', function() clocks[#clocks + 1] = {}; return clocks[#clocks] end)
+    local starts = {}
+    native('TimerStart', function(timer, timeout, periodic, callback)
+        starts[#starts + 1] = {timer, timeout, periodic, type(callback)}
+    end)
+    local up = Input.onKeyUp(who, q, function() end)
+    -- One long run, not a repeating one: the elapsed time must never start over.
+    eq(#clocks, 1); eq(#starts, 1)
+    eq(starts[1][1], clocks[1]); eq(starts[1][2], 1000000); eq(starts[1][3], false); eq(starts[1][4], 'function')
+    local down, other = Input.onKeyDown(who, q, function() end), Input.onKeyDown(who, w, function() end)
+    eq(#clocks, 1); eq(#starts, 1)
+    native('TimerStart', function() end)
+    for _, token in ipairs({up, down, other, mouse[1], mouse[2], mouse[3]}) do Input.off(token) end
+    eq(callCount('PauseTimer'), 0); eq(callCount('DestroyTimer'), 0)
+end)
 
 test('one trigger per player and key, registered for all 16 modifier values, down and up', function()
     local who, other, q, w = newPlayer(), newPlayer(), numbered(), numbered()
@@ -105,6 +135,32 @@ test('the option repeats passes the repeated downs and says which they are', fun
     press(who, q); press(who, q); press(who, q); release(who, q); press(who, q)
     eq(table.concat(log, ', '), 'every false, once false, every true, every true, every false, once false')
     Input.off(every); Input.off(once)
+end)
+
+test('a down more than two seconds of game time after the last is a new press: its release was lost', function()
+    local who, q, w, log = newPlayer(), numbered(), numbered(), {}
+    local function note(name) return function(_, _, repeated) log[#log + 1] = name .. ' ' .. tostring(repeated) end end
+    local tokens = {Input.onKeyDown(who, q, note('once')), Input.onKeyDown(who, q, note('every'), {repeats = true}),
+        Input.onKeyDown(who, w, note('w'))}
+    local function at(time, key) gameTime = time; press(who, key) end
+    at(100, q)
+    -- The first repeat, and one exactly two seconds after it: both are repeats.
+    at(100.5, q); at(102.5, q)
+    eq(table.concat(log, ', '), 'once false, every false, every true, every true')
+    -- The window starts at the last down, not at the first: 2.25 seconds after it this is a new press.
+    log = {}
+    at(104.75, q); at(104.78125, q)
+    eq(table.concat(log, ', '), 'once false, every false, every true')
+    -- Each key has a time of its own: W's first down, long after Q's, and Q's repeat right after it.
+    log = {}
+    at(106.5, w); at(106.5, q); at(109, w)
+    eq(table.concat(log, ', '), 'w false, every true, w false')
+    -- A release still ends the press at once.
+    log = {}
+    release(who, q); at(109, q); at(109, q)
+    eq(table.concat(log, ', '), 'once false, every false, every true')
+    for _, token in ipairs(tokens) do Input.off(token) end
+    gameTime = 0
 end)
 
 test('what is held is kept per player and key, and forgotten when the last listener of a key is removed', function()

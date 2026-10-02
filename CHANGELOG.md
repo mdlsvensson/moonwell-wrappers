@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed:** `Input.onKeyDown` no longer skips the press that follows a lost key release. The game sends no release
+  for a key let go while it takes no keyboard input (another program in front, the chat box or the menu open), and the
+  next press was taken for a repeat. A down that comes more than two seconds of game time after the key's last down
+  now counts as a new press, and `repeated` is `false` for it.
+- The first key listener starts one game timer, which the module reads game time from.
+- Not fixed, and now documented: `onKeyUp` does not run for a lost release, and a press within two seconds of the
+  last down, or after the single-player menu (which pauses game time), is still skipped.
+
 ## 0.9.0 (2026-10-02)
 
 - New `Unit.autoDispose(interval?)`: one game timer that disposes the wrappers of units the game has removed (decay,
