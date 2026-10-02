@@ -150,3 +150,4 @@ v0.8.1 (2026-10-02): `moonwell-library.json` with `{ "dir": "src" }` (Moonwell's
 Moonwell 0.6.0 or later reads it from a tag's download and from a local `path`, so a map leaves `dir` out; a `dir` in
 the map's manifest still wins. Integration's consumer names the library by `path` alone, so every run exercises the
 file. `src/` is that of v0.8.0, and the in-game gate was not re-run.
+Tag consumption passed the same day: a fresh map whose entry has no `dir` locked `v0.8.1` to `c8e434b`.
