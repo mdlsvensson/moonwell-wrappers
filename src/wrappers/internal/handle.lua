@@ -4,6 +4,8 @@
 ---@field require fun(value: unknown, operation: string, depth: integer?): H
 ---@field dispose fun(value: unknown, operation: string): H?
 ---@field isDisposed fun(value: unknown, operation: string): boolean
+---@field live fun(value: unknown, operation: string): H?
+---@field sweep fun(gone: fun(raw: H): boolean)
 ---@field member fun(value: unknown): H|false|nil
 
 ---@class MoonwellWrappers.RegistryOptions
@@ -61,6 +63,24 @@ function Handle.new(class, name, options)
         local raw = members[value]
         if raw == nil then error(expected(operation), 3) end
         return raw == false
+    end
+    ---Like require, but a disposed wrapper gives nil instead of raising.
+    function registry.live(value, operation)
+        local raw = members[value]
+        if raw then return raw end
+        if raw == nil then error(expected(operation), 3) end
+        return nil
+    end
+    ---Disposes every cached wrapper whose handle `gone` names, without a native call of its own. The cache is walked
+    ---in no fixed order, so `gone` must only read.
+    function registry.sweep(gone)
+        for raw, value in pairs(byHandle) do
+            if gone(raw) then
+                members[value] = false
+                byHandle[raw] = nil
+                value.handle = nil
+            end
+        end
     end
     loaded[name] = registry
     if options.widget then widgets[#widgets + 1] = registry end

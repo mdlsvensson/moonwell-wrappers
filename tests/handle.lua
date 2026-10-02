@@ -51,6 +51,35 @@ test('widget install copies shared methods without replacing class methods', fun
     fails(function() f:getY() end, '[wrappers] FakeInstall.getY: FakeInstall is disposed')
 end)
 
+test('live gives the handle, nil once disposed, and raises for a stranger at the public caller', function()
+    local Fake = {}
+    local fakes = Handle.new(Fake, 'FakeLive')
+    function Fake:read() return (fakes.live(self, 'FakeLive.read')) end
+    local f = fakes.wrap({})
+    eq(f:read(), f.handle)
+    fakes.dispose(f, 'Test.dispose')
+    eq(f:read(), nil)
+    failsAt(function() Fake.read({}) end, '[wrappers] FakeLive.read: expected FakeLive wrapper')
+end)
+
+test('sweep disposes the wrappers whose handle the predicate names, and no others', function()
+    local Fake = {}
+    local fakes = Handle.new(Fake, 'FakeSweep', {weak = true})
+    local kept, gone = fakes.wrap({}), fakes.wrap({})
+    local goneRaw, asked = gone.handle, {}
+    fakes.sweep(function(raw) asked[raw] = true; return raw == goneRaw end)
+    eq(asked[kept.handle], true); eq(asked[goneRaw], true)
+    eq(fakes.isDisposed(kept, 'Test.op'), false); eq(fakes.isDisposed(gone, 'Test.op'), true)
+    eq(gone.handle, nil)
+    fails(function() fakes.require(gone, 'Test.op') end, '[wrappers] Test.op: FakeSweep is disposed')
+    local again = fakes.wrap(goneRaw)
+    assert(again ~= gone); eq(fakes.isDisposed(again, 'Test.op'), false)
+    asked = {}
+    fakes.sweep(function(raw) asked[raw] = true; return false end)
+    eq(asked[kept.handle], true); eq(asked[goneRaw], true)
+    eq(fakes.isDisposed(again, 'Test.op'), false)
+end)
+
 -- Wrap inside a helper so no register of the test body keeps the wrapper alive.
 local function wrapAndMark(fromHandle, raw, probe, kind)
     probe[fromHandle(raw)] = kind

@@ -28,9 +28,12 @@ function Item:getHandle() return (registry.require(self, 'Item.getHandle')) end
 ---@return boolean
 function Item:isDisposed() return (registry.isDisposed(self, 'Item.isDisposed')) end
 ---True while the game still has the item; false once it was removed (a used powerup, used-up charges, or removal by
----code that bypassed this wrapper). A disposed wrapper raises, like every method.
+---code that bypassed this wrapper). False for a disposed wrapper, without raising.
 ---@return boolean
-function Item:exists() return GetItemTypeId(registry.require(self, 'Item.exists')) ~= 0 end
+function Item:exists()
+    local raw = registry.live(self, 'Item.exists')
+    return raw ~= nil and GetItemTypeId(raw) ~= 0
+end
 ---@return integer
 function Item:getTypeId() return GetItemTypeId(registry.require(self, 'Item.getTypeId')) end
 ---@return string

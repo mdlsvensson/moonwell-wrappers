@@ -6,6 +6,7 @@
 -- Set frames = true for a separate run of the v0.5.0 frames gate only; it loads war3mapImported\wrappers-gate.toc.
 -- Set port = true for a separate run of the v0.7.0 port prerequisites gate only (damage, pathing, sync).
 -- Set additions = true for a separate run of the v0.8.0 additions gate only (art, events, weather, input).
+-- Set dispose = true for a separate run of the v0.9.0 automatic disposal gate only.
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -43,6 +44,7 @@ ui = false
 frames = false
 port = false
 additions = false
+dispose = false
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -837,13 +839,99 @@ additionsGate = (owner) ->
       inputGate!
   say "gate started: lines to read first, then watch the middle of the screen"
 
+-- v0.9.0 automatic disposal. Run with dispose = true. CONTRIBUTING step 15 lists every message; they are also written
+-- to CustomMapData\moonwell-wrappers-dispose.pld. Nothing needs watching; the run takes about four seconds.
+disposeGate = (owner) ->
+  lines = {}
+  say = (...) ->
+    parts = {"Wrapper dispose"}
+    for index = 1, select "#", ...
+      parts[#parts + 1] = tostring (select index, ...)
+    line = table.concat parts, " "
+    print line
+    lines[#lines + 1] = line
+  save = ->
+    PreloadGenClear!
+    PreloadGenStart!
+    for line in *lines
+      -- A Preload line keeps 259 characters: longer lines continue on the next.
+      for at = 1, #line, 200
+        Preload (line\sub(at, at + 199)\gsub "\"", "'")
+    PreloadGenEnd "moonwell-wrappers-dispose.pld"
+    PreloadGenClear!
+  state = (unit) -> "disposed " .. tostring(unit\isDisposed!) .. " exists " .. tostring unit\exists!
+
+  footman = $FourCC "hfoo"
+  living = Unit.create owner, footman, -300, 0, 270
+  removed = Unit.create owner, footman, -150, 0, 270
+  exploded = Unit.create owner, footman, 0, 0, 270
+  corpse = Unit.create owner, footman, 150, 0, 270
+  hero = Unit.create owner, $FourCC("Hpal"), 300, 0, 270
+  removedId = GetHandleId removed\getHandle!
+  stop = Unit.autoDispose!
+  RemoveUnit removed\getHandle!
+  SetUnitExploded exploded\getHandle!, true
+  exploded\kill!
+  corpse\kill!
+  hero\kill!
+  Unit.sweep!
+  say "1 same instant, after a sweep: removed", state(removed), "| exploded", state exploded
+
+  -- How long the timer's sweep takes to notice, in steps of 0.05 seconds.
+  waited = 0
+  watch = Timer.create!
+  watch\start 0.05, true, (self) ->
+    waited += 1
+    if removed\isDisposed!
+      self\destroy!
+      say "2 the timer's sweep disposed the removed unit after", string.format("%.2f", waited * 0.05), "s"
+
+  tick = 0
+  steps = Timer.create!
+  steps\start 1, true, (self) ->
+    tick += 1
+    if tick == 1
+      say "3 after 1 s: living", state(living), "| removed", state(removed), "| exploded", state(exploded),
+        "| corpse", state(corpse), "| dead hero", state hero
+      _, located = pcall -> print "ERROR no error for a swept unit", removed\getX!
+      say "4 error:", located
+      stop!
+      stop!
+      RemoveUnit living\getHandle!
+    elseif tick == 2
+      say "5 stopped, then removed by raw code:", state living
+      Unit.sweep!
+      say "6 after a sweep by hand: disposed", living\isDisposed!, "exists", living\exists!
+      fresh = Unit.create owner, footman, -150, 0, 270
+      say "7 handle ids: the removed unit had", removedId, "and a unit created now has", GetHandleId fresh\getHandle!
+      fresh\remove!
+    elseif tick == 3
+      held = for index = 1, 200
+        Unit.create owner, footman, -600 + 60 * (index % 20), -300 - 60 * math.floor((index - 1) / 20), 270
+      started = os.clock!
+      for _ = 1, 100
+        Unit.sweep!
+      elapsed = os.clock! - started
+      say "8 sweep cost:", #held, "more wrappers,", string.format("%.1f", elapsed * 10000), "microseconds per sweep"
+      for unit in *held
+        unit\remove!
+    else
+      self\destroy!
+      watch\destroy!
+      say "9 corpse and dead hero at the end:", state(corpse), "|", state hero
+      say "gate done"
+      save!
+  say "gate started: nothing to watch, about four seconds"
+
 -- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
 mw.on_main ->
   start = Timer.create!
   start\start 0, false, (self) ->
     self\destroy!
     owner = Player.fromIndex 0
-    if additions
+    if dispose
+      disposeGate owner
+    elseif additions
       additionsGate owner
     elseif port
       portGate owner

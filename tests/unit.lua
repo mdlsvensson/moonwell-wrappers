@@ -230,8 +230,74 @@ test('isAlive asks UnitAlive; exists asks for a type id', function()
     eq(u:isAlive(), true); eq(u:exists(), true)
     alive = false; eq(u:isAlive(), false); eq(u:exists(), true)
     typeId = 0; eq(u:exists(), false)
+    typeId = 1
     u:remove()
-    failsAt(function() u:exists() end, 'Unit.exists: Unit is disposed')
+    local asked = callCount('GetUnitTypeId')
+    eq(u:exists(), false); eq(callCount('GetUnitTypeId'), asked)
+    failsAt(function() Unit.exists({}) end, 'Unit.exists: expected Unit wrapper')
+end)
+
+test('sweep disposes the wrappers of removed units and leaves living units and corpses', function()
+    collectgarbage(); collectgarbage()
+    local types = {}
+    native('GetUnitTypeId', function(raw) return types[raw] end)
+    local living, corpse, gone = Unit.fromHandle({}), Unit.fromHandle({}), Unit.fromHandle({})
+    local goneRaw = gone.handle
+    types[living.handle], types[corpse.handle], types[goneRaw] = 1751543663, 1751543663, 0
+    resetCalls()
+    eq(select('#', Unit.sweep()), 0)
+    eq(callCount('GetUnitTypeId'), 3); eq(totalCalls(), 3)
+    eq(living:isDisposed(), false); eq(corpse:isDisposed(), false)
+    eq(gone:isDisposed(), true); eq(gone.handle, nil); eq(gone:exists(), false)
+    failsAt(function() gone:getX() end, 'Unit.getX: Unit is disposed')
+    gone:remove(); eq(callCount('RemoveUnit'), 0)
+    local again = Unit.fromHandle(goneRaw)
+    assert(again ~= gone); eq(again:isDisposed(), false)
+    types[goneRaw] = 1751543663
+    Unit.sweep()
+    eq(again:isDisposed(), false); eq(living:isDisposed(), false)
+    again:remove(); living:remove(); corpse:remove()
+end)
+
+test('autoDispose sweeps on one repeating timer; starting again changes the interval; stop is idempotent', function()
+    local timers, started, types = {}, nil, {}
+    native('CreateTimer', function() timers[#timers + 1] = {}; return timers[#timers] end)
+    native('TimerStart', function(timer, interval, periodic, callback)
+        started = {timer = timer, interval = interval, periodic = periodic, callback = callback}
+    end)
+    native('PauseTimer', function() end)
+    native('DestroyTimer', function() end)
+    native('GetUnitTypeId', function(raw) return types[raw] end)
+    local stop = Unit.autoDispose()
+    eq(#timers, 1); eq(started.timer, timers[1]); eq(started.interval, 0.25); eq(started.periodic, true)
+    local gone, living = Unit.fromHandle({}), Unit.fromHandle({})
+    types[gone.handle], types[living.handle] = 0, 1751543663
+    started.callback()
+    eq(gone:isDisposed(), true); eq(living:isDisposed(), false)
+    local stopAgain = Unit.autoDispose(1)
+    eq(#timers, 1); eq(started.timer, timers[1]); eq(started.interval, 1); eq(started.periodic, true)
+    eq(callCount('DestroyTimer'), 0)
+    stop()
+    eq(callName(totalCalls() - 1), 'PauseTimer'); expectCall('PauseTimer', timers[1])
+    eq(callName(totalCalls()), 'DestroyTimer'); expectCall('DestroyTimer', timers[1])
+    stop(); stopAgain()
+    eq(callCount('PauseTimer'), 1); eq(callCount('DestroyTimer'), 1)
+    local last = Unit.autoDispose(0.5)
+    eq(#timers, 2); eq(started.timer, timers[2]); eq(started.interval, 0.5)
+    last(); expectCall('DestroyTimer', timers[2])
+    living:remove()
+end)
+
+test('autoDispose rejects a bad interval and a missing timer at the caller, before any native', function()
+    native('CreateTimer', function() return {} end)
+    native('TimerStart', function() end)
+    for _, bad in ipairs({0, -1, 0/0, math.huge, '1', false, {}}) do
+        failsAt(function() Unit.autoDispose(bad) end, 'Unit.autoDispose: expected a finite positive interval')
+    end
+    eq(totalCalls(), 0)
+    native('CreateTimer', function() return nil end)
+    failsAt(function() Unit.autoDispose() end, 'Unit.autoDispose: native returned nil')
+    eq(callCount('TimerStart'), 0)
 end)
 
 test('orders and damage accept any widget target', function()
@@ -265,7 +331,7 @@ test('new unit methods reject a removed receiver', function()
         'addItem', 'addItemById', 'removeItem', 'removeItemFromSlot', 'hasItem', 'dropItemAt', 'dropItemToSlot',
         'useItem', 'getMana', 'setMana', 'getMaxMana', 'setMaxMana', 'setMaxLife', 'getMoveSpeed', 'setMoveSpeed',
         'setX', 'setY', 'setScale', 'setVertexColor', 'setAnimation', 'pause', 'isPaused', 'setInvulnerable',
-        'isInvulnerable', 'show', 'isHidden', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder', 'isAlive', 'exists',
+        'isInvulnerable', 'show', 'isHidden', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder', 'isAlive',
         'damageTarget', 'applyTimedLife', 'issueOrderById', 'issuePointOrderById', 'issueTargetOrderById'})
 end)
 

@@ -100,6 +100,14 @@ test('exists asks for a type id', function()
     typeId = 0; eq(wrapper:exists(), false)
 end)
 
+test('exists is false for a disposed wrapper, without a native call', function()
+    native('GetItemTypeId', function() return 1 end)
+    local wrapper = Item.fromHandle({})
+    wrapper:remove()
+    eq(wrapper:exists(), false); eq(callCount('GetItemTypeId'), 0)
+    failsAt(function() Item.exists({}) end, 'Item.exists: expected Item wrapper')
+end)
+
 test('fromEvent wraps the item of the running event, and nil when it has none', function()
     local raw = {}
     native('GetManipulatedItem', function() return raw end)

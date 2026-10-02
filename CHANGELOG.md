@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- New `Unit.autoDispose(interval?)`: one game timer that disposes the wrappers of units the game has removed (decay,
+  or removal by code that bypassed the wrapper), every 0.25 seconds unless told otherwise. It returns a function that
+  stops it, and nothing runs until a map calls it.
+- New `Unit.sweep()`: the same check, once, at a moment the map chooses.
+- A swept wrapper is like one `remove()` was called on: its methods raise `Unit is disposed` at the calling line, and
+  it lets go of the handle. A corpse is still a unit, so its wrapper stays valid until the corpse is gone.
+- **Changed:** `exists()` on Unit, Item and Destructable returns `false` for a disposed wrapper; before, it raised.
+  Migration: none is needed, unless code relied on that error.
+
 ## 0.8.1 (2026-10-02)
 
 - New `moonwell-library.json` at the library's root, naming `src` as its module folder. A map on Moonwell 0.6.0 or

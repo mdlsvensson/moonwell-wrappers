@@ -83,6 +83,14 @@ test('exists asks for a type id', function()
     typeId = 0; eq(wrapper:exists(), false)
 end)
 
+test('exists is false for a disposed wrapper, without a native call', function()
+    native('GetDestructableTypeId', function() return 1 end)
+    local wrapper = Destructable.fromHandle({})
+    wrapper:remove()
+    eq(wrapper:exists(), false); eq(callCount('GetDestructableTypeId'), 0)
+    failsAt(function() Destructable.exists({}) end, 'Destructable.exists: expected Destructable wrapper')
+end)
+
 test('fromEvent wraps the destructable of the running event, and nil when it has none', function()
     local raw = {}
     native('GetTriggerDestructable', function() return raw end)

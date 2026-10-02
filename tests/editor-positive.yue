@@ -16,6 +16,8 @@ import "wrappers.trigger" as Trigger
 mw.on_main ->
   unit = Unit.create Player.fromIndex(0), 1751543663, 0, 0, 270
   unit\setLife 250
+  stopSweeping = Unit.autoDispose!
+  stopSweeping! unless unit\exists!
   group = Group.create!
   group\add unit
   timer = Timer.create!

@@ -252,6 +252,22 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       6. Q and a click after the listeners are removed: every count is 0 (`input 6: downs 0 … moves 0`), then
          `gate done`.
     - No `[wrappers] ... failed` line at any point.
+15. Automatic disposal (v0.9.0): in the gate map, `yue -e gate.lua dispose` (normal build only). Only the dispose gate
+    runs, for about four seconds, and nothing needs watching: five units stand in a row, of which some die. Every line
+    starts with `Wrapper dispose` and is also written to
+    `Documents\Warcraft III\CustomMapData\moonwell-wrappers-dispose.pld`.
+    - `1 same instant, after a sweep: removed disposed false exists true | exploded disposed <…> exists <…>`: a unit
+      removed by raw code is not seen in the instant of its removal. Record what the exploded unit reads.
+    - `2 the timer's sweep disposed the removed unit after <at most 0.30> s`.
+    - `3 after 1 s: living disposed false exists true | removed disposed true exists false | exploded disposed true
+      exists false | corpse disposed false exists true | dead hero disposed false exists true`.
+    - `4 error: war3map.lua:<line>: [wrappers] Unit.getX: Unit is disposed`.
+    - `5 stopped, then removed by raw code: disposed false exists false`: nothing sweeps after `stop()`.
+    - `6 after a sweep by hand: disposed true exists false`.
+    - `7 handle ids: the removed unit had <id> and a unit created now has <id>`: record both.
+    - `8 sweep cost: 200 more wrappers, <n> microseconds per sweep`: record the number.
+    - `9 corpse and dead hero at the end: disposed false exists true | disposed false exists true`, then `gate done`.
+    - No `[wrappers] ... failed` line at any point.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor

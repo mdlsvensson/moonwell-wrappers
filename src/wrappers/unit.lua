@@ -137,9 +137,41 @@ function Unit:getCurrentOrder() return GetUnitCurrentOrder(registry.require(self
 function Unit:isAlive() return UnitAlive(registry.require(self, 'Unit.isAlive')) end
 ---True while the game still has the unit, dead or alive; false once the game has removed it (decay, or removal by code
 ---that bypassed this wrapper). A removal shows from the next frame: in the same instant as RemoveUnit it still reads
----true (v0.6.0 gate, 3.0.0.24268). A disposed wrapper raises, like every method.
+---true (v0.6.0 gate, 3.0.0.24268). False for a disposed wrapper, without raising.
 ---@return boolean
-function Unit:exists() return GetUnitTypeId(registry.require(self, 'Unit.exists')) ~= 0 end
+function Unit:exists()
+    local raw = registry.live(self, 'Unit.exists')
+    return raw ~= nil and GetUnitTypeId(raw) ~= 0
+end
+---@param raw unit
+local function removed(raw) return GetUnitTypeId(raw) == 0 end
+---Disposes the wrapper of every unit the game has removed (decay, or removal by code that bypassed the wrapper), as
+---`remove()` would have: its methods raise from then on. One native call per Unit wrapper still in use; a corpse is
+---still a unit. A removal shows from the next frame.
+function Unit.sweep() registry.sweep(removed) end
+---@type timer?
+local sweeper
+local function sweep() registry.sweep(removed) end
+local function stopSweeper()
+    local timer = sweeper
+    if not timer then return end
+    sweeper = nil
+    PauseTimer(timer)
+    DestroyTimer(timer)
+end
+---Runs `Unit.sweep()` every `interval` seconds on one game timer, until the returned function is called. Off until a
+---map calls it. Calling it again changes the interval of that one timer, and every returned function stops it.
+---@param interval number? Seconds between sweeps; default 0.25.
+---@return fun() stop Idempotent.
+function Unit.autoDispose(interval)
+    if interval == nil then interval = 0.25 end
+    if type(interval) ~= 'number' or interval ~= interval or interval <= 0 or interval == math.huge then
+        error('[wrappers] Unit.autoDispose: expected a finite positive interval', 2)
+    end
+    if not sweeper then sweeper = Handle.created(CreateTimer(), 'Unit.autoDispose') end
+    TimerStart(sweeper, interval, true, sweep)
+    return stopSweeper
+end
 function Unit:kill() KillUnit(registry.require(self, 'Unit.kill')) end
 function Unit:remove()
     local raw = registry.dispose(self, 'Unit.remove')

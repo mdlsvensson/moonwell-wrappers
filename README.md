@@ -109,7 +109,7 @@ session.
 
 Use `unit/item/destructable:remove()` and `timer/trigger/group/effect/rect/region/force:destroy()`, and `destroy()` on
 the presentation classes. Repeated cleanup is harmless; other methods reject disposed receivers and disposed wrapper
-arguments. `unit:kill()` leaves its wrapper valid because death is not removal. Groups do not own their units, effects
+arguments (`isDisposed()` and a widget's `exists()` answer instead). `unit:kill()` leaves its wrapper valid because death is not removal. Groups do not own their units, effects
 do not own their targets, and fog modifiers do not own their rects. Garbage collection never destroys game objects.
 
 Raw natives remain available through `getHandle()`, for example `SetUnitInvulnerable(unit:getHandle(), true)`. Destroy
@@ -120,9 +120,36 @@ handle. There is no generic native liveness or handle-type check. Do not modify 
 
 A widget the game removes by itself (decay, a used powerup, removal by code that bypassed the wrapper) leaves a wrapper
 that is not disposed: `exists()` tells you it is gone (its type id reads 0), while `isAlive()` on a unit uses the
-`UnitAlive` native, which needs Moonwell 0.5.1 or later. Both raise for a disposed wrapper, like every method. Measured
-on 3.0.0.24268 (v0.6.0 gate): an item or destructable removed with the raw native reads `false` at once; a unit reads
+`UnitAlive` native, which needs Moonwell 0.5.1 or later. `exists()` is also `false` for a disposed wrapper, so it is
+the one question that never raises; `isAlive()` raises for a disposed wrapper, like every other method. Measured on
+3.0.0.24268 (v0.6.0 gate): an item or destructable removed with the raw native reads `false` at once; a unit reads
 `true` in the same instant as `RemoveUnit` and `false` from the next frame (a zero-second timer).
+
+### Automatic disposal of removed units
+
+A map can have the library dispose the wrappers of units the game has removed:
+
+```yue
+import "moonwell" as mw
+import "wrappers.unit" as Unit
+
+mw.on_main ->
+  Unit.autoDispose!        -- every 0.25 seconds; Unit.autoDispose 1 for every second
+```
+
+- `Unit.autoDispose(interval?)` starts one game timer that runs `Unit.sweep()` every `interval` seconds (0.25 when left
+  out) and returns a function that stops it. Nothing runs until a map calls it. Calling it again changes the interval
+  of that one timer, and any of the returned functions stops it.
+- `Unit.sweep()` checks once: it disposes the wrapper of every unit whose type id reads 0, with one native call per
+  Unit wrapper still in use. Call it yourself to choose the moment, for example from your own scheduler.
+- A swept wrapper is like one you called `remove()` on: `isDisposed()` is `true`, `exists()` is `false`, every other
+  method raises `Unit is disposed` at your line, and the wrapper lets go of the handle.
+- A corpse is still a unit: its wrapper stays valid until the corpse is gone. A hero waiting to be revived stays valid
+  too.
+- A removal is seen at the first sweep after the frame it happened in, so code that keeps a unit across time asks
+  `unit\exists!` before it uses it.
+- There is no "unit was removed" callback: wrappers are swept in no fixed order, so nothing may depend on it. Items and
+  destructables are not swept.
 
 Unit, Item and Destructable are widgets (`MoonwellWrappers.Widget` in the editor). All three have `getLife()`,
 `setLife(value)`, `getX()` and `getY()`. Parameters typed Widget accept any of them: `unit:issueTargetOrder`,
@@ -343,6 +370,7 @@ and `destroy` or `remove`).
 ### `wrappers.unit`
 
 - `create(Player, typeId, x, y, facing)`, `fromEvent()`
+- `sweep()`, `autoDispose(interval?)`: see [Automatic disposal of removed units](#automatic-disposal-of-removed-units)
 - `getTypeId()`, `getName()`, `getOwner()`, `setOwner(Player, changeColor)`
 - `getX()`, `getY()`, `setPosition(x,y)`, `setX(x)`, `setY(y)`, `getFacing()`, `setFacing(degrees)`
 - `getLife()`, `setLife(v)`, `getMaxLife()`, `setMaxLife(n)`, `getMana()`, `setMana(v)`, `getMaxMana()`,
