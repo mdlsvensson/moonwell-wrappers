@@ -170,3 +170,5 @@ after the maintainer chose polling over the undefend order).
   `.test-work/dry_gate_dispose.lua` runs the compiled gate on stub natives. Measured: a sweep in the instant of a
   removal sees nothing; the default timer disposed a removed unit after 0.25 s; 0.45 microseconds per wrapper; the
   removed unit's handle id was not used again two seconds later.
+
+Tag consumption for v0.9.0 passed the same day: a fresh map locked `v0.9.0` to `7347705`.
