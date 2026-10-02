@@ -188,3 +188,5 @@ v0.9.1 (2026-10-02): the lost key release (Moonwell's backlog item; a probe, the
   `timer?` passed to a native, and the wrappers use no `--[[@as]]` casts.
 - `.test-work/dry_probe_release.lua` runs the compiled probe on stub natives. It caught an import named `Player`
   hiding the native `Player` before the maintainer ran the probe: name such an import `PlayerWrapper` in raw code.
+
+Tag consumption for v0.9.1 passed the same day: a fresh map locked `v0.9.1` to `24b1511`.
