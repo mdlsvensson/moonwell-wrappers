@@ -4,8 +4,8 @@ This is a separate optional Moonwell library, written in annotated Lua 5.3. Runt
 `src/wrappers/`. Maps consume this repository through a local path or an immutable GitHub tag; `moonwell-library.json`
 at the root names `src` as the module folder (since `v0.8.1`; a map on an older tag, or on Moonwell 0.5, writes
 `dir = "src"`). The remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`,
-`v0.3.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0`, `v0.8.0` and `v0.8.1` on the commits that record
-their gates. Tags must never be moved.
+`v0.3.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0`, `v0.8.0`, `v0.8.1` and `v0.9.0` on the commits
+that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -25,8 +25,9 @@ v0.2.0 adds broad gameplay coverage; v0.3.0 adds presentation (text tags, sounds
 modifiers), deeper effects and item/destructable enumeration; v0.4.0 adds classic UI (dialogs, multiboards,
 leaderboards, quests, defeat conditions, timer dialogs). v0.5.0 adds frames. v0.7.0 adds damage events and sync, for the
 wc3-lib port, on a shared internal listener list (`internal/listeners.lua`). v0.8.0 adds input listeners, weather
-effects, art from ability data, four Trigger registrations and `fromEvent()`. Do not add gameplay systems, implicit
-cleanup or a w3ts compatibility layer without a new design.
+effects, art from ability data, four Trigger registrations and `fromEvent()`. v0.9.0 adds the opt-in disposal of
+removed units' wrappers. Do not add gameplay systems, further implicit cleanup or a w3ts compatibility layer without a
+new design.
 
 ## Rules
 
@@ -151,3 +152,21 @@ Moonwell 0.6.0 or later reads it from a tag's download and from a local `path`, 
 the map's manifest still wins. Integration's consumer names the library by `path` alone, so every run exercises the
 file. `src/` is that of v0.8.0, and the in-game gate was not re-run.
 Tag consumption passed the same day: a fresh map whose entry has no `dir` locked `v0.8.1` to `c8e434b`.
+
+v0.9.0 (2026-10-02): automatic disposal of Unit wrappers by polling (Moonwell's backlog item; a short design in chat,
+after the maintainer chose polling over the undefend order).
+
+- `registry.sweep(gone)` in `internal/handle.lua` walks the cache and disposes what the predicate names; it calls no
+  native itself. `Unit.sweep()` passes "type id reads 0". `Unit.autoDispose(interval?)` runs it on one raw game timer
+  (not `wrappers.timer`, so Unit bundles nothing more) and returns the one stop function.
+- The sweep walks a weak table, so its order differs between machines, and so does the set of wrappers it meets (each
+  machine's collector drops unused ones at its own time). That is harmless only while nothing observes it: the sweep
+  returns nothing and has no callback. A "unit was removed" listener would need an ordered list beside the cache.
+- `registry.live(value, operation)` gives the handle, or nil for a disposed wrapper; `exists()` on the three widget
+  classes uses it and no longer raises for a disposed wrapper.
+- Items and destructables are not swept. The undefend order (exact timing, needs a custom ability in every map) is
+  left as a possible second source.
+- The gate map's `dispose` run (`yue -e gate.lua dispose`, CONTRIBUTING step 15) passed on 2026-10-02;
+  `.test-work/dry_gate_dispose.lua` runs the compiled gate on stub natives. Measured: a sweep in the instant of a
+  removal sees nothing; the default timer disposed a removed unit after 0.25 s; 0.45 microseconds per wrapper; the
+  removed unit's handle id was not used again two seconds later.

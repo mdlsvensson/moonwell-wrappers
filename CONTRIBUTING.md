@@ -359,6 +359,13 @@ its one change to existing code is a type check in front of four natives. Two pr
 v0.8.1: Not re-run (maintainer's decision, 2026-10-02). The release adds `moonwell-library.json` and changes tools and
 documentation; no file under `src/` changed since v0.8.0.
 
+v0.9.0: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua dispose` (step 15),
+normal build, one machine. Every line printed as described, read from the gate's file. The exploded unit read
+`disposed false exists true` in the instant of its death, like the removed one; the timer's sweep disposed the removed
+unit after 0.25 s; the error named `war3map.lua:5417`, the gate's own line; the handle ids were 1048696 and 1048703;
+a sweep over 200 more wrappers took 90.0 microseconds. Steps 2–10, 13 and 14 were not re-run: the release adds two
+functions and changes `exists()` for a disposed wrapper only.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

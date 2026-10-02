@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2026-10-02)
 
 - New `Unit.autoDispose(interval?)`: one game timer that disposes the wrappers of units the game has removed (decay,
   or removal by code that bypassed the wrapper), every 0.25 seconds unless told otherwise. It returns a function that
@@ -10,6 +10,37 @@
   it lets go of the handle. A corpse is still a unit, so its wrapper stays valid until the corpse is gone.
 - **Changed:** `exists()` on Unit, Item and Destructable returns `false` for a disposed wrapper; before, it raised.
   Migration: none is needed, unless code relied on that error.
+
+### Release gate
+
+Automated checks passed 2026-10-02 on Windows, with Moonwell 0.8.1 and YueScript 0.34.3:
+
+- 34 suites (225 tests), among them the sweep, the timer and `exists()` on the three widget classes;
+- Lua 5.3.6 syntax checks (75 files);
+- Moonwell normal and minified builds, the one-module bundles and bundled execution;
+- LuaLS 3.19.1 fixtures (28 expected negative diagnostics, the new one a text passed as the interval);
+- the native-call check of `src/wrappers` against Moonwell's declarations;
+- the gate example builds with clean editor diagnostics;
+- 20 mutations of the new code, each caught by a test;
+- moonwell-systems' 21 suites and its integration against this code: it needs no change.
+
+In-game gate, 2026-10-02, Warcraft III 3.0.0.24268, the new `dispose` run, normal build, one machine (the other runs
+were not re-run: the release adds two functions and changes `exists()` for a disposed wrapper only):
+
+- A sweep in the same instant as a raw `RemoveUnit` and an exploding death saw neither: both wrappers still read
+  `disposed false exists true`.
+- The timer's sweep, at the default 0.25 seconds, disposed the removed unit after 0.25 s.
+- After one second the removed and the exploded unit read `disposed true exists false`; the living unit, the corpse and
+  the dead hero read `disposed false exists true`, and the last two still did at the end of the run.
+- A method on a swept wrapper raised `war3map.lua:5417: [wrappers] Unit.getX: Unit is disposed`, the gate's own line.
+- After `stop()`, a unit removed by raw code read `disposed false exists false` a second later; a sweep by hand then
+  disposed it.
+- 100 sweeps over 200 more wrappers took 90 microseconds each, about 0.45 per wrapper.
+- The removed unit's handle id was 1048696 and a unit created two seconds later got 1048703: the id was not used again
+  within the run.
+- No `[wrappers] ... failed` line printed.
+
+Two machines are not part of this gate. The sweep's order differs between machines, and nothing observes it.
 
 ## 0.8.1 (2026-10-02)
 

@@ -5,12 +5,12 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.8.1` (2026-10-02): the library names its own module folder (`moonwell-library.json`), so a map no
-longer writes `dir = "src"`. Its code is that of `v0.8.0` (2026-10-01): keyboard and mouse listeners
-(`wrappers.input`), weather effects (`wrappers.weathereffect`), `Effect.abilityArt`, four more Trigger registrations
-and `fromEvent()`. It builds on v0.7's damage events and sync, v0.6's refactor (errors point at the calling line;
-Moonwell 0.5.1 or later), v0.5's frames, v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on
-3.0.0.24268. Multiplayer desync checks are deferred until before Moonwell 1.0.
+**Status:** `v0.9.0` (2026-10-02): `Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has
+removed, and `exists()` answers `false` for a disposed wrapper. It builds on v0.8's input listeners, weather effects,
+`Effect.abilityArt`, Trigger registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer
+writes `dir = "src"`), v0.7's damage events and sync, v0.6's refactor (errors point at the calling line; Moonwell 0.5.1
+or later), v0.5's frames, v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268.
+Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -29,13 +29,13 @@ libraries {
 Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.8.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.9.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.8.1"
+    tag = "v0.9.0"
   }
 }
 ```
@@ -150,6 +150,10 @@ mw.on_main ->
   `unit\exists!` before it uses it.
 - There is no "unit was removed" callback: wrappers are swept in no fixed order, so nothing may depend on it. Items and
   destructables are not swept.
+
+Measured on 3.0.0.24268 (v0.9.0 gate): with the default interval a unit removed by raw code was disposed 0.25 seconds
+later, and an exploded unit within a second; a corpse and a dead hero stayed valid; a sweep by hand in the same instant
+as `RemoveUnit` did not see the removal; a sweep over 200 wrappers took 90 microseconds, about 0.45 per wrapper.
 
 Unit, Item and Destructable are widgets (`MoonwellWrappers.Widget` in the editor). All three have `getLife()`,
 `setLife(value)`, `getX()` and `getY()`. Parameters typed Widget accept any of them: `unit:issueTargetOrder`,
