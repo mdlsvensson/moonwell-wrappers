@@ -1,14 +1,38 @@
 # Changelog
 
-## Unreleased
+## 0.9.1 (2026-10-02)
 
 - **Fixed:** `Input.onKeyDown` no longer skips the press that follows a lost key release. The game sends no release
   for a key let go while it takes no keyboard input (another program in front, the chat box or the menu open), and the
   next press was taken for a repeat. A down that comes more than two seconds of game time after the key's last down
   now counts as a new press, and `repeated` is `false` for it.
 - The first key listener starts one game timer, which the module reads game time from.
-- Not fixed, and now documented: `onKeyUp` does not run for a lost release, and a press within two seconds of the
-  last down, or after the single-player menu (which pauses game time), is still skipped.
+- Not fixed, and now documented: `onKeyUp` does not run for a lost release, and a press within two seconds of game
+  time after the last down is still skipped. In a single-player game that time stands still while the menu is open and
+  runs slower while another program is in front.
+
+### Release gate
+
+Automated checks passed 2026-10-02 on Windows, with Moonwell 0.9.0 and YueScript 0.34.3: 34 suites (227 tests); Lua
+5.3.6 syntax checks (75 files); integration (normal and minified builds, the one-module bundles, LuaLS 3.19.1 fixtures
+with 28 expected negative diagnostics, the native-call check and the gate example); 10 mutations of the new code, each
+caught by a test.
+
+In game, 2026-10-02, Warcraft III 3.0.0.24268, one machine, the probe `yue -e gate.lua probe-release` in the gate map
+(`../wrappers-gate/PROBE-RELEASE-RESULTS.md`), run twice by the maintainer: hold Q, do something, let go, tap Q.
+
+- **Before the fix (v0.9.0):** the release was lost after Alt+Tab, after a click on another window, with the chat box
+  open and with the menu open, and in all four the tap did not reach an `onKeyDown` listener. With Shift pressed
+  while Q was held the release arrived, with `meta` 1.
+- **With the fix:** the tap ran after Alt+Tab (8.25 s of game time since the last down), after the click on another
+  window (3.19 s) and after the chat box (4.00 s). After the menu it did not run: 1.00 s of game time had passed in
+  3.33 s, inside the two-second window.
+- Game time ran slower than the machine's clock while the game was in the background: 14.05 s counted as 8.25 s, and
+  8.73 s as 3.19 s.
+- A held key's first repeat came 0.50 s after the press; pressing another key stopped its repeats.
+
+The other gate runs were not re-run: the change is inside `wrappers.input`. Two machines are not part of this; game
+time is the same on every machine.
 
 ## 0.9.0 (2026-10-02)
 

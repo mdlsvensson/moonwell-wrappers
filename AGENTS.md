@@ -4,8 +4,8 @@ This is a separate optional Moonwell library, written in annotated Lua 5.3. Runt
 `src/wrappers/`. Maps consume this repository through a local path or an immutable GitHub tag; `moonwell-library.json`
 at the root names `src` as the module folder (since `v0.8.1`; a map on an older tag, or on Moonwell 0.5, writes
 `dir = "src"`). The remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`,
-`v0.3.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0`, `v0.8.0`, `v0.8.1` and `v0.9.0` on the commits
-that record their gates. Tags must never be moved.
+`v0.3.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0`, `v0.8.0`, `v0.8.1`, `v0.9.0` and `v0.9.1` on the
+commits that record their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -172,3 +172,19 @@ after the maintainer chose polling over the undefend order).
   removed unit's handle id was not used again two seconds later.
 
 Tag consumption for v0.9.0 passed the same day: a fresh map locked `v0.9.0` to `7347705`.
+
+v0.9.1 (2026-10-02): the lost key release (Moonwell's backlog item; a probe, then a short design in chat).
+
+- Measured (`../wrappers-gate/PROBE-RELEASE-RESULTS.md`): the game sends no release for a key let go while it takes no
+  keyboard input (Alt+Tab, a click on another window, the chat box, the menu). `onKeyUp` cannot know; `onKeyDown` took
+  the next press for a repeat.
+- The rule in `input.lua`: `held[id]` is the game time of the key's last down, and a down later than `REPEAT_WINDOW`
+  (2 seconds) after it is a new press. Game time is `TimerGetElapsed` of one raw timer on a run of 1,000,000 seconds,
+  created with the first key listener (`keySource`) and never destroyed. It must be game time, not `os.clock`: every
+  machine has to decide alike.
+- What stays: a press within the window after a lost release is skipped. In single player, game time stands still in
+  the menu and runs slower in the background (8.7 s counted as 3.2 s), so the window is longer there in real time.
+- A local that is set before its readers can run is declared `---@type timer` without a value: LuaLS flags
+  `timer?` passed to a native, and the wrappers use no `--[[@as]]` casts.
+- `.test-work/dry_probe_release.lua` runs the compiled probe on stub natives. It caught an import named `Player`
+  hiding the native `Player` before the maintainer ran the probe: name such an import `PlayerWrapper` in raw code.

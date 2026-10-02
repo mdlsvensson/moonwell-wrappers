@@ -366,6 +366,12 @@ unit after 0.25 s; the error named `war3map.lua:5417`, the gate's own line; the 
 a sweep over 200 more wrappers took 90.0 microseconds. Steps 2–10, 13 and 14 were not re-run: the release adds two
 functions and changes `exists()` for a disposed wrapper only.
 
+v0.9.1: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, the probe
+`yue -e gate.lua probe-release` (six steps, `../wrappers-gate/PROBE-RELEASE.md`), before and after the fix. The
+results are in `../wrappers-gate/PROBE-RELEASE-RESULTS.md` and in the changelog: with the fix the press after
+Alt+Tab, after a click on another window and after the chat box reached `onKeyDown`, and the press one second of game
+time after the menu did not. The numbered steps above were not re-run: the change is inside `wrappers.input`.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to
