@@ -2,21 +2,24 @@
 
 Use handwritten annotated Lua 5.3, test-first changes and explicit native boundaries. Keep runtime modules under
 `src/wrappers/`; tests/tools/examples must stay outside `src/`. No Node.js or npm dependencies. Expected gameplay misuse
-raises contextual Lua errors. Review each task and the final change. Work on main; the maintainer pushes.
+raises contextual Lua errors. Review each task and the final change. Work on main; push once the checks pass.
 
 ## Tools
 
-- Deno 2.x.
+- The `moonwell` program, 0.8.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
+  line). The tools themselves are Lua, run with `yue -e`: there is no Deno.
 - YueScript 0.34.2, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
 - Pkl 0.32.1, on PATH (or set `MOONWELL_PKL` to its executable).
-- A sibling Moonwell checkout at 0.5.1 or later (or `MOONWELL_REPO` pointing to that checkout). The library itself needs
-  Moonwell 0.5.1 or later, which knows the `UnitAlive` native.
+- A sibling Moonwell checkout (or `MOONWELL_REPO` pointing to that checkout): integration links its consumer map to
+  the checkout's Pkl schema, so the program and the checkout must have the same major and minor version. The library
+  itself needs Moonwell 0.5.1 or later, which knows the `UnitAlive` native.
 - LuaLS 3.19.1 (or `MOONWELL_LUALS` pointing to the Lua extension's `server/bin/lua-language-server.exe`).
 - Lua 5.3.6 `luac` (or `MOONWELL_LUAC` pointing to it).
 
 No tool is installed globally by the tests. Environment overrides are paths to executables, except MOONWELL_REPO.
 Integration creates a fresh ignored `.test-work/integration-*/consumer`; reports and a latest-run pointer are retained
-there. It uses the real CLI, Pkl schema, generated editor files and bundler. All tests run from this repository root.
+there. It uses the real `moonwell` program, Pkl schema, generated editor files and bundler. All tests run from this
+repository root.
 
 On Windows, a small portable Lua syntax checker can be built from the official source using Tiny C Compiler. The
 archives and compiled tools belong in ignored `.tools/`. Download sources:
@@ -45,12 +48,9 @@ its passing runtime tests alone do not establish game syntax compatibility.
 ## Automated checks
 
 ```text
-deno task check
-deno task lint
-deno fmt --check
-deno task test
-deno task check:lua
-deno task test:integration
+yue -e tools/test.lua          # the behavior suites, one process each; name suites to run only those
+yue -e tools/check.lua         # Lua 5.3.6 syntax of src/, tests/ and tools/
+yue -e tools/integration.lua   # a real consumer map, LuaLS and the bundler
 ```
 
 Tests use real wrappers and stand-ins for unavailable Warcraft natives, checking arguments, return values and callback
@@ -136,7 +136,7 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    If a sound, model or splat never appears or plays in any run, its path or name may not exist in this game version:
    substitute one from World Editor and record it. Record whether the bolt stays visible and moves at 12 s. Restore
    `presentation = false`.
-8. Classic UI (v0.4.0): first run the gate map's `ui-init` probe (`../wrappers-gate`, `deno task gate ui-init`,
+8. Classic UI (v0.4.0): first run the gate map's `ui-init` probe (`../wrappers-gate`, `yue -e gate.lua ui-init`,
    instructions in its `PROBE-UI.md`) and record its answers in the results below and in README. Then set `ui = true`
    and run again; only the classic UI gate runs. A dialog titled `Wrapper dialog` appears with `Keyed (K)`, `Plain` and
    `Rebuild` (`Wrapper dialog shown: ...` prints). Press K: the dialog closes, `Wrapper dialog keyed by <your name>`
@@ -160,7 +160,7 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    (yellow title, green time) counts down from about 1:00; at 36 s it counts faster (`speed 4`; record what it shows);
    at 39 s it shows about 0:10; at 42 s it disappears. At 45 s `Wrapper ui cleanup passed; quest item disposed true`
    prints and the quests leave the log. Restore `ui = false`.
-9. Frames (v0.5.0): first run the gate map's `frame-init` probe (`../wrappers-gate`, `deno task gate frame-init`,
+9. Frames (v0.5.0): first run the gate map's `frame-init` probe (`../wrappers-gate`, `yue -e gate.lua frame-init`,
    instructions in its `PROBE-FRAME.md`) and record its answers in the results below and in README. If a template the
    gate uses did not create after loading the gate map's TOC, change the gate to one that did before continuing. Then
    set `frames = true` and run again; only the frames gate runs. `Wrapper frames shown: <name> children <n>` prints
@@ -194,7 +194,7 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
     occurs. Then stop and apply it.
-13. Port prerequisites (v0.7.0): in the gate map, `deno task gate port` (normal build only). Only the port gate runs; a
+13. Port prerequisites (v0.7.0): in the gate map, `yue -e gate.lua port` (normal build only). Only the port gate runs; a
     footman stands at the centre with another one to its left, and a line of trees runs north–south to their right.
     Messages, one step per second:
     - at start: `Wrapper collision size <n>` (record it) and `Wrapper port gate started`;
@@ -219,7 +219,7 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       `Wrapper sync received from <your name> 255 true` and the prefix lines: record which of `prefix 16 arrived`,
       `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
     - step 15: `Wrapper port gate done`, and no `[wrappers] ... failed` line at any point.
-14. Additions (v0.8.0): in the gate map, `deno task gate additions` (normal build only). Only the additions gate runs.
+14. Additions (v0.8.0): in the gate map, `yue -e gate.lua additions` (normal build only). Only the additions gate runs.
     Every line starts with `Wrapper additions` and is also written to
     `Documents\Warcraft III\CustomMapData\moonwell-wrappers-additions.pld`.
     - Printed at once, nothing to watch:
@@ -309,7 +309,7 @@ v0.5.1: Not re-run (maintainer's decision, 2026-09-30). The release changes LuaL
 `Effect.flashOn` take a Unit), a comment, fixtures and documentation; runtime code is that of v0.5.0.
 
 v0.6.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, normal builds from the gate map
-(`deno task gate core`, `probes`, `presentation`, `ui`, `perf`). Steps 2–8 passed as described. The probes run was
+(`yue -e gate.lua core`, `probes`, `presentation`, `ui`, `perf`). Steps 2–8 passed as described. The probes run was
 repeated once after adding the delayed `exists()` check.
 
 - `Wrapper exists after raw removal true false false`: the unit still reads `true` in that instant.
@@ -323,14 +323,14 @@ parentheses on raising returns and the shared `require`, which the unit tests an
 run the same code. Performance against v0.5.1 is recorded in the CHANGELOG and in
 `../wrappers-gate/PROBE-PERF-RESULTS.md`.
 
-v0.7.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, `deno task gate port` (step 13), normal
+v0.7.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua port` (step 13), normal
 build. Every step printed as described, with two corrections to the expectations, now written into step 13: `isAttack`
 reads false for `damageTarget` (the native's value), and the footman with pathing off walked around the tree line, not
 through it (`Wrapper pathing walker x 563.7461`). Collision size 31.0; step 3 gave 178.5714 (magic against heavy armor
 doubles); the nested hit's outer `setAmount 0` took effect; prefixes of 16, 17 and 32 characters arrived whole. Steps
 2–10 were not re-run: this release adds modules and two Unit methods and changes no existing code path.
 
-v0.8.0: run 2026-10-01 by the maintainer on Warcraft III Reforged 3.0.0.24268, `deno task gate additions` (step 14),
+v0.8.0: run 2026-10-01 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua additions` (step 14),
 normal build, one machine. Every line printed as described, read from the gate's file, with two corrections now written
 into step 14: the Claws of Attack read `+12`, and the region line arrives a moment after the start, not with the first
 lines. All 21 weather ids were created. The maintainer saw the rain start, stop, start and stop at the four lines, and

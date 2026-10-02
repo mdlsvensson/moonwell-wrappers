@@ -26,7 +26,7 @@ libraries {
 }
 ```
 
-Run `deno task check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
+Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
 To use the published `v0.8.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
@@ -280,7 +280,7 @@ its automatic layout off or on, for everyone.
 
 ## Editor types
 
-Use Moonwell's normal YueScript + Lua extension setup and run the map's `deno task check`. Moonwell supplies native
+Use Moonwell's normal YueScript + Lua extension setup and run the map's `moonwell check`. Moonwell supplies native
 types and the library view. Wrapper classes are named `MoonwellWrappers.Unit`, etc., separate from native `unit`. These
 are editor diagnostics, not a new Moonwell compile-time type checker.
 

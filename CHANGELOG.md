@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The repository's tools are Lua run with `yue -e` (`tools/test.lua`, `tools/check.lua`, `tools/integration.lua`), and
+  integration runs the `moonwell` program of Moonwell 0.8.0. Deno is no longer needed. No library code changed.
+
 ## 0.8.0 (2026-10-01)
 
 - New `wrappers.input`: `onKeyDown`, `onKeyUp`, `onMouseDown`, `onMouseUp` and `onMouseMove` listeners for one player,
