@@ -1,10 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 (2026-10-02)
 
+- New `moonwell-library.json` at the library's root, naming `src` as its module folder. A map on Moonwell 0.6.0 or
+  later leaves `dir = "src"` out of its `libraries` entry; an entry that still has it keeps working. With Moonwell 0.5,
+  keep `dir = "src"`.
 - The repository's tools are Lua run with `yue -e` (`tools/test.lua`, `tools/check.lua`, `tools/integration.lua`), and
-  integration runs the `moonwell` program of Moonwell 0.8.0. Deno is no longer needed. No library code changed.
+  integration runs the `moonwell` program of Moonwell 0.8.0. Deno is no longer needed.
 - The tools need YueScript 0.34.3, the compiler Moonwell 0.8.1 pins, in place of 0.34.2.
+
+No library code changed: `src/` is that of 0.8.0.
+
+### Release gate
+
+Automated checks passed 2026-10-02 on Windows, with Moonwell 0.8.1 and YueScript 0.34.3: 34 suites (218 tests); Lua
+5.3.6 syntax checks (75 files, now with `tools/`); integration, whose consumer map names the library by `path` alone,
+so the file is what places its modules: normal and minified builds, the one-module bundles, LuaLS 3.19.1 fixtures (27
+expected negative diagnostics), the native-call check and the gate example.
+
+The in-game gate was not re-run: no file under `src/` changed.
 
 ## 0.8.0 (2026-10-01)
 

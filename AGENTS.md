@@ -1,10 +1,11 @@
 # Moonwell Wrappers: agent handoff
 
 This is a separate optional Moonwell library, written in annotated Lua 5.3. Runtime modules live only in
-`src/wrappers/`. Maps consume this repository with `dir = "src"`, through a local path or an immutable GitHub tag. The
-remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`, `v0.3.0`, `v0.3.1`,
-`v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0` and `v0.8.0` on the commits that record their gates. Tags must never be
-moved.
+`src/wrappers/`. Maps consume this repository through a local path or an immutable GitHub tag; `moonwell-library.json`
+at the root names `src` as the module folder (since `v0.8.1`; a map on an older tag, or on Moonwell 0.5, writes
+`dir = "src"`). The remote is `mdlsvensson/moonwell-wrappers`; `v0.1.0` is tagged on commit `c1209f5`; `v0.2.0`,
+`v0.3.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`, `v0.6.0`, `v0.7.0`, `v0.8.0` and `v0.8.1` on the commits that record
+their gates. Tags must never be moved.
 
 The approved design and implementation history live in the sibling Moonwell repository:
 
@@ -135,7 +136,7 @@ v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
 Tools in Lua (2026-10-02, Moonwell's Plan 5f, `../moonwell/docs/superpowers/plans/2026-10-02-moonwell-go-siblings.md`):
 Moonwell 0.8.0 is a Go program, `moonwell`, and its Deno CLI is gone, so `tools/test.ts`, `run.ts`, `check-lua.ts` and
 `integration.ts` became `tools/test.lua`, `lib.lua`, `check.lua` and `integration.lua`, and `deno.json` and `deno.lock`
-went. No library code changed, so there is no tag. The numbers are the same as with the Deno tools: 34 suites (218
+went. No library code changed. The numbers are the same as with the Deno tools: 34 suites (218
 tests), 27 expected negative diagnostics, 4 planted native mistakes.
 
 - Integration runs `moonwell init --link` with the Moonwell checkout as its working directory: the Go program finds the
@@ -144,3 +145,8 @@ tests), 27 expected negative diagnostics, 4 planted native mistakes.
 - The program and the checkout must agree in major and minor version, because the consumer links to the checkout's Pkl
   schema.
 - `luac` now checks `tools/` too. The gate map's runner is `yue -e gate.lua <run>` in `../wrappers-gate`.
+
+v0.8.1 (2026-10-02): `moonwell-library.json` with `{ "dir": "src" }` (Moonwell's backlog item, a short design in chat).
+Moonwell 0.6.0 or later reads it from a tag's download and from a local `path`, so a map leaves `dir` out; a `dir` in
+the map's manifest still wins. Integration's consumer names the library by `path` alone, so every run exercises the
+file. `src/` is that of v0.8.0, and the in-game gate was not re-run.

@@ -5,11 +5,12 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.8.0` (2026-10-01): keyboard and mouse listeners (`wrappers.input`), weather effects
-(`wrappers.weathereffect`), `Effect.abilityArt`, four more Trigger registrations and `fromEvent()`. It builds on v0.7's
-damage events and sync, v0.6's refactor (errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames,
-v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks
-are deferred until before Moonwell 1.0.
+**Status:** `v0.8.1` (2026-10-02): the library names its own module folder (`moonwell-library.json`), so a map no
+longer writes `dir = "src"`. Its code is that of `v0.8.0` (2026-10-01): keyboard and mouse listeners
+(`wrappers.input`), weather effects (`wrappers.weathereffect`), `Effect.abilityArt`, four more Trigger registrations
+and `fromEvent()`. It builds on v0.7's damage events and sync, v0.6's refactor (errors point at the calling line;
+Moonwell 0.5.1 or later), v0.5's frames, v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on
+3.0.0.24268. Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -21,7 +22,6 @@ amends "moonwell.pkl"
 libraries {
   ["wrappers"] {
     path = "../moonwell-wrappers"
-    dir = "src"
   }
 }
 ```
@@ -29,20 +29,22 @@ libraries {
 Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
 library. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.8.0` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.8.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
 
 ```pkl
 libraries {
   ["wrappers"] {
     github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.8.0"
-    dir = "src"
+    tag = "v0.8.1"
   }
 }
 ```
 
 Commit the resulting `moonwell.lock`. A local `path` override preserves that entry. The configuration key is a cache
 label; imports follow paths inside `src/`. For example, `src/wrappers/unit.lua` is `wrappers.unit`.
+
+The library's `moonwell-library.json` tells Moonwell 0.6.0 or later that module names start at `src/`. With Moonwell
+0.5, or a tag before `v0.8.1`, add `dir = "src"` to the entry. An entry that still has it keeps working.
 
 ## YueScript
 

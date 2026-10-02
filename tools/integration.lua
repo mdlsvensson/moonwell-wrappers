@@ -49,7 +49,8 @@ local function bundle() return Lib.read(consumer .. '/dist/stage/map.w3x/war3map
 moonwell('init --link ' .. Lib.quote(Lib.native(consumer)), repo)
 Lib.write(consumer .. '/moonwell.local.pkl', table.concat({
     'amends "moonwell.pkl"',
-    'libraries { ["wrappers"] { path = "' .. root .. '"; dir = "src" } }',
+    -- No `dir`: the library's moonwell-library.json names it.
+    'libraries { ["wrappers"] { path = "' .. root .. '" } }',
     yueOverride and ('yue { path = "' .. absolute(yueOverride) .. '" }') or '',
     '',
 }, '\n'))
