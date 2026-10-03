@@ -369,7 +369,7 @@ and bundled execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eleven expecte
 check of `src/wrappers` with no problems; the gate example builds with clean editor diagnostics.
 
 The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-log screenshots and observations on
-Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, library code `dae9982`:
+Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, library code `f685abe`:
 
 - **Core, probes and weak cache (normal and minified):** as in v0.2.0, `collected=true stale=true identity=true`.
 - **Presentation (normal and minified):** text tags (owned and floating, hidden for another player), sounds (first-play
@@ -409,7 +409,7 @@ execution; LuaLS 3.19.1 positive Lua/Yue fixtures and eight expected negative di
 clean editor diagnostics.
 
 The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-log screenshots on Warcraft III Reforged
-3.0.0.24268 and World Editor 3.00 (file version 3.0.0.24268), library commit `5417ce6`:
+3.0.0.24268 and World Editor 3.00 (file version 3.0.0.24268), library commit `7f4261f`:
 
 - **Normal and minified runs:** startup messages (hero level 4, ability level 2 with a 30-second cooldown, item charges
   3, filtered heroes 1), region entry, item pickup, unit and tree death events, both cleanups, the tree restore, and
@@ -418,17 +418,17 @@ The in-game gate **passed 2026-09-29**, confirmed by the maintainer's message-lo
 - **Probe run:** all three intentional errors printed (timer, trigger, condition), then recovery.
 - **World Editor:** opened the packed minified map.
 - **Chat:** the first `-gate` printed `Wrapper chat once` and `Wrapper chat accepted`, so the self-removing action and
-  condition both ran in game. That was the first run, on `830cf31`, which has the same library code. The second `-gate`
+  condition both ran in game. That was the first run, on `faa54f3`, which has the same library code. The second `-gate`
   was not observed.
 - **Gate fix during the run:** it printed its startup messages while the map loaded, where they never reach the log;
-  `5417ce6` starts it just after loading.
+  `7f4261f` starts it just after loading.
 
 Deferred, not passed: the two-player no-desync run. Reforged's latest patch removed LAN, and online multiplayer and
 desync checks wait until the last step before Moonwell 1.0 (Moonwell's backlog).
 
 GitHub-tag consumption **passed 2026-09-29** with Moonwell 0.5.0: a fresh map configured with the README GitHub settings
 ran check, build and `build --minify` with the gate example; `moonwell.lock` recorded tag `v0.2.0` at commit
-`7baa81eb46d0e4dec6e18a976e55fb90d3858cfd`, and the fetched files matched the tag's `src/`. After removing only that
+`4b2c845b6775541896a5652c17e40ff5544affca`, and the fetched files matched the tag's `src/`. After removing only that
 map's `.moonwell/`, check downloaded the tag again and left the lock unchanged. (The tagged commit's copy of this
 section does not include this check; the tag was not moved.)
 

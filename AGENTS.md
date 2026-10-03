@@ -75,27 +75,27 @@ recovery, minified gameplay and World Editor opening (Warcraft 3.0.0.24268, Worl
 consumption passed the same day: a fresh map locked `v0.1.0` to `c1209f5`. The runnable gate is `examples/gate.yue`.
 v0.2.0: the in-game gate passed on 2026-09-29, including the weak cache probe
 (`collected=true stale=true identity=true`); the two-player desync run is deferred to Moonwell's pre-1.0 online checks
-(LAN was removed from the game). Tag consumption passed the same day: a fresh map locked `v0.2.0` to `7baa81e`. v0.3.0:
+(LAN was removed from the game). Tag consumption passed the same day: a fresh map locked `v0.2.0` to `4b2c845`. v0.3.0:
 the in-game gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). It found game behaviour now in the
 README: Chain Lightning fades by itself, `lightning:setColor` shows no visible change, and effects attached to items and
 destructables are not drawn. The disposable gate map lived in `../wrappers-gate` (`yue -e gate.lua <run>`, one command
 per run, generated from `examples/gate.yue`); recreate it the same way for later releases. Tag consumption passed the
-same day: a fresh map locked `v0.3.0` to `1277875`. v0.3.1 (2026-09-29): documentation from the w3ts and WCSharp
+same day: a fresh map locked `v0.3.0` to `5da96d8`. v0.3.1 (2026-09-29): documentation from the w3ts and WCSharp
 comparisons and an in-game probe (Moonwell's `docs/superpowers/research/`), `Image.create`'s wrong-path error, and
 flipped-boolean setter checks; the in-game gate was not re-run by the maintainer's decision (CONTRIBUTING). Tag
-consumption passed the same day: a fresh map locked `v0.3.1` to `94d650f`. The probe map is
+consumption passed the same day: a fresh map locked `v0.3.1` to `b37aef4`. The probe map is
 `../wrappers-gate/src/probe.yue` (`yue -e gate.lua probe`). The README's "Reported native caveats" are other libraries'
 claims: move one into the measured notes only after a gate or probe confirms it. Later releases repeat the automated
 checks, the in-game gate and the tag consumption gate in CONTRIBUTING. v0.4.0: the gate map has a `ui-init` probe
 (`../wrappers-gate/src/probe_ui.yue`, `yue -e gate.lua ui-init`, results in `PROBE-UI-RESULTS.md`) and the runs `ui` and
 `ui-min`; the probe and the classic UI gate passed on 2026-09-29, normal and minified (CONTRIBUTING records it). Tag
-consumption passed the same day: a fresh map locked `v0.4.0` to `7e8ef13`. v0.5.0: the gate map has a `frame-init` probe
+consumption passed the same day: a fresh map locked `v0.4.0` to `be7dc97`. v0.5.0: the gate map has a `frame-init` probe
 (`../wrappers-gate/src/probe_frame.yue`, `yue -e gate.lua frame-init`) and the runs `frames` and `frames-min`; the frames
 gate loads `war3mapImported\wrappers-gate.toc` from the gate map's assets (the probe found the game's templates need no
 TOC; results in `PROBE-FRAME-RESULTS.md`). The probe and the frames gate passed on 2026-09-29, normal and minified
-(CONTRIBUTING records it). Tag consumption passed the same day: a fresh map locked `v0.5.0` to `b91ffd4`. v0.5.1
+(CONTRIBUTING records it). Tag consumption passed the same day: a fresh map locked `v0.5.0` to `76d515c`. v0.5.1
 (2026-09-30): `Effect.attach` and `Effect.flashOn` take a Unit in the editor; runtime unchanged, so the in-game gate was
-not re-run. Tag consumption passed the same day with Moonwell 0.5.1: a fresh map locked `v0.5.1` to `af9961e`. v0.6.0
+not re-run. Tag consumption passed the same day with Moonwell 0.5.1: a fresh map locked `v0.5.1` to `26c208d`. v0.6.0
 (2026-09-30): the refactor after the review (Moonwell's `docs/superpowers/research/2026-09-30-wrappers-review.md`, spec
 and plan `2026-09-30-moonwell-wrappers-refactor`).
 
@@ -106,14 +106,14 @@ and plan `2026-09-30-moonwell-wrappers-refactor`).
 
 The in-game gate passed for `core`, `probes`, `presentation`, `ui` and `perf`. Frames and the minified runs were not
 re-run. The performance probe is `../wrappers-gate/src/probe_perf.yue` (`yue -e gate.lua perf`). Tag consumption passed
-the same day: a fresh map locked `v0.6.0` to `933b580`.
+the same day: a fresh map locked `v0.6.0` to `e908b2e`.
 
 v0.7.0 (2026-09-30): the port prerequisites (Moonwell spec and plan `2026-09-30-moonwell-wrappers-port-prerequisites`).
 `wrappers.damage` and `wrappers.sync` share `internal/listeners.lua`: one trigger per key, disabled while empty and
 never destroyed. Damage events are live only while their listeners run (a weak set), and DAMAGED events have no type
 setters. `Sync.send` checks 255 bytes. The gate map's `port` run (`yue -e gate.lua port`, CONTRIBUTING step 13) passed;
 it found that `isAttack` is false for `damageTarget` and that `setPathing(false)` does not make orders cross trees. Tag
-consumption passed the same day: a fresh map locked `v0.7.0` to `e9c2880`.
+consumption passed the same day: a fresh map locked `v0.7.0` to `9a8456e`.
 
 v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
 `2026-10-01-moonwell-wrappers-additions`; probes `../wrappers-gate/PROBE-EXTRAS-RESULTS.md`).
@@ -132,7 +132,7 @@ v0.8.0 (2026-10-01): the additions the port did not need (Moonwell spec and plan
   `CustomMapData\moonwell-wrappers-additions.pld`. `.test-work/dry_gate_additions.lua` runs the compiled gate on stub
   natives; run it before handing a gate run to the maintainer. The run passed on 2026-10-01: all 21 weather ids of the
   README were created, and a held key gave one down against 60 with repeats. Tag consumption passed the same day: a
-  fresh map locked `v0.8.0` to `d823b1b`.
+  fresh map locked `v0.8.0` to `75724ac`.
 
 Tools in Lua (2026-10-02, Moonwell's Plan 5f, `../moonwell/docs/superpowers/plans/2026-10-02-moonwell-go-siblings.md`):
 Moonwell 0.8.0 is a Go program, `moonwell`, and its Deno CLI is gone, so `tools/test.ts`, `run.ts`, `check-lua.ts` and
@@ -151,7 +151,7 @@ v0.8.1 (2026-10-02): `moonwell-library.json` with `{ "dir": "src" }` (Moonwell's
 Moonwell 0.6.0 or later reads it from a tag's download and from a local `path`, so a map leaves `dir` out; a `dir` in
 the map's manifest still wins. Integration's consumer names the library by `path` alone, so every run exercises the
 file. `src/` is that of v0.8.0, and the in-game gate was not re-run.
-Tag consumption passed the same day: a fresh map whose entry has no `dir` locked `v0.8.1` to `c8e434b`.
+Tag consumption passed the same day: a fresh map whose entry has no `dir` locked `v0.8.1` to `4d1d6e9`.
 
 v0.9.0 (2026-10-02): automatic disposal of Unit wrappers by polling (Moonwell's backlog item; a short design in chat,
 after the maintainer chose polling over the undefend order).
@@ -171,7 +171,7 @@ after the maintainer chose polling over the undefend order).
   removal sees nothing; the default timer disposed a removed unit after 0.25 s; 0.45 microseconds per wrapper; the
   removed unit's handle id was not used again two seconds later.
 
-Tag consumption for v0.9.0 passed the same day: a fresh map locked `v0.9.0` to `7347705`.
+Tag consumption for v0.9.0 passed the same day: a fresh map locked `v0.9.0` to `0b6c180`.
 
 v0.9.1 (2026-10-02): the lost key release (Moonwell's backlog item; a probe, then a short design in chat).
 
@@ -189,4 +189,4 @@ v0.9.1 (2026-10-02): the lost key release (Moonwell's backlog item; a probe, the
 - `.test-work/dry_probe_release.lua` runs the compiled probe on stub natives. It caught an import named `Player`
   hiding the native `Player` before the maintainer ran the probe: name such an import `PlayerWrapper` in raw code.
 
-Tag consumption for v0.9.1 passed the same day: a fresh map locked `v0.9.1` to `24b1511`.
+Tag consumption for v0.9.1 passed the same day: a fresh map locked `v0.9.1` to `667cdc5`.

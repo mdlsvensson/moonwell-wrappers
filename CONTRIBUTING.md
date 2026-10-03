@@ -277,12 +277,12 @@ selection adjustments for visibility. Library code was commit `3b923d5` througho
 
 v0.2.0: Passed 2026-09-29, confirmed by the maintainer's message-log screenshots on Warcraft III Reforged 3.0.0.24268
 and World Editor 3.00 (file version 3.0.0.24268). Steps 2, 3, 5 (`collected=true stale=true identity=true`), 6 and 7
-(the minified run, now step 8) passed with library `5417ce6`. Gate copies added one camera line. Step 4: the first
-`-gate` printed `Wrapper chat once` and `Wrapper chat accepted` on `830cf31` (same library code); the second `-gate` was
+(the minified run, now step 8) passed with library `7f4261f`. Gate copies added one camera line. Step 4: the first
+`-gate` printed `Wrapper chat once` and `Wrapper chat accepted` on `faa54f3` (same library code); the second `-gate` was
 not observed. Step 8 (the two-player run, now step 9) is deferred.
 
 v0.3.0: Passed 2026-09-29, confirmed by the maintainer's message-log screenshots and observations on Warcraft III
-Reforged 3.0.0.24268 and World Editor 3.00, library code `dae9982` (unchanged since), run from a disposable map with one
+Reforged 3.0.0.24268 and World Editor 3.00, library code `f685abe` (unchanged since), run from a disposable map with one
 command per run. Steps 2–5 and 6 passed as in v0.2.0, normal and minified, including
 `collected=true stale=true
 identity=true`. Step 7 found four gate problems, each fixed in the gate and documented: trees
@@ -298,18 +298,18 @@ v0.3.1: Not re-run (maintainer's decision, 2026-09-29). The release changes docu
 `Image.create`'s wrong-path error; a dedicated probe run on Warcraft III 3.0.0.24268 measured the behaviour it relies on
 (handle id -1 for a wrong path; `DestroyImage` on it does not crash). Library code is otherwise that of v0.3.0.
 
-v0.4.0: `ui-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `2a6cd9f`): a
+v0.4.0: `ui-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `b4f4201`): a
 dialog and a multiboard shown directly in `on_main` did not appear; a quest, leaderboard and multiboard created in
 `on_main` did not crash, the leaderboard later showed its item and the quest was listed in the log; one
 `MultiboardSetRowCount` from 0 to 5 showed 5 rows, as did the wrapper's stepped change; a new 2 × 2 multiboard showed an
-eye icon in each cell and no text. The gate passed the same day with library `c685374`, confirmed by the maintainer's
+eye icon in each cell and no text. The gate passed the same day with library `c2f2b2c`, confirmed by the maintainer's
 message-log screenshots and observations: step 8 printed every listed line in order, from `Wrapper dialog keyed by` to
 `Wrapper ui cleanup passed; quest item disposed true`, with no `[wrappers] ... failed` line; every listed visual
 matched, and `setSpeed 4` made the countdown run faster. Step 9: the minified `ui-min` run gave the same result and the
 packed map opened in World Editor. Steps 2–7 were not re-run (their code is unchanged since v0.3.1). Step 10 is
 deferred.
 
-v0.5.0: `frame-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `5918202`;
+v0.5.0: `frame-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `a565d2c`;
 `../wrappers-gate/PROBE-FRAME-RESULTS.md`): the origin frame existed in `on_main` and an icon made there showed;
 BlzGetFrameByName returned the created frame (identity); all nine templates tried (`ScriptDialogButton`,
 `EscMenuBackdrop`, `EscMenuTitleTextTemplate`, `EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`,
@@ -389,59 +389,59 @@ commit `c1209f5fb3141d91df2234e765e66c43bb01fc02`, the fetched files matched the
 unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.2.0: Passed 2026-09-29 for `v0.2.0` with Moonwell 0.5.0: check, normal and minified builds of the gate example;
-`moonwell.lock` recorded commit `7baa81eb46d0e4dec6e18a976e55fb90d3858cfd`, the fetched files matched the tag's `src/`,
+`moonwell.lock` recorded commit `4b2c845b6775541896a5652c17e40ff5544affca`, the fetched files matched the tag's `src/`,
 and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.3.0: Passed 2026-09-29 for `v0.3.0` with Moonwell 0.5.0: check, normal and minified builds of the gate example;
-`moonwell.lock` recorded commit `1277875b936fdb60a0b4c64283d5244b73d6c858`, the fetched files matched the tag's `src/`,
+`moonwell.lock` recorded commit `5da96d8d3f69402e872c07a708dfd667979ed714`, the fetched files matched the tag's `src/`,
 and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
 
-v0.3.1: Passed 2026-09-29 for `v0.3.1` with Moonwell at `92f8f40` (0.5.0 plus `UnitAlive` in its natives list): check,
+v0.3.1: Passed 2026-09-29 for `v0.3.1` with Moonwell at `9186220` (0.5.0 plus `UnitAlive` in its natives list): check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`94d650febc2564bcd62d45f2a4f60613ad347e00`, the fetched files matched the tag's `src/` (plus Moonwell's
+`b37aef4f45045b146b065a3ea1c1530814283f65`, the fetched files matched the tag's `src/` (plus Moonwell's
 `.moonwell-library.json`), and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
 
-v0.4.0: Passed 2026-09-29 for `v0.4.0` with Moonwell at `913725a` (0.5.0 plus `UnitAlive` in its natives list): check,
+v0.4.0: Passed 2026-09-29 for `v0.4.0` with Moonwell at `b998bec` (0.5.0 plus `UnitAlive` in its natives list): check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`7e8ef13630605ce49844e206445830a123f8a272`, the fetched files matched the tag's `src/` byte for byte, and the lock
+`be7dc97e0071e5f9b0b6674af69e888b6bd6bcc5`, the fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
-v0.5.0: Passed 2026-09-29 for `v0.5.0` with Moonwell at `1afdc29` (0.5.0 plus `UnitAlive` in its natives list), in a map
+v0.5.0: Passed 2026-09-29 for `v0.5.0` with Moonwell at `b1acd76` (0.5.0 plus `UnitAlive` in its natives list), in a map
 made fresh with `init --link`: check, normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`b91ffd444bc5a28d62229b3a75d05a9b9e6b2382`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
+`76d515c3ab64105d3abd9715334517079c36ff98`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
-v0.5.1: Passed 2026-09-30 for `v0.5.1` with Moonwell 0.5.1 (`c883e4c`), in a map made fresh with `init --link`: check,
+v0.5.1: Passed 2026-09-30 for `v0.5.1` with Moonwell 0.5.1 (`8a86425`), in a map made fresh with `init --link`: check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`af9961eb399dc00c3b2c95c0a60a612cbc315e19`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
+`26c208d6b9d7cc006b4221940e755171913719d7`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.6.0: Passed 2026-09-30 for `v0.6.0` with Moonwell 0.5.2 (`main`), in a map made fresh with `init --link`: check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`933b58093ad5357aeefbbb5acb241a876cf1c1f1`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
+`e908b2e1717f996cc52f1c6c98409306bb841171`, the 28 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.7.0: Passed 2026-09-30 for `v0.7.0` with Moonwell 0.5.2 (`main`), in a map made fresh with `init --link`: check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`e9c2880993fd8b0755da8d2d442654cea467c913`, the 31 fetched files matched the tag's `src/` byte for byte, and the lock
+`9a8456e4d2c16dbb46cecaf92b303f7fac8017c3`, the 31 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.8.0: Passed 2026-10-01 for `v0.8.0` with Moonwell 0.5.2 (`main`), in a map made fresh with `init --link`: check,
 normal and minified builds of the gate example; `moonwell.lock` recorded commit
-`d823b1b38c0fe60a5758569c2b552c5f07a97c70`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
+`75724acdda02364d2dc4ac99e6b0e6cb6063dd1e`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.8.1: Passed 2026-10-02 for `v0.8.1` with Moonwell 0.8.1, in a map made fresh with `init --link` whose entry has no
 `dir` (the README configuration): check, normal and minified builds of the gate example (34 modules); `moonwell.lock`
-recorded commit `c8e434bbcc90e9dabf70189564f7302272187198` with `"dir": ""`, the 33 fetched files matched the tag's
+recorded commit `4d1d6e977ea3755cf6f85c95a65d985ca5b5c2db` with `"dir": ""`, the 33 fetched files matched the tag's
 `src/` byte for byte, and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.9.0: Passed 2026-10-02 for `v0.9.0` with Moonwell 0.8.1, in a map made fresh with `init --link` whose entry has no
 `dir`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock` recorded commit
-`734770577142cee2383431de6fb522d508e332d3`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
+`0b6c1800a7f26963519da63b064150ae6425fb84`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
 
 v0.9.1: Passed 2026-10-02 for `v0.9.1` with Moonwell 0.9.0, in a map made fresh with `init --link` whose entry has no
 `dir`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock` recorded commit
-`24b1511dba5cab23c5355347428d7d05a6dc9b8b`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
+`667cdc50a7625e6a61e12f2e52778a2bf40300ad`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
