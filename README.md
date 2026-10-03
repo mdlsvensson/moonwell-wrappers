@@ -778,9 +778,8 @@ and the subsequent tick and cleanup messages.
 
 ## Reported native caveats
 
-Other libraries document these Warcraft behaviours (w3ts 3.0.2 doc comments and WCSharp 3.3.9; compared in Moonwell's
-`docs/superpowers/research/`). They are **not tested by our gates**; they are listed because ignoring them can cause a
-desync, a crash or wrong game logic.
+Other libraries document these Warcraft behaviours (w3ts 3.0.2 doc comments and WCSharp 3.3.9). They are **not tested
+by our gates**; they are listed because ignoring them can cause a desync, a crash or wrong game logic.
 
 - `getName()` on Unit, Item and Destructable returns the text in each player's game language. Display it, but do not
   compare or branch on it in synchronized logic.
