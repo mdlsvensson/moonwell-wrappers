@@ -12,18 +12,20 @@
 -- in `src` passes this suite, and only a suite that defines its natives one by one (or the integration) catches it.
 --
 -- What the sweep does not reach, so a green run proves nothing about it:
--- - a check behind an argument that no filler satisfies: a wrapper of another class than Player, or a mix of kinds
---   that no shape builds (three different kinds in a row);
--- - a check on the value of an argument of the right kind, where it has an error of its own: an empty prefix, a
---   string over a limit, an index outside a count (the fillers are 1, 'text', true);
--- - an error that depends on what a native answers ("native returned nil", "no frame named ..."): the stand-in
+-- - a check behind a wrapper that is no Player (a Unit, a Rect, a Timer, a Frame): no filler is one;
+-- - a check behind arguments of two kinds: a shape is one to four fillers of one kind, then at most one argument of
+--   another kind, then nothing (or the table again), so what comes behind two kinds is only ever missing;
+-- - a check on the value of an argument of the right kind, where it has an error of its own: an options table with a
+--   known key and a wrong value, an empty prefix, a string over a limit, an index outside a count (the fillers are 1,
+--   'text' and true, and the table's one key is no option);
+-- - every error that depends on what a native answers ("native returned nil", "no frame named ..."): the stand-in
 --   always answers 0;
 -- - code inside a callback that a native would call (an enumeration, a filter, a timer or a trigger action);
 -- - a receiver in a state the suite does not build: a disposed wrapper, a frame the library created, an image
 --   wrapped with fromHandle, a multiboard with rows;
 -- - a function that fails for none of the shapes (every fromHandle and fromEvent, a create without a checked
 --   argument).
--- A check that only one of those reaches is pinned with `failsAt` in its own suite.
+-- The sweep says nothing about any of these: each needs a test in its module's own suite.
 
 -- Arithmetic on an argument that nothing checked: a raw Lua error at a library line. Lua words it one way for a nil,
 -- a boolean, a function or a table ("attempt to perform arithmetic on a nil value") and another for a string that is
@@ -107,15 +109,39 @@ end
 ---@field shielded boolean? A failure was misplaced and held one of those fragments.
 ---@field unexpected string? The first misplaced failure that held none of them.
 
+-- This file, as a stack frame names it.
+local HERE = debug.getinfo(1, 'S').short_src
+
+---The lines of this file that the callers of the calling function are running.
+---@return table<integer, true>
+local function linesAbove()
+    -- Level 1 is this function and 2 the one that asked.
+    local lines, level = {}, 3
+    while true do
+        local info = debug.getinfo(level, 'Sl')
+        if not info then return lines end
+        if info.short_src == HERE then lines[info.currentline] = true end
+        level = level + 1
+    end
+end
+
+---Judges one call. A placed error names the line that defines `attempt`. A level one too high names no line (that
+---frame is pcall), and a higher one names the line some frame further up is running: this function at its pcall,
+---`sweep` where it calls this function, then the callers of `sweep`. So the position proves the level only while none
+---of those runs on the attempt's line. This function defines no attempt; for the others, an attempt is defined on a
+---line of its own and passed here from the next, and this function refuses to judge otherwise.
 ---@param result BlameResult
----@param attempt fun() Calls the function as a statement on the line that defines `attempt`, so the error's position
----is that line: a level two or more too high names another line of this file, and one too high names none.
-local function try(result, attempt)
+---@param attempt fun() Calls the function as a statement on the one line that defines it.
+---@param above table<integer, true> What `linesAbove` gave `sweep`.
+local function try(result, attempt, above)
     local ok, err = pcall(attempt)
     if ok then return end
     result.raised = result.raised + 1
     local message = tostring(err)
     local line = debug.getinfo(attempt, 'S').linedefined
+    if above[line] or debug.getinfo(2, 'l').currentline == line then
+        error('line ' .. line .. ' defines an attempt and a frame above it runs there: give the attempt its own line')
+    end
     if message:find('^%./tests/blame%.lua:' .. line .. ': %[wrappers%] ') then return end
     for _, fragment in ipairs(result.known or {}) do
         if message:find(fragment, 1, true) then
@@ -133,6 +159,7 @@ end
 ---@param results table<string, BlameResult>
 ---@param shapes any[][]
 local function sweep(label, class, receiver, results, shapes)
+    local above = linesAbove()
     for key, fn in pairs(class) do
         if type(fn) == 'function' then
             local name = label .. '.' .. key
@@ -144,11 +171,14 @@ local function sweep(label, class, receiver, results, shapes)
             for index = 1, #shapes do
                 local list = shapes[index]
                 local count = #list
-                try(result, function() fn(table.unpack(list, 1, count)) end)
+                -- Each attempt is defined on a line of its own and judged from the next: see `try`.
+                local bare = function() fn(table.unpack(list, 1, count)) end
+                try(result, bare, above)
                 if receiver then
                     -- A fresh instance per call: some functions dispose their receiver.
                     local instance = receiver()
-                    try(result, function() fn(instance, table.unpack(list, 1, count)) end)
+                    local behind = function() fn(instance, table.unpack(list, 1, count)) end
+                    try(result, behind, above)
                 end
             end
         end
