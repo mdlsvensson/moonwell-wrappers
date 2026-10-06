@@ -13,10 +13,16 @@
 ---@field widget boolean? Join the widget family that Handle.unwrapWidget consults.
 
 local Handle = {}
----@type table<string, MoonwellWrappers.Registry>
-local loaded = {}
----@type MoonwellWrappers.Registry[]
-local widgets = {}
+---Each registry's membership table by class name: a wrapper to its handle, or to false once disposed. Handle.unwrap
+---indexes it directly.
+---@type table<string, table<table, any>>
+local membersOf = {}
+---The membership tables of the widget classes, for Handle.unwrapWidget, and their class names at the same indices.
+---Unit comes first whatever the load order: most widget arguments are units.
+---@type table<table, any>[]
+local widgetMembers = {}
+---@type string[]
+local widgetNames = {}
 
 ---Private membership, rather than fields or metatables, authenticates instances.
 ---@param class table
@@ -24,7 +30,7 @@ local widgets = {}
 ---@param options MoonwellWrappers.RegistryOptions?
 ---@return MoonwellWrappers.Registry
 function Handle.new(class, name, options)
-    if loaded[name] then error('[wrappers] duplicate registry: ' .. name, 2) end
+    if membersOf[name] then error('[wrappers] duplicate registry: ' .. name, 2) end
     options = options or {}
     local byHandle = options.weak and setmetatable({}, {__mode = 'v'}) or {}
     local members = setmetatable({}, {__mode = 'k'})
@@ -32,11 +38,19 @@ function Handle.new(class, name, options)
     class.__index = class
     local function expected(operation) return '[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper' end
     local function disposed(operation) return '[wrappers] ' .. operation .. ': ' .. name .. ' is disposed' end
+    ---The one place a wrapper is disposed: it stays a member, without a handle, and leaves the cache.
+    local function release(value, raw)
+        members[value] = false
+        byHandle[raw] = nil
+        value.handle = nil
+    end
     function registry.member(value) return members[value] end
+    ---One cache lookup for a handle that already has its wrapper.
     function registry.wrap(raw)
         if raw == nil then return nil end
-        if byHandle[raw] then return byHandle[raw] end
-        local value = setmetatable({handle = raw}, class)
+        local value = byHandle[raw]
+        if value then return value end
+        value = setmetatable({handle = raw}, class)
         byHandle[raw] = value
         members[value] = raw
         return value
@@ -54,9 +68,7 @@ function Handle.new(class, name, options)
         local raw = members[value]
         if raw == false then return nil end
         if raw == nil then error(expected(operation), 3) end
-        members[value] = false
-        byHandle[raw] = nil
-        value.handle = nil
+        release(value, raw)
         return raw
     end
     function registry.isDisposed(value, operation)
@@ -75,47 +87,52 @@ function Handle.new(class, name, options)
     ---in no fixed order, so `gone` must only read.
     function registry.sweep(gone)
         for raw, value in pairs(byHandle) do
-            if gone(raw) then
-                members[value] = false
-                byHandle[raw] = nil
-                value.handle = nil
-            end
+            if gone(raw) then release(value, raw) end
         end
     end
-    loaded[name] = registry
-    if options.widget then widgets[#widgets + 1] = registry end
+    membersOf[name] = members
+    if options.widget then
+        local at = name == 'Unit' and 1 or #widgetMembers + 1
+        table.insert(widgetMembers, at, members)
+        table.insert(widgetNames, at, name)
+    end
     return registry
 end
 
 ---Converts a wrapper argument without importing its module: a caller holding one has loaded it. Errors point at the
----caller of the public function (level 3), plus `depth` for helper frames in between.
+---caller of the public function (level 3), plus `depth` for helper frames in between. Each overload gives the handle
+---type of one class name, so a native call is checked against what was unwrapped; a name without one gives `any`.
 ---@param value unknown
 ---@param name string
 ---@param operation string
 ---@param depth integer?
 ---@return any
+---@overload fun(value: unknown, name: 'Player', operation: string, depth: integer?): player
+---@overload fun(value: unknown, name: 'Unit', operation: string, depth: integer?): unit
+---@overload fun(value: unknown, name: 'Item', operation: string, depth: integer?): item
+---@overload fun(value: unknown, name: 'Rect', operation: string, depth: integer?): rect
+---@overload fun(value: unknown, name: 'Region', operation: string, depth: integer?): region
+---@overload fun(value: unknown, name: 'Timer', operation: string, depth: integer?): timer
 function Handle.unwrap(value, name, operation, depth)
-    local registry = loaded[name]
-    local raw = registry and registry.member(value)
+    local members = membersOf[name]
+    local raw = members and members[value]
     if raw then return raw end
     local level = 3 + (depth or 0)
     if raw == false then error('[wrappers] ' .. operation .. ': ' .. name .. ' is disposed', level) end
     error('[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper', level)
 end
 
----Converts a Unit, Item or Destructable argument.
+---Converts a Unit, Item or Destructable argument. Errors point at the caller of the public function (level 3).
 ---@param value unknown
 ---@param operation string
----@param depth integer?
 ---@return widget
-function Handle.unwrapWidget(value, operation, depth)
-    local level = 3 + (depth or 0)
-    for _, registry in ipairs(widgets) do
-        local raw = registry.member(value)
-        if raw == false then error('[wrappers] ' .. operation .. ': ' .. registry.name .. ' is disposed', level) end
-        if raw ~= nil then return raw end
+function Handle.unwrapWidget(value, operation)
+    for index = 1, #widgetMembers do
+        local raw = widgetMembers[index][value]
+        if raw then return raw end
+        if raw == false then error('[wrappers] ' .. operation .. ': ' .. widgetNames[index] .. ' is disposed', 3) end
     end
-    error('[wrappers] ' .. operation .. ': expected Widget wrapper', level)
+    error('[wrappers] ' .. operation .. ': expected Widget wrapper', 3)
 end
 
 ---@generic H
