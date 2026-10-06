@@ -231,6 +231,22 @@ test('state and presentation methods', function()
         'makeAbilityPermanent'}) do
         eq(Unit[old], nil)
     end
+    -- setColor takes four channels: the old call with a playercolor is refused at the caller, before any native.
+    resetCalls()
+    local message = 'Unit.setColor: expected an integer %s from 0 to 255'
+    failsAt(function() u:setColor({}, 0, 0, 0) end, message:format('red'))
+    failsAt(function() u:setColor({}) end, message:format('red'))
+    failsAt(function() u:setColor(0, 0, 0) end, message:format('alpha'))
+    for _, bad in ipairs({256, -1, 1.5, 2 ^ 31, 0/0, math.huge, '1', false}) do
+        failsAt(function() u:setColor(bad, 0, 0, 0) end, message:format('red'))
+        failsAt(function() u:setColor(0, bad, 0, 0) end, message:format('green'))
+        failsAt(function() u:setColor(0, 0, bad, 0) end, message:format('blue'))
+        failsAt(function() u:setColor(0, 0, 0, bad) end, message:format('alpha'))
+    end
+    eq(totalCalls(), 0)
+    u:setColor(0, 0, 0, 0); expectCall('SetUnitVertexColor', u.handle, 0, 0, 0, 0)
+    u:setColor(255, 255, 255, 255); expectCall('SetUnitVertexColor', u.handle, 255, 255, 255, 255)
+    u:setColor(255.0, 0, 0, 255); expectCall('SetUnitVertexColor', u.handle, 255, 0, 0, 255)
     native('SetUnitScale', function() end)
     u:setScale(1.5); expectCall('SetUnitScale', u.handle, 1.5, 1.5, 1.5)
     native('IsUnitAlly', function() return true end)

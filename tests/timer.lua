@@ -40,7 +40,7 @@ test('periodic callbacks receive self; a new start replaces the callback and reu
     tick(); tick(); eq(hits, 2)
     t:pause(); t:resume(); tick(); eq(hits, 3)
     t:start(0, false, function(self) self:destroy() end)
-    eq(#ticks, 2); eq(ticks[2], tick); expectCall('TimerStart', t.handle, 0, false, tick)
+    eq(ticks[#ticks], tick); expectCall('TimerStart', t.handle, 0, false, tick)
     tick(); eq(hits, 3); eq(t:isDisposed(), true)
     tick(); eq(callCount('DestroyTimer'), 1)
     -- Each Timer has a tick function of its own.
@@ -68,6 +68,26 @@ test('one shot retains timer and restart from callback survives', function()
     -- A one-shot delivery releases its callback: an expiry with no start before it runs nothing.
     ticks[#ticks](); ticks[#ticks](); eq(hits, 22)
     eq(t:isDisposed(), false); t:destroy()
+end)
+
+test('a periodic timer restarted as a one-shot runs once and releases its callback', function()
+    local t, hits = Timer.create(), 0
+    t:start(1, true, function() hits = hits + 1 end)
+    local tick = ticks[#ticks]
+    tick(); eq(hits, 1)
+    t:start(1, false, function() hits = hits + 10 end)
+    eq(ticks[#ticks], tick); expectCall('TimerStart', t.handle, 1, false, tick)
+    tick(); tick(); eq(hits, 11)
+    -- The same, with the restart made by the periodic callback itself.
+    local calls = 0
+    t:start(1, true, function(self)
+        calls = calls + 1
+        if calls == 2 then self:start(1, false, function() hits = hits + 100 end) end
+    end)
+    tick(); eq(calls, 1)
+    tick(); eq(calls, 2)
+    tick(); tick(); eq(hits, 111); eq(calls, 2)
+    t:destroy()
 end)
 
 test('invalid start cannot replace an existing schedule', function()

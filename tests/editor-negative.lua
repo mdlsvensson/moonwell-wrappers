@@ -56,6 +56,8 @@ WeatherEffect.create(unit, 1380018290) -- EXPECT param-type-mismatch
 Effect.flash(Effect.abilityArt(1095267427, EFFECT_TYPE_CASTER), 0, 0) -- EXPECT param-type-mismatch
 trigger:registerTimerExpireEvent(unit) -- EXPECT param-type-mismatch
 Unit.autoDispose('fast') -- EXPECT param-type-mismatch
+unit:setColor( -- EXPECT missing-parameter
+    PLAYER_COLOR_RED) -- EXPECT param-type-mismatch
 local eventUnit = Unit.fromEvent()
 eventUnit:kill() -- EXPECT need-check-nil
 return true

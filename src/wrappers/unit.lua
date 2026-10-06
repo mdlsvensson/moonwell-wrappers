@@ -91,7 +91,14 @@ function Unit:setScale(scale) SetUnitScale(registry.require(self, 'Unit.setScale
 ---@param g integer 0-255
 ---@param b integer 0-255
 ---@param a integer 0-255
-function Unit:setColor(r, g, b, a) SetUnitVertexColor(registry.require(self, 'Unit.setColor'), r, g, b, a) end
+function Unit:setColor(r, g, b, a)
+    local raw = registry.require(self, 'Unit.setColor')
+    Check.requireInteger(r, 'red', 'Unit.setColor', 0, 0, 255)
+    Check.requireInteger(g, 'green', 'Unit.setColor', 0, 0, 255)
+    Check.requireInteger(b, 'blue', 'Unit.setColor', 0, 0, 255)
+    Check.requireInteger(a, 'alpha', 'Unit.setColor', 0, 0, 255)
+    SetUnitVertexColor(raw, r, g, b, a)
+end
 ---@param animation string
 function Unit:setAnimation(animation) SetUnitAnimation(registry.require(self, 'Unit.setAnimation'), animation) end
 ---@param flag boolean
@@ -146,10 +153,13 @@ function Unit:exists()
 end
 ---@param raw unit
 local function removed(raw) return GetUnitTypeId(raw) == 0 end
+-- The one definition of the sweep is private: `autoDispose` runs it, whatever a map assigns to `Unit.sweep` later.
+local function sweepRemoved() registry.sweep(removed) end
 ---Disposes the wrapper of every unit the game has removed (decay, or removal by code that bypassed the wrapper), as
 ---`remove()` would have: its methods raise from then on. One native call per cached Unit wrapper, which includes the
 ---ones the collector has not freed yet; a corpse is still a unit. A removal shows from the next frame.
-function Unit.sweep() registry.sweep(removed) end
+---@type fun()
+Unit.sweep = sweepRemoved
 ---@type timer?
 local sweeper
 local function stopSweeper()
@@ -167,7 +177,7 @@ function Unit.autoDispose(interval)
     if interval == nil then interval = 0.25 end
     Check.requirePositive(interval, 'interval', 'Unit.autoDispose')
     if not sweeper then sweeper = Handle.created(CreateTimer(), 'Unit.autoDispose') end
-    TimerStart(sweeper, interval, true, Unit.sweep)
+    TimerStart(sweeper, interval, true, sweepRemoved)
     return stopSweeper
 end
 function Unit:kill() KillUnit(registry.require(self, 'Unit.kill')) end
