@@ -1,17 +1,22 @@
 local Callback = {}
 
+---Errors point at the caller of the public function (level 3), plus `depth` for helper frames in between.
 ---@param value unknown
 ---@param operation string
-function Callback.check(value, operation)
-    if type(value) ~= 'function' then error('[wrappers] ' .. operation .. ': expected a callback function', 3) end
+---@param depth integer?
+function Callback.check(value, operation, depth)
+    if type(value) ~= 'function' then
+        error('[wrappers] ' .. operation .. ': expected a callback function', 3 + (depth or 0))
+    end
 end
 
----Accepts nil or a function; used for optional filters.
+---Accepts nil or a function; used for optional filters. Errors point as those of Callback.check do.
 ---@param value unknown
 ---@param operation string
-function Callback.optional(value, operation)
+---@param depth integer?
+function Callback.optional(value, operation, depth)
     if value ~= nil and type(value) ~= 'function' then
-        error('[wrappers] ' .. operation .. ': expected a callback function', 3)
+        error('[wrappers] ' .. operation .. ': expected a callback function', 3 + (depth or 0))
     end
 end
 
