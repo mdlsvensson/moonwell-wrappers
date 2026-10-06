@@ -1,7 +1,11 @@
 local rows, columns, steps, items, released = {}, {}, {}, {}, {}
 local function newBoard() local raw = {}; rows[raw], columns[raw] = 0, 0; return raw end
 native('CreateMultiboard', newBoard)
-native('MultiboardSetRowCount', function(raw, count) rows[raw] = count; steps[#steps + 1] = count end)
+native('MultiboardSetRowCount', function(raw, count)
+    -- No test asks for more than a few rows: a count this high means setRowCount is stepping without end.
+    if count > 1000 then error('setRowCount kept stepping') end
+    rows[raw] = count; steps[#steps + 1] = count
+end)
 native('MultiboardSetColumnCount', function(raw, count) columns[raw] = count end)
 native('MultiboardGetRowCount', function(raw) return rows[raw] end)
 native('MultiboardGetColumnCount', function(raw) return columns[raw] end)
@@ -56,18 +60,37 @@ test('setRowCount steps one row at a time, up and down', function()
     board:destroy()
 end)
 
-test('counts must be non-negative integers', function()
-    fails(function() Multiboard.create(-1, 2) end, 'Multiboard.create: expected a non-negative integer row count')
-    fails(function() Multiboard.create(1, 1.5) end, 'Multiboard.create: expected a non-negative integer column count')
-    fails(function() Multiboard.create('3', 1) end, 'Multiboard.create: expected a non-negative integer row count')
+test('counts must be integers of at least 0', function()
+    failsAt(function() Multiboard.create(-1, 2) end, 'Multiboard.create: expected an integer row count of at least 0')
+    failsAt(function() Multiboard.create(1, 1.5) end,
+        'Multiboard.create: expected an integer column count of at least 0')
+    failsAt(function() Multiboard.create('3', 1) end, 'Multiboard.create: expected an integer row count of at least 0')
+    failsAt(function() Multiboard.create(1, 2^31) end,
+        'Multiboard.create: expected an integer column count of at least 0')
     eq(totalCalls(), 0)
     local board = Multiboard.create(1, 1)
     resetCalls()
-    fails(function() board:setRowCount('3') end, 'Multiboard.setRowCount: expected a non-negative integer row count')
-    fails(function() board:setRowCount(math.huge) end, 'expected a non-negative integer row count')
-    fails(function() board:setColumnCount(-2) end,
-        'Multiboard.setColumnCount: expected a non-negative integer column count')
+    failsAt(function() board:setRowCount('3') end,
+        'Multiboard.setRowCount: expected an integer row count of at least 0')
+    failsAt(function() board:setRowCount(math.huge) end, 'expected an integer row count of at least 0')
+    failsAt(function() board:setColumnCount(-2) end,
+        'Multiboard.setColumnCount: expected an integer column count of at least 0')
+    failsAt(function() board:setColumnCount(2^31) end,
+        'Multiboard.setColumnCount: expected an integer column count of at least 0')
     eq(callCount('MultiboardSetRowCount'), 0); eq(callCount('MultiboardSetColumnCount'), 0)
+    board:destroy()
+end)
+
+test('a row count outside the 32-bit range is refused before any native, and an integral float is taken', function()
+    local board = Multiboard.create(1, 1)
+    resetCalls()
+    for _, count in ipairs({2^31, 1e300, -2^31 - 1}) do
+        failsAt(function() board:setRowCount(count) end,
+            'Multiboard.setRowCount: expected an integer row count of at least 0')
+    end
+    eq(totalCalls(), 0)
+    steps = {}
+    board:setRowCount(3.0); eq(table.concat(steps, ','), '2,3'); eq(board:getRowCount(), 3)
     board:destroy()
 end)
 
@@ -100,21 +123,36 @@ end)
 test('bad cells fail before any item is obtained', function()
     local board = Multiboard.create(4, 2)
     resetCalls()
-    fails(function() board:setCell(5, 1, {value = 'x'}) end, 'Multiboard.setCell: row 5 outside 1..4')
-    fails(function() board:setCell(0, 1, {value = 'x'}) end, 'Multiboard.setCell: row 0 outside 1..4')
-    fails(function() board:setCell(1, 3, {value = 'x'}) end, 'Multiboard.setCell: column 3 outside 1..2')
-    fails(function() board:setCell(1.5, 1, {value = 'x'}) end, 'Multiboard.setCell: row 1.5 outside 1..4')
-    fails(function() board:setCell('1', 1, {value = 'x'}) end, 'Multiboard.setCell: row 1 outside 1..4')
-    fails(function() board:setRow(9, {value = 'x'}) end, 'Multiboard.setRow: row 9 outside 1..4')
-    fails(function() board:setColumn(3, {value = 'x'}) end, 'Multiboard.setColumn: column 3 outside 1..2')
+    for _, row in ipairs({5, 0, 1.5, '1', 2^31}) do
+        failsAt(function() board:setCell(row, 1, {value = 'x'}) end,
+            'Multiboard.setCell: expected an integer row from 1 to 4')
+    end
+    failsAt(function() board:setCell(1, 3, {value = 'x'}) end,
+        'Multiboard.setCell: expected an integer column from 1 to 2')
+    failsAt(function() board:setRow(9, {value = 'x'}) end, 'Multiboard.setRow: expected an integer row from 1 to 4')
+    failsAt(function() board:setColumn(3, {value = 'x'}) end,
+        'Multiboard.setColumn: expected an integer column from 1 to 2')
+    -- A count that reached the native as a float still prints as a whole number in the range.
+    local floaty = Multiboard.create(2.0, 3.0)
+    columns[floaty.handle] = 3.0
+    failsAt(function() floaty:setCell(1, 4, {value = 'x'}) end,
+        'Multiboard.setCell: expected an integer column from 1 to 3')
+    local floatOk, floatMessage = pcall(function() floaty:setCell(1, 4, {value = 'x'}) end)
+    eq(floatOk, false)
+    assert(tostring(floatMessage):find('column from 1 to 3$'), tostring(floatMessage))
+    floaty:destroy()
+    -- A table is refused without its address (W11): the message ends after the range.
+    local ok, message = pcall(function() board:setCell({}, 1, {value = 'x'}) end)
+    eq(ok, false)
+    assert(tostring(message):find('Multiboard.setCell: expected an integer row from 1 to 4$'), tostring(message))
     eq(callCount('MultiboardGetItem'), 0)
     resetCalls()
-    fails(function() board:setCell(1, 1, {}) end, 'Multiboard.setCell: expected at least one option')
-    fails(function() board:setCell(1, 1) end, 'Multiboard.setCell: expected at least one option')
-    fails(function() board:setAll({showValue = true}) end,
+    failsAt(function() board:setCell(1, 1, {}) end, 'Multiboard.setCell: expected at least one option')
+    failsAt(function() board:setCell(1, 1) end, 'Multiboard.setCell: expected at least one option')
+    failsAt(function() board:setAll({showValue = true}) end,
         "Multiboard.setAll: options 'showValue' and 'showIcon' go together")
-    fails(function() board:setRow(1, {showIcon = false}) end, "options 'showValue' and 'showIcon' go together")
-    fails(function() board:setCell(1, 1, {colour = {1, 2, 3}}) end, "unknown option 'colour'")
+    failsAt(function() board:setRow(1, {showIcon = false}) end, "options 'showValue' and 'showIcon' go together")
+    failsAt(function() board:setCell(1, 1, {colour = {1, 2, 3}}) end, "unknown option 'colour'")
     failsAt(function() board:setCell(1, 1, {width = -1}) end,
         "Multiboard.setCell: 'width' expected a finite non-negative number")
     eq(totalCalls(), 0)
@@ -150,14 +188,15 @@ end)
 test('title, display and minimize forward exact arguments', function()
     local board = Multiboard.create(1, 1)
     checkSetters(board, {{'MultiboardSetTitleText', 'setTitle', 'Kills'},
-        {'MultiboardSetTitleTextColor', 'setTitleColor', 1, 2, 3, 4}, {'MultiboardDisplay', 'show', true},
-        {'MultiboardMinimize', 'minimize', false}})
+        {'MultiboardSetTitleTextColor', 'setTitleColor', 1, 2, 3, 4}, {'MultiboardDisplay', 'setVisible', true},
+        {'MultiboardMinimize', 'setMinimized', false}})
     checkGetters(board, {{'MultiboardGetTitleText', 'getTitle', 'Kills'}})
-    Multiboard.suppressDisplay(true); expectCall('MultiboardSuppressDisplay', true)
-    Multiboard.suppressDisplay(false); expectCall('MultiboardSuppressDisplay', false)
+    Multiboard.setDisplaySuppressed(true); expectCall('MultiboardSuppressDisplay', true)
+    Multiboard.setDisplaySuppressed(false); expectCall('MultiboardSuppressDisplay', false)
+    eq(Multiboard.show, nil); eq(Multiboard.minimize, nil); eq(Multiboard.suppressDisplay, nil)
     board:setVisibleFor(Player.fromIndex(0)); expectCall('MultiboardDisplay', board.handle, true)
     board:setVisibleFor(Player.fromHandle({})); expectCall('MultiboardDisplay', board.handle, false)
-    fails(function() board:setVisibleFor(board) end, 'Multiboard.setVisibleFor: expected Player wrapper')
+    failsAt(function() board:setVisibleFor(board) end, 'Multiboard.setVisibleFor: expected Player wrapper')
     eq(board.isMinimized, nil); eq(board.isDisplayed, nil)
     board:destroy()
 end)
@@ -169,12 +208,13 @@ test('destroy is idempotent and guards every method', function()
     expectCall('DestroyMultiboard', raw); eq(callCount('DestroyMultiboard'), 1)
     eq(board.handle, nil); eq(board:isDisposed(), true)
     checkDisposed(board, {'getHandle', 'setRowCount', 'setColumnCount', 'getRowCount', 'getColumnCount', 'setTitle',
-        'getTitle', 'setTitleColor', 'setCell', 'setRow', 'setColumn', 'setAll', 'show', 'setVisibleFor', 'minimize'})
+        'getTitle', 'setTitleColor', 'setCell', 'setRow', 'setColumn', 'setAll', 'setVisible', 'setVisibleFor',
+        'setMinimized'})
 end)
 
 test('create fails clearly when the native returns nil', function()
     native('CreateMultiboard', function() return nil end)
-    fails(function() Multiboard.create(1, 1) end, 'Multiboard.create: native returned nil')
+    failsAt(function() Multiboard.create(1, 1) end, 'Multiboard.create: native returned nil')
     eq(callCount('MultiboardSetColumnCount'), 0)
     native('CreateMultiboard', newBoard)
 end)
@@ -183,5 +223,6 @@ test('cell option errors point at the caller', function()
     local board = Multiboard.create(1, 1)
     failsAt(function() board:setCell(1, 1, {bogus = 1}) end, "Multiboard.setCell: unknown option 'bogus'")
     failsAt(function() board:setCell(1, 1, {}) end, 'Multiboard.setCell: expected at least one option')
-    failsAt(function() board:setCell(9, 1, {value = 'x'}) end, 'outside 1..1')
+    failsAt(function() board:setCell(9, 1, {value = 'x'}) end,
+        'Multiboard.setCell: expected an integer row from 1 to 1')
 end)

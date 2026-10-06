@@ -37,7 +37,7 @@ Effect.attach('model.mdx', Item.create(1, 0, 0), 'origin') -- EXPECT param-type-
 Effect.flashOn('model.mdx', Destructable.create(1, 0, 0, 0, 1, 0), 'origin') -- EXPECT param-type-mismatch
 TextTag.create():setVisibleFor(unit) -- EXPECT param-type-mismatch
 TextTag.float('x', 0, 0, {size = 'big'}) -- EXPECT assign-type-mismatch
-Dialog.create():addButton('x', nil, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
+Dialog.create():addButton('x', function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
 Multiboard.create(1, 1):setVisibleFor(unit) -- EXPECT param-type-mismatch
 Frame.create('EscMenuBackdrop', unit) -- EXPECT param-type-mismatch
 Frame.origin(ORIGIN_FRAME_GAME_UI):on(FRAMEEVENT_CONTROL_CLICK, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch

@@ -82,31 +82,27 @@ function Dialog:isDisposed() return (registry.isDisposed(self, 'Dialog.isDispose
 ---@param text string
 function Dialog:setMessage(text) DialogSetMessage(registry.require(self, 'Dialog.setMessage'), text) end
 
----Adds a button. Pass a callback as the second argument, or options and then an optional callback. The callback
----receives the Player who clicked and runs behind the callback boundary: an error is printed, later clicks still run.
+---Adds a button: the text, then the callback, then the options, each of the last two optional (a button with options
+---and no callback is `addButton(text, nil, options)`). The callback receives the Player who clicked and runs behind
+---the callback boundary: an error is printed, later clicks still run.
 ---@param text string
----@param options MoonwellWrappers.DialogButtonOptions|MoonwellWrappers.DialogButtonCallback|nil
 ---@param callback MoonwellWrappers.DialogButtonCallback?
+---@param options MoonwellWrappers.DialogButtonOptions?
 ---@return MoonwellWrappers.DialogButton
-function Dialog:addButton(text, options, callback)
+function Dialog:addButton(text, callback, options)
     local raw = registry.require(self, 'Dialog.addButton')
-    local settings, handler = options, callback
-    if type(options) == 'function' then
-        if callback ~= nil then error('[wrappers] Dialog.addButton: a callback given twice', 2) end
-        settings, handler = nil, options
-    end
-    Callback.optional(handler, 'Dialog.addButton')
-    local o = Options.read(settings, buttonFields, 'Dialog.addButton')
+    Callback.optional(callback, 'Dialog.addButton')
+    local o = Options.read(options, buttonFields, 'Dialog.addButton')
     local hotkey = 0
     if o.hotkey ~= nil then
         if not o.hotkey:match('^[A-Za-z0-9]$') then
-            error("[wrappers] Dialog.addButton: option 'hotkey' expected one letter or digit", 2)
+            error("[wrappers] Dialog.addButton: 'hotkey' expected one letter or digit", 2)
         end
         hotkey = string.byte(o.hotkey:upper())
     end
-    if o.scoreScreen and not o.quit then error("[wrappers] Dialog.addButton: option 'scoreScreen' needs 'quit'", 2) end
+    if o.scoreScreen and not o.quit then error("[wrappers] Dialog.addButton: 'scoreScreen' needs 'quit'", 2) end
     local state = stateOf(self)
-    if handler and not state.trigger then
+    if callback and not state.trigger then
         local trigger = Handle.created(CreateTrigger(), 'Dialog.addButton')
         TriggerRegisterDialogEvent(trigger, raw)
         TriggerAddAction(trigger, function() route(self) end)
@@ -119,7 +115,7 @@ function Dialog:addButton(text, options, callback)
         buttonRaw = DialogAddButton(raw, text, hotkey)
     end
     local button = Handle.created(buttonRegistry.wrap(buttonRaw), 'Dialog.addButton')
-    buttonInfo[button] = {dialog = self, callback = handler}
+    buttonInfo[button] = {dialog = self, callback = callback}
     state.buttons[#state.buttons + 1] = button
     state.byHandle[buttonRaw] = button
     return button

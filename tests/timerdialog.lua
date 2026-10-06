@@ -11,10 +11,10 @@ local Timer = require('wrappers.timer')
 local Player = require('wrappers.player')
 eq(totalCalls(), 0)
 
-local methods = {'getHandle', 'setTitle', 'setTitleColor', 'setTimeColor', 'setSpeed', 'setRealTimeRemaining', 'show',
-    'setVisibleFor'}
+local methods = {'getHandle', 'setTitle', 'setTitleColor', 'setTimeColor', 'setSpeed', 'setRealTimeRemaining',
+    'setVisible', 'setVisibleFor'}
 
-test('create shows the given timer with an optional title, hidden until show', function()
+test('create shows the given timer with an optional title, hidden until setVisible', function()
     local timer = Timer.create()
     local dialog = TimerDialog.create(timer, 'Next wave')
     expectCall('CreateTimerDialog', timer.handle)
@@ -25,7 +25,7 @@ test('create shows the given timer with an optional title, hidden until show', f
     local untitled = TimerDialog.create(timer)
     eq(callCount('TimerDialogSetTitle'), 1)
     resetCalls()
-    fails(function() TimerDialog.create(dialog) end, 'TimerDialog.create: expected Timer wrapper')
+    failsAt(function() TimerDialog.create(dialog) end, 'TimerDialog.create: expected Timer wrapper')
     eq(totalCalls(), 0)
     dialog:destroy(); untitled:destroy(); timer:destroy()
 end)
@@ -36,11 +36,11 @@ test('setters forward exact arguments', function()
     checkSetters(dialog, {{'TimerDialogSetTitle', 'setTitle', 'T'},
         {'TimerDialogSetTitleColor', 'setTitleColor', 1, 2, 3, 4}, {'TimerDialogSetTimeColor', 'setTimeColor', 5, 6, 7, 8},
         {'TimerDialogSetSpeed', 'setSpeed', 2}, {'TimerDialogSetRealTimeRemaining', 'setRealTimeRemaining', 30},
-        {'TimerDialogDisplay', 'show', true}})
+        {'TimerDialogDisplay', 'setVisible', true}})
     dialog:setVisibleFor(Player.fromIndex(0)); expectCall('TimerDialogDisplay', dialog.handle, true)
     dialog:setVisibleFor(Player.fromHandle({})); expectCall('TimerDialogDisplay', dialog.handle, false)
-    fails(function() dialog:setVisibleFor(timer) end, 'TimerDialog.setVisibleFor: expected Player wrapper')
-    eq(dialog.isDisplayed, nil)
+    failsAt(function() dialog:setVisibleFor(timer) end, 'TimerDialog.setVisibleFor: expected Player wrapper')
+    eq(dialog.isDisplayed, nil); eq(TimerDialog.show, nil)
     dialog:destroy(); timer:destroy()
 end)
 
@@ -50,7 +50,7 @@ test('methods raise once the timer is disposed, but destroy still works', functi
     timer:destroy()
     resetCalls()
     for _, method in ipairs(methods) do
-        fails(function() dialog[method](dialog) end, 'TimerDialog.' .. method .. ': Timer is disposed')
+        failsAt(function() dialog[method](dialog) end, 'TimerDialog.' .. method .. ': Timer is disposed')
     end
     eq(totalCalls(), 0); eq(dialog:isDisposed(), false)
     local raw = dialog.handle
@@ -72,7 +72,7 @@ end)
 test('create fails clearly when the native returns nil', function()
     local timer = Timer.create()
     native('CreateTimerDialog', function() return nil end)
-    fails(function() TimerDialog.create(timer, 'x') end, 'TimerDialog.create: native returned nil')
+    failsAt(function() TimerDialog.create(timer, 'x') end, 'TimerDialog.create: native returned nil')
     eq(callCount('TimerDialogSetTitle'), 0)
     native('CreateTimerDialog', function() return {} end)
     timer:destroy()

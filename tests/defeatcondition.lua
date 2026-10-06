@@ -21,7 +21,7 @@ end)
 
 test('create fails clearly when the native returns nil', function()
     native('CreateDefeatCondition', function() return nil end)
-    fails(function() DefeatCondition.create('x') end, 'DefeatCondition.create: native returned nil')
+    failsAt(function() DefeatCondition.create('x') end, 'DefeatCondition.create: native returned nil')
     eq(callCount('DefeatConditionSetDescription'), 0)
     native('CreateDefeatCondition', function() return {} end)
 end)

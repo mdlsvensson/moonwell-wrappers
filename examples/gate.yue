@@ -434,7 +434,7 @@ uiBoards = (owner) ->
   board\setCell 2, 1, {value: "Footman", icon: footman, showValue: true, showIcon: true}
   board\setRow 3, {value: "Row 3"}
   board\setColumn 3, {icon: footman, showValue: false, showIcon: true}
-  board\show true
+  board\setVisible true
   print "Wrapper multiboard", board\getTitle!, board\getRowCount!, board\getColumnCount!
   local leaders, quest, optional, first, defeat, countdown, clock
   steps = Timer.create!
@@ -449,10 +449,10 @@ uiBoards = (owner) ->
       board\setRowCount 2
       print "Wrapper multiboard rows", board\getRowCount!
     elseif step == 3
-      board\minimize true
+      board\setMinimized true
       print "Wrapper multiboard minimized"
     elseif step == 4
-      board\minimize false
+      board\setMinimized false
       board\setVisibleFor other
       print "Wrapper multiboard hidden for another player"
     elseif step == 5
@@ -464,7 +464,7 @@ uiBoards = (owner) ->
       leaders\setItemValueColor other, 0, 128, 255, 255
       leaders\sortByValue false
       leaders\assign owner
-      leaders\show true
+      leaders\setVisible true
       print "Wrapper leaderboard items", leaders\getItemCount!
     elseif step == 6
       leaders\setItemValue owner, 12
@@ -499,7 +499,7 @@ uiBoards = (owner) ->
       countdown = TimerDialog.create clock, "Wrapper timer dialog"
       countdown\setTitleColor 255, 220, 0, 255
       countdown\setTimeColor 0, 255, 0, 255
-      countdown\show true
+      countdown\setVisible true
       print "Wrapper timer dialog shown"
     elseif step == 12
       countdown\setSpeed 4
@@ -529,9 +529,10 @@ uiGate = (owner) ->
     later\start 0.5, false, (self) ->
       self\destroy!
       dialog\show player unless dialog\isDisposed!
-  dialog\addButton "Keyed (K)", {hotkey: "K"}, (player) ->
+  keyed = (player) ->
     print "Wrapper dialog keyed by", player\getName!
     reshow player
+  dialog\addButton "Keyed (K)", keyed, hotkey: "K"
   dialog\addButton "Plain", (player) ->
     print "Wrapper dialog plain by", player\getName!
     reshow player

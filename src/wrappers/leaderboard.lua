@@ -155,14 +155,16 @@ end
 function Leaderboard:sortByPlayer(ascending)
     LeaderboardSortItemsByPlayer(registry.require(self, 'Leaderboard.sortByPlayer'), ascending)
 end
----Makes this the leaderboard that player sees. Assign, then show.
+---Makes this the leaderboard that player sees. Assign, then setVisible(true).
 ---@param player MoonwellWrappers.Player
 function Leaderboard:assign(player)
     local raw = registry.require(self, 'Leaderboard.assign')
     PlayerSetLeaderboard(Handle.unwrap(player, 'Player', 'Leaderboard.assign'), raw)
 end
 ---@param flag boolean
-function Leaderboard:show(flag) LeaderboardDisplay(registry.require(self, 'Leaderboard.show'), flag) end
+function Leaderboard:setVisible(flag)
+    LeaderboardDisplay(registry.require(self, 'Leaderboard.setVisible'), flag)
+end
 function Leaderboard:destroy()
     local raw = registry.dispose(self, 'Leaderboard.destroy')
     if raw then DestroyLeaderboard(raw) end

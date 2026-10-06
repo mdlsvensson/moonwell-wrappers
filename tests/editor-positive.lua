@@ -112,7 +112,8 @@ for _, found in ipairs(Destructable.enumInRect(area)) do found:kill() end
 local dialog = Dialog.create()
 dialog:setMessage('Choose')
 local stay = dialog:addButton('Stay', function(player) player:addGold(10) end)
-dialog:addButton('Leave', {hotkey = 'L', quit = true}, function(player) print(player:getName()) end)
+dialog:addButton('Leave', function(player) print(player:getName()) end, {hotkey = 'L', quit = true})
+dialog:addButton('Quit', nil, {quit = true})
 if stay:getDialog() == dialog then dialog:show(PlayerWrapper.fromIndex(0)) end
 local board = Multiboard.create(2, 2, 'Scores')
 board:setCell(1, 1, {value = 'Name', color = {255, 204, 0}, showValue = true, showIcon = false})

@@ -25,7 +25,7 @@ end
 ---@return MoonwellWrappers.TimerDialog?
 ---@overload fun(raw: nil): nil
 function TimerDialog.fromHandle(raw) return registry.wrap(raw) end
----Creates a hidden timer dialog for the timer; call show(true) to display it.
+---Creates a hidden timer dialog for the timer; call setVisible(true) to display it.
 ---@param timer MoonwellWrappers.Timer
 ---@param title string?
 ---@return MoonwellWrappers.TimerDialog
@@ -63,7 +63,7 @@ function TimerDialog:setRealTimeRemaining(seconds)
     TimerDialogSetRealTimeRemaining(live(self, 'TimerDialog.setRealTimeRemaining'), seconds)
 end
 ---@param flag boolean
-function TimerDialog:show(flag) TimerDialogDisplay(live(self, 'TimerDialog.show'), flag) end
+function TimerDialog:setVisible(flag) TimerDialogDisplay(live(self, 'TimerDialog.setVisible'), flag) end
 ---Shows the timer dialog on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function TimerDialog:setVisibleFor(player)

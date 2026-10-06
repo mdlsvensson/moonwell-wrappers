@@ -1,5 +1,6 @@
 local Handle = require('wrappers.internal.handle')
 local Options = require('wrappers.internal.options')
+local Check = require('wrappers.internal.check')
 
 ---Rows and columns count from 1. Cell handles are obtained and released inside each call, so none can leak.
 ---@class MoonwellWrappers.Multiboard
@@ -38,24 +39,10 @@ local function cellOptions(options, operation)
     return o
 end
 
----@param value unknown
----@param what string
----@param operation string
-local function checkCount(value, what, operation)
-    if type(value) ~= 'number' or value % 1 ~= 0 or value < 0 then
-        error('[wrappers] ' .. operation .. ': expected a non-negative integer ' .. what, 3)
-    end
-end
-
----@param value unknown
+---A count a native returned, as an integer: an integral float (a count set as 3.0) would print as `3.0` in a message.
 ---@param count integer
----@param what string
----@param operation string
-local function checkIndex(value, count, what, operation)
-    if type(value) ~= 'number' or value % 1 ~= 0 or value < 1 or value > count then
-        error('[wrappers] ' .. operation .. ': ' .. what .. ' ' .. tostring(value) .. ' outside 1..' .. count, 3)
-    end
-end
+---@return integer
+local function whole(count) return math.tointeger(count) or count end
 
 ---Gets one cell (one-based), applies the options in a fixed order and releases the cell handle.
 ---@param raw multiboard
@@ -81,8 +68,8 @@ function Multiboard.fromHandle(raw) return registry.wrap(raw) end
 ---@param title string?
 ---@return MoonwellWrappers.Multiboard
 function Multiboard.create(rows, columns, title)
-    checkCount(rows, 'row count', 'Multiboard.create')
-    checkCount(columns, 'column count', 'Multiboard.create')
+    Check.requireInteger(rows, 'row count', 'Multiboard.create', 0, 0)
+    Check.requireInteger(columns, 'column count', 'Multiboard.create', 0, 0)
     local raw = CreateMultiboard()
     local board = Handle.created(Multiboard.fromHandle(raw), 'Multiboard.create')
     MultiboardSetColumnCount(raw, columns)
@@ -92,28 +79,25 @@ function Multiboard.create(rows, columns, title)
 end
 ---Hides (true) or allows (false) every multiboard, for everyone.
 ---@param flag boolean
-function Multiboard.suppressDisplay(flag) MultiboardSuppressDisplay(flag) end
+function Multiboard.setDisplaySuppressed(flag) MultiboardSuppressDisplay(flag) end
 ---@return multiboard
 function Multiboard:getHandle() return (registry.require(self, 'Multiboard.getHandle')) end
 ---@return boolean
 function Multiboard:isDisposed() return (registry.isDisposed(self, 'Multiboard.isDisposed')) end
 ---Changes the row count one row at a time, a safeguard: w3ts reports that bigger steps are unsafe (a direct change from
----0 to 5 rows worked in our probe on 3.0.0.24268).
+---0 to 5 rows worked in our probe on 3.0.0.24268). The loop is counted, so it ends for any count the check lets by.
 ---@param count integer
 function Multiboard:setRowCount(count)
     local raw = registry.require(self, 'Multiboard.setRowCount')
-    checkCount(count, 'row count', 'Multiboard.setRowCount')
+    Check.requireInteger(count, 'row count', 'Multiboard.setRowCount', 0, 0)
     local current = MultiboardGetRowCount(raw)
     local step = count >= current and 1 or -1
-    while current ~= count do
-        current = current + step
-        MultiboardSetRowCount(raw, current)
-    end
+    for rows = current + step, count, step do MultiboardSetRowCount(raw, rows) end
 end
 ---@param count integer
 function Multiboard:setColumnCount(count)
     local raw = registry.require(self, 'Multiboard.setColumnCount')
-    checkCount(count, 'column count', 'Multiboard.setColumnCount')
+    Check.requireInteger(count, 'column count', 'Multiboard.setColumnCount', 0, 0)
     MultiboardSetColumnCount(raw, count)
 end
 ---@return integer
@@ -139,8 +123,8 @@ end
 function Multiboard:setCell(row, column, options)
     local raw = registry.require(self, 'Multiboard.setCell')
     local o = cellOptions(options, 'Multiboard.setCell')
-    checkIndex(row, MultiboardGetRowCount(raw), 'row', 'Multiboard.setCell')
-    checkIndex(column, MultiboardGetColumnCount(raw), 'column', 'Multiboard.setCell')
+    Check.requireInteger(row, 'row', 'Multiboard.setCell', 0, 1, whole(MultiboardGetRowCount(raw)))
+    Check.requireInteger(column, 'column', 'Multiboard.setCell', 0, 1, whole(MultiboardGetColumnCount(raw)))
     setCell(raw, row, column, o)
 end
 ---@param row integer From 1.
@@ -148,7 +132,7 @@ end
 function Multiboard:setRow(row, options)
     local raw = registry.require(self, 'Multiboard.setRow')
     local o = cellOptions(options, 'Multiboard.setRow')
-    checkIndex(row, MultiboardGetRowCount(raw), 'row', 'Multiboard.setRow')
+    Check.requireInteger(row, 'row', 'Multiboard.setRow', 0, 1, whole(MultiboardGetRowCount(raw)))
     for column = 1, MultiboardGetColumnCount(raw) do setCell(raw, row, column, o) end
 end
 ---@param column integer From 1.
@@ -156,7 +140,7 @@ end
 function Multiboard:setColumn(column, options)
     local raw = registry.require(self, 'Multiboard.setColumn')
     local o = cellOptions(options, 'Multiboard.setColumn')
-    checkIndex(column, MultiboardGetColumnCount(raw), 'column', 'Multiboard.setColumn')
+    Check.requireInteger(column, 'column', 'Multiboard.setColumn', 0, 1, whole(MultiboardGetColumnCount(raw)))
     for row = 1, MultiboardGetRowCount(raw) do setCell(raw, row, column, o) end
 end
 ---Applies the options to every cell with the whole-board natives.
@@ -171,7 +155,7 @@ function Multiboard:setAll(options)
     if o.width ~= nil then MultiboardSetItemsWidth(raw, o.width) end
 end
 ---@param flag boolean
-function Multiboard:show(flag) MultiboardDisplay(registry.require(self, 'Multiboard.show'), flag) end
+function Multiboard:setVisible(flag) MultiboardDisplay(registry.require(self, 'Multiboard.setVisible'), flag) end
 ---Shows the multiboard on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function Multiboard:setVisibleFor(player)
@@ -179,7 +163,9 @@ function Multiboard:setVisibleFor(player)
     MultiboardDisplay(raw, Handle.unwrap(player, 'Player', 'Multiboard.setVisibleFor') == GetLocalPlayer())
 end
 ---@param flag boolean
-function Multiboard:minimize(flag) MultiboardMinimize(registry.require(self, 'Multiboard.minimize'), flag) end
+function Multiboard:setMinimized(flag)
+    MultiboardMinimize(registry.require(self, 'Multiboard.setMinimized'), flag)
+end
 function Multiboard:destroy()
     local raw = registry.dispose(self, 'Multiboard.destroy')
     if raw then DestroyMultiboard(raw) end
