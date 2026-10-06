@@ -6,27 +6,14 @@ A refactor for one set of conventions (spec `2026-10-06-moonwell-wrappers-refact
 renames calls, changes three units and replaces every listener token by a cancel function. What the library can do
 is unchanged: no wrapper, method or covered native is new. A map on moonwell-systems needs its 0.6 with this version.
 
-- **Boolean state is `set<Adjective>(flag)`:** `setVisible`, `setEnabled`, `setPaused`, `setMinimized` and the three
-  ability setters replace `show(flag)`, `enable`, `disable`, `pause(flag)`, `minimize(flag)` and their kin. Verbs
-  without a flag stay actions (`timer:pause()`, `dialog:show(Player)`).
-- **One unit per quantity:** colour channels 0 to 255, angles in degrees, times in seconds. `lightning:setColor`,
-  `effect:setOrientation` and `sound:getDuration` change their unit.
-- **`setColor(r, g, b, a?)` is always a tint;** a unit's player colour is `setPlayerColor`.
-- **Factories are `create` or `create<Variant>`, and arguments come as what, where, callback, options.**
-- **Every registration returns a function that cancels it.** `removeAction`, `removeCondition`, `frame:off`,
-  `Damage.off`, `Sync.off` and `Input.off` are gone, and so are the classes `TriggerAction`, `TriggerCondition`,
-  `FrameHandler`, `DamageListener`, `SyncListener` and `InputListener`; the return type is `MoonwellWrappers.Cancel`.
+Four 0.9 calls keep their names, so they still run, and nothing in the editor flags them. Check them first, in every
+file of the map:
 
-### Migrating from 0.9
-
-Every renamed method is gone under its old name, so a call that still uses it fails with Lua's
-`attempt to call a nil value` at the calling line, and the editor flags it. Four old calls keep their names, so they
-still run and nothing flags them. Check them first, in every file of the map:
-
-- **`lightning:setColor(1, 1, 1, 1)`, the commonest 0.9 call, still passes and now draws an almost transparent bolt.**
-  The channels are whole numbers from 0 to 255 now, and 1 is one of them: it sends 1/255 on every channel, alpha
-  included. Only a fraction such as 0.5 is refused (`Lightning.setColor: expected an integer red from 0 to 255`).
-  Multiply the arguments of every `lightning:setColor` call by 255.
+- **`lightning:setColor(1, 1, 1, 1)`, the commonest 0.9 call, still passes and now sends 1/255 on every channel, alpha
+  included:** an almost transparent bolt wherever the game draws the colour (the v0.3.0 gate saw no visible change on
+  a Drain Life bolt). The channels are whole numbers from 0 to 255 now, and 1 is one of them. Only a fraction such as
+  0.5 is refused (`Lightning.setColor: expected an integer red from 0 to 255`). Multiply the arguments of every
+  `lightning:setColor` call by 255.
 - **`effect:setOrientation(yaw, pitch, roll)` takes degrees.** Radians passed to it turn the effect by a tiny angle, and
   no error is possible: any finite number is accepted.
 - **`sound:getDuration()` returns seconds.** A duration still read as milliseconds is a thousand times too small. It
@@ -34,9 +21,38 @@ still run and nothing flags them. Check them first, in every file of the map:
 - **`effect:setColor(r, g, b, a)` sets the alpha with its fourth argument.** 0.9 ignored that argument; a call that
   passes one now changes the effect's alpha. Without it nothing changes, as before.
 
-One more old call keeps its name but is refused loudly: `unit:setColor(playercolor)`, because `setColor` is the tint
-now and checks its four channels (`Unit.setColor: expected an integer red from 0 to 255`). Call
-`unit:setPlayerColor(playercolor)` instead.
+The full table of renamed calls and the list of newly refused arguments are in the repository's CHANGELOG, under
+"Migrating from 0.9" and "Behaviour that changed without a rename".
+
+What changed, in short:
+
+- **Boolean state is `set<Adjective>(flag)`:** `setVisible`, `setEnabled`, `setPaused`, `setMinimized` and the three
+  ability setters replace `show(flag)`, `enable`, `disable`, `pause(flag)`, `minimize(flag)` and their kin. Verbs
+  without a flag stay actions (`timer:pause()`, `dialog:show(Player)`).
+- **One unit per quantity:** colour channels 0 to 255, angles in degrees, times in seconds. `lightning:setColor`,
+  `effect:setOrientation` and `sound:getDuration` change their unit.
+- **`setColor(r, g, b, a)` is always a tint** (on Effect the alpha may be left out); a unit's player colour is
+  `setPlayerColor`.
+- **Factories are `create` or `create<Variant>`, and arguments come as what, where, callback, options.**
+- **Every function that registers a callback returns a function that cancels it.** `removeAction`, `removeCondition`,
+  `frame:off`, `Damage.off`, `Sync.off` and `Input.off` are gone, and so are the classes `TriggerAction`,
+  `TriggerCondition`, `FrameHandler`, `DamageListener`, `SyncListener` and `InputListener`; the return type is
+  `MoonwellWrappers.Cancel`.
+
+### Migrating from 0.9
+
+Every renamed method is gone under its old name, so a call that still uses it fails with Lua's
+`attempt to call a nil value` at the calling line, and the editor flags it. The four calls that keep their names and
+change meaning are listed at the top of this section. Three more old calls keep their names or shapes and are refused
+loudly:
+
+- `unit:setColor(playercolor)`: `setColor` is the tint now and checks its four channels
+  (`Unit.setColor: expected an integer red from 0 to 255`). Call `unit:setPlayerColor(playercolor)` instead.
+- `WeatherEffect.create(rect, effectId)`, the old order (`WeatherEffect.create: expected Rect wrapper`). Call
+  `WeatherEffect.create(effectId, rect)`.
+- `dialog:addButton(text, options)` and `dialog:addButton(text, options, callback)`
+  (`Dialog.addButton: expected a callback function`). Call `dialog:addButton(text, callback, options)`, or
+  `dialog:addButton(text, nil, options)` for options without a callback.
 
 | Before | After |
 |---|---|
@@ -64,16 +80,18 @@ now and checks its four channels (`Unit.setColor: expected an integer red from 0
 | `token = Sync.on(prefix, f)` then `Sync.off(token)` | `cancel = Sync.on(prefix, f)` then `cancel()` |
 | `token = Input.onKeyDown(...)` (or any `Input.on*`) then `Input.off(token)` | `cancel = Input.onKeyDown(...)` then `cancel()` |
 
-
 ### Behaviour that changed without a rename
 
-- **Cancelling after the owner is gone does nothing.** Removing an action or a condition after `trigger:destroy()`, or a
-  frame callback after the frame was destroyed, raised `... is disposed`; the cancel function is silent. Cancelling
-  twice does nothing either, and a callback that cancels itself or another during a firing takes effect at once, and a
-  callback added during a firing waits for the next one.
-- **Integers are bounded.** A whole number outside the game's 32-bit range (`2^31`, `1e300`) is refused wherever an
-  integer is expected, and an integral float inside it (`5.0`) is accepted: options of the `integer` kind and colour
-  channels in options, multiboard counts and cells, `Effect.abilityArt`'s index.
+- **Registrations return a cancel function instead of a token.** The remove methods (`removeAction`,
+  `removeCondition`, `frame:off`, `Damage.off`, `Sync.off`, `Input.off`) are gone. A cancel function called after its
+  owner was destroyed does nothing: removing an action or a condition after `trigger:destroy()`, or a frame callback
+  after the frame was destroyed, raised `... is disposed`. Calling it twice does nothing either.
+- **Integers are bounded.** Wherever the library checks an integer, a whole number outside the game's 32-bit range
+  (`2^31`, `1e300`) is refused, and an integral float inside it (`5.0`) is accepted. The checks are: `Player.fromIndex`,
+  `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`, `Effect.abilityArt`'s index, the
+  index of `Frame.origin` and `frame:getChild` and the context of `Frame.byName`, the counts and cell indices of
+  Multiboard, and options of the `integer` kind and colour options. Other integer arguments, such as `player:setGold`,
+  `unit:setLevel` and `unit:setMaxLife`, are passed to the native as they were.
 - **Multiboard.** `Multiboard.create(rows, columns)`, `setRowCount` and `setColumnCount` take a whole number from 0 to
   2147483647, and `setCell`, `setRow` and `setColumn` a row or column that is a whole number from 1 to the board's
   count. `setRowCount(2^31)` raised nothing and never returned in 0.9, and a column count of that size went to the game
@@ -83,9 +101,10 @@ now and checks its four channels (`Unit.setColor: expected an integer red from 0
   `addButton(text, options, callback)` raise `Dialog.addButton: expected a callback function`. Two are accepted now:
   `addButton(text, callback, options)` and `addButton(text, nil, options)`, a button with options and no callback.
 - **Options.** A wrapper passed where an options table is expected gets `expected an options table`, not
-  `unknown option 'handle'`. A wrong value reads `'<name>' expected <description>` (the word `option` is gone from
-  it), and a key that is not a string is shown by its type. The defaults of an option set are checked once, at its
-  first use.
+  `unknown option 'handle'`. A wrong value reads `'<name>' expected <description>` (the word `option` is gone from it),
+  and a key that is not a string is shown by its value when it is a number or a boolean (`{'K'}` reads
+  `unknown option '1'`) and by its type when it is a table or a function (`unknown option '<table>'`). The defaults of
+  an option set are checked once, at its first use.
 - **Messages name the argument:** `Timer.start: expected a finite non-negative timeout`,
   `Group.enumInRange: expected a finite non-negative radius`,
   `Trigger.registerUnitInRange: expected a finite non-negative range`,
@@ -102,7 +121,8 @@ now and checks its four channels (`Unit.setColor: expected an integer red from 0
   a missing or wrong number; they raise a `[wrappers]` error at the calling line now: `Image.create`
   (`expected a finite width`, `height`, `x`, `y`), `image:setPosition` (`x`, `y`), `tag:setText` (`size`),
   `player:addGold` and `player:addLumber` (`expected an integer amount`). A numeric string such as `'64'` (Lua's
-  arithmetic used to coerce it), infinity and NaN are refused as well; fractions, zero and negative numbers pass as
+  arithmetic used to coerce it) and infinity are refused as well, and NaN outside the game (in Warcraft's Lua NaN equals
+  itself, so the check cannot see it); fractions, zero and negative numbers pass as
   before, except for the two amounts, which must be whole.
 - **New refusals.** `Lightning.create` refuses a code that is not a string (`expected a lightning code`), as Effect's
   constructors refuse a model. `lightning:setColor` refuses a channel that is not a whole number from 0 to 255 (a
@@ -124,8 +144,9 @@ now and checks its four channels (`Unit.setColor: expected an integer red from 0
   each used to get a table of its own.
 - **Less work on repeated paths:** a cached `fromHandle` does one lookup; `Item.enumInRect` and
   `Destructable.enumInRect` build one table, two with a filter; a filtered group enumeration makes no closure; a Timer
-  keeps one callback closure for its whole life, across `start` calls; the four widget methods of Item and Destructable
-  build no string per call.
+  keeps one callback closure for its whole life, across `start` calls, so the wrapper no longer tells the expiry of an
+  old schedule from that of the new one (no measurement shows the game delivering such an expiry); the four widget
+  methods of Item and Destructable build no string per call.
 - Not public, but visible in a stack trace: `internal/check.lua` and `internal/cells.lua` are new, and
   `internal/widget.lua` holds annotations only.
 

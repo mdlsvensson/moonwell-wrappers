@@ -98,10 +98,15 @@ Each class has:
 
 Factories return non-null wrappers or raise an error if the native returns nil. Every wrapper error reads
 `[wrappers] <Class>.<method>: <problem>` and points at the line that called the wrapper. A test (`tests/blame.lua`)
-calls every public function of every class with many wrong argument lists, bare and on a live receiver, and fails on any
-failure that is not a `[wrappers]` error at the calling line. It does not reach a check behind a wrapper that is not a
-Player, a check on the value of an argument of the right kind, an error that depends on what a native answers, code
-inside a callback, or a receiver that is disposed: each module's own tests cover those. Rewrapping the same live handle
+calls every public function of every class with many wrong argument lists, bare and behind a live receiver, against
+stand-in natives, and fails on any failure that is not a `[wrappers]` error at the calling line. Its argument lists are
+one to four values of one kind (a number, a string, a boolean, a function or a Player) followed by at most one of
+another kind, so it does not reach a check behind a wrapper that is not a Player (a Unit, a Rect, a Timer, a Frame), a
+check behind arguments of two kinds, a check on the value of an argument of the right kind (an option with a wrong
+value, an empty prefix, an index outside a count), an error that depends on what a native answers, code inside a
+callback, a receiver in a state the sweep does not build (a disposed wrapper, a multiboard with rows), or a function
+that fails for none of its argument lists. Such errors are not proven by the sweep: each needs a test in its module's
+own suite. Rewrapping the same live handle
 returns the same Lua table while any reference to that wrapper exists.
 
 Unit, Item and Destructable use a weak cache: the game removes these on its own (decay, used powerups, dead trees), so a
@@ -214,14 +219,16 @@ usual); `splat:reset()` did not bring a finished splat back.
 
 Colours are whole numbers 0–255 everywhere; `lightning:setColor` divides them by 255 for its native and refuses a
 channel that is not a whole number from 0 to 255. A fraction such as 0.5 raises `expected an integer red from 0 to 255`,
-but `setColor(1, 1, 1, 1)` passes and draws an almost transparent bolt. Sound volume is 0–127 and `getDuration()` is in
-seconds; it can be 0 until the file is loaded, so do not drive synchronized game logic from it. Text tag `size` is World
-Editor's font size; `setVelocity` takes native units. `effect:setOrientation(yaw, pitch, roll)` takes degrees and
-refuses an angle that is not a finite number. `Image.create(path, width, height, x, y, imageType)` centres the image on
-`x, y` and makes it visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game
-cannot load raises `[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not
-nil, and the wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with
-`fromHandle`, whose size is unknown. Fog modifiers start stopped.
+but `setColor(1, 1, 1, 1)` still passes and sends 1/255 on every channel, alpha included: an almost transparent bolt
+wherever the game draws the colour (the v0.3.0 gate saw no visible change on a Drain Life bolt). Sound volume is 0–127
+and `getDuration()` is in seconds; it can be 0 until the file is loaded, so do not drive synchronized game logic from
+it. Text tag `size` is World Editor's font size; `setVelocity` takes native units.
+`effect:setOrientation(yaw, pitch, roll)` takes degrees and refuses an angle that is not a finite number.
+`Image.create(path, width, height, x, y, imageType)` centres the image on `x, y` and makes it visible; image types are 1
+selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game cannot load raises
+`[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not nil, and the
+wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with `fromHandle`, whose
+size is unknown. Fog modifiers start stopped.
 
 `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return a new dense array of what the
 native enumerates. The filter runs afterwards as ordinary Lua and keeps the objects for which it returns truthy; its
@@ -291,7 +298,8 @@ There are three kinds of frame:
   zero-based index. A part belongs to the owned frame it was found through and cannot be destroyed or re-parented. A
   part first reached through `Frame.byName` or `Frame.fromHandle` counts as borrowed only until it is found through its
   owner with `findChild` or `getChild`; from then on it is that owner's part, and the owner's `destroy()` disposes its
-  wrapper. A borrowed frame found through `getParent` stays borrowed, and so does one of the game's origin frames.
+  wrapper. A borrowed frame found through `getParent` stays borrowed, and so does one of the game's origin frames. An
+  owned frame created under such a part while it was still borrowed is not disposed by the owner's `destroy()`.
 - **Borrowed** frames are the game's: `Frame.origin(ORIGIN_FRAME_GAME_UI)`, `Frame.byName(name, context?)`,
   `Frame.fromHandle(raw)`. They can be parents but never be destroyed through a wrapper, and can only be re-parented
   under another borrowed frame, so destroying one of your frames never silently destroys a game frame.
@@ -367,18 +375,23 @@ One set of rules holds for every class:
 - **One unit per quantity.** Colour channels are whole numbers 0–255, angles are degrees and times are seconds. Player
   indices are zero-based and distances are the game's units. Where a native differs, the wrapper converts:
   `SetLightningColor` takes 0–1, `BlzSetSpecialEffectOrientation` radians and `GetSoundDuration` gives milliseconds.
-- **`setColor(r, g, b, a?)` is a tint,** on units, frames, effects, text tags, images and lightning. A player colour is
-  `unit:setPlayerColor(playercolor)` or `effect:setPlayerColor(Player)`, and the colour of a named part keeps its name
-  (`frame:setTextColor`, `multiboard:setTitleColor`).
+- **`setColor(r, g, b, a)` is a tint,** on units, frames, effects, text tags, images and lightning; `effect:setColor`
+  alone may leave the alpha out. A player colour is `unit:setPlayerColor(playercolor)` or
+  `effect:setPlayerColor(Player)`, and the colour of a named part keeps its name (`frame:setTextColor`,
+  `multiboard:setTitleColor`).
 - **What the map must destroy is made by `create` or `create<Variant>`** (`FogModifier.createRadius`,
   `Frame.createByType`); `Effect.attach` and `Rect.worldBounds` are the two other names. Helpers that return nothing
   (`TextTag.float`, `Sound.playOnce`, `Effect.flash`) leave nothing to destroy.
-- **Arguments come in the order what, where, callback, options:** `WeatherEffect.create(effectId, Rect)`,
-  `dialog:addButton(text, callback?, options?)`, `Input.onKeyDown(Player, key, callback, options?)`.
-- **Every registration returns a function that cancels it:** `trigger:addAction`, `trigger:addCondition`, `frame:on`,
-  `Damage.onDamaging`, `Damage.onDamaged`, `Sync.on` and the five `Input.on…` functions. Calling it takes effect at
-  once, even during a firing; calling it again, or after its owner was destroyed, does nothing. `Unit.autoDispose`
-  returns its stop function in the same way.
+- **New functions take their arguments in the order what, where, callback, options:**
+  `WeatherEffect.create(effectId, Rect)`, `dialog:addButton(text, callback?, options?)`,
+  `Input.onKeyDown(Player, key, callback, options?)`. Three older signatures keep their order: the image type comes
+  after the position in `Image.create(path, width, height, x, y, imageType)`, and the owner comes first in
+  `Unit.create(Player, typeId, x, y, facing)` and `FogModifier.createRadius(Player, fogstate, x, y, radius, ...)`.
+- **Every function that registers a callback returns a function that cancels it:** `trigger:addAction`,
+  `trigger:addCondition`, `frame:on`, `Damage.onDamaging`, `Damage.onDamaged`, `Sync.on` and the five `Input.on…`
+  functions. Calling it takes effect at once, even during a firing; calling it again, or after its owner was destroyed,
+  does nothing. `Unit.autoDispose` returns its stop function in the same way. The `trigger:register…` methods register
+  events, not callbacks, and return nothing.
 - **Factories and frame lookups raise, queries return nil.** A factory, `Frame.byName`, `Frame.origin`,
   `frame:getChild` and `frame:findChild` raise when there is nothing to return; `getParent`, `getItemInSlot`,
   `group:first`, `Effect.abilityArt`, `fromHandle` and `fromEvent` return nil.
@@ -388,9 +401,13 @@ One set of rules holds for every class:
   `group:enumInRect(Rect, filter?)` clears and fills the group and returns nothing; `Item.enumInRect(Rect, filter?)` and
   `Destructable.enumInRect(Rect, filter?)` return a new array.
 - **Errors read `[wrappers] <Class>.<method>: <problem>`,** name the argument (`expected a finite non-negative timeout`,
-  `'hotkey' expected a string`) and point at the line that called the wrapper. An integer argument refuses a whole
-  number outside the game's 32-bit range. A check for a finite number refuses NaN in the test suites but not in the
-  game, where Warcraft's Lua treats NaN as equal to itself.
+  `'hotkey' expected a string`) and point at the line that called the wrapper. Wherever the library checks an integer it
+  refuses a whole number outside the game's 32-bit range (`2^31`) and accepts an integral float inside it (`5.0`):
+  `Player.fromIndex`, `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`,
+  `Effect.abilityArt`'s index, the index of `Frame.origin` and `frame:getChild` and the context of `Frame.byName`, the
+  counts and cell indices of Multiboard, and options of the `integer` kind and colour options. Other integer arguments
+  (`player:setGold`, `unit:setLevel`, `unit:setMaxLife`) pass to the native as they are. A check for a finite number
+  refuses NaN in the test suites but not in the game, where Warcraft's Lua treats NaN as equal to itself.
 
 ## API reference
 
@@ -819,7 +836,7 @@ as false. The trigger owns each condition's boolexpr and destroys it on removal,
 
 `start` replaces the timer's old schedule. Timeouts must be finite and not negative (in the game a NaN passes, as for
 radii). One-shot timers remain allocated after firing: restart them or explicitly destroy them. A callback can restart
-or destroy its own timer. Stale callbacks from replaced schedules or destroyed wrappers do nothing.
+or destroy its own timer. Stale callbacks from destroyed wrappers do nothing.
 
 Callbacks must be synchronous: do not yield or call TriggerSleepAction. Use timers for delayed work. A callback error is
 caught and printed with `[wrappers] Timer/Trigger callback failed:`; periodic ticks and future actions continue. Errors

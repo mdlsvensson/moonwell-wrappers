@@ -69,18 +69,30 @@ conservatively nullable in LuaLS 3.19.1; narrow it or assert it. Factories valid
 
 Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual versions if different.
 
-The maintainer runs each gate run in a throwaway map and reads the printed lines against the steps below. The
-workspace's release skill (`.claude/skills/release/SKILL.md`, "Building a throwaway gate map") writes the map's
-files: a Moonwell project linked to the Moonwell checkout, whose `moonwell.local.pkl` names this library by a local
-path, with the skill's object data (the unit and ability types the example uses) and the frames run's
-`war3mapImported\wrappers-gate.toc`, and whose `src/main.yue` is a copy of `examples/gate.yue` with the run's switch
-set and one camera line added (`SetCameraPosition 0, 0`, after `owner = Player.fromIndex 0`). The map is built with
-`moonwell build --entry src/main.yue` (`--minify` for a minified run), and the game is started on `dist/bin/map.w3x`.
-One map is built per run. The runs are the seven switches near the top of the example (`probes = false` and the six
-lines after it): `core` leaves them all false (steps 2 to 5), and `probes` (step 6), `presentation` (step 7), `ui`
-(step 8), `frames` (step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to
-`true`. A printed line shows on screen for a few seconds: take a screenshot, or read the file that the additions and
-dispose runs also write.
+The maintainer runs each gate run in a throwaway map and reads the printed lines against the steps below. The map is
+a Moonwell project linked to the Moonwell checkout, whose `moonwell.local.pkl` names this library by a local path, and
+whose `src/main.yue` is a copy of `examples/gate.yue` with the run's switch set and one camera line added
+(`SetCameraPosition 0, 0`, after `owner = Player.fromIndex 0`). The example needs no object data of its own: it uses
+the game's stock rawcodes. The frames run needs one file, the TOC that the example loads
+(`Frame.loadTOC "war3mapImported\\wrappers-gate.toc"`): it goes into the map as
+`assets/war3mapImported/wrappers-gate.toc`, and holds the paths of the game's own FDF files, one per line, ending with
+an empty line (a TOC must):
+
+```text
+UI\FrameDef\UI\EscMenuTemplates.fdf
+UI\FrameDef\Glue\StandardTemplates.fdf
+UI\FrameDef\Glue\BattleNetTemplates.fdf
+UI\FrameDef\UI\QuestDialog.fdf
+
+```
+
+The map is built with `moonwell build --entry src/main.yue` (`--minify` for a minified run), and the game is started on
+`dist/bin/map.w3x`. The release skill of the maintainer's private workspace (`.claude/skills/release/SKILL.md`,
+"Building a throwaway gate map") writes these files and builds the map; this section stands without it. One map is built
+per run. The runs are the seven switches near the top of the example (`probes = false` and the six lines after it):
+`core` leaves them all false (steps 2 to 5), and `probes` (step 6), `presentation` (step 7), `ui` (step 8), `frames`
+(step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to `true`. A printed line
+shows on screen for a few seconds: take a screenshot, or read the file that the additions and dispose runs also write.
 
 1. The gate starts just after the map loads (times below count from there). Play each run until
    `Wrapper weak cache probe` prints (about 50 seconds); the presentation run (step 7) never prints it and ends at about
