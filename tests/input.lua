@@ -79,7 +79,7 @@ test('the game clock is one timer, started by the first key listener and by no m
     local down, other = Input.onKeyDown(who, q, function() end), Input.onKeyDown(who, w, function() end)
     eq(#clocks, 1); eq(#starts, 1)
     native('TimerStart', function() end)
-    for _, token in ipairs({up, down, other, mouse[1], mouse[2], mouse[3]}) do Input.off(token) end
+    for _, cancel in ipairs({up, down, other, mouse[1], mouse[2], mouse[3]}) do cancel() end
     eq(callCount('PauseTimer'), 0); eq(callCount('DestroyTimer'), 0)
 end)
 
@@ -100,13 +100,13 @@ test('one trigger per player and key, registered for all 16 modifier values, dow
     local second = Input.onKeyDown(who, w, function() end)
     local third = Input.onKeyUp(other, q, function() end)
     eq(callCount('CreateTrigger'), 3); eq(callCount('BlzTriggerRegisterPlayerKeyEvent'), 96)
-    Input.off(down)
+    down()
     eq(trigger.enabled, true)
-    Input.off(up)
+    up()
     eq(trigger.enabled, false); eq(triggerOf(who, w).enabled, true); eq(triggerOf(other, q).enabled, true)
     local again = Input.onKeyUp(who, q, function() end)
     eq(callCount('CreateTrigger'), 3); eq(trigger.enabled, true)
-    Input.off(again); Input.off(second); Input.off(third)
+    again(); second(); third()
     eq(callCount('DestroyTrigger'), 0)
 end)
 
@@ -123,7 +123,7 @@ test('onKeyDown runs once per press with the modifiers, and onKeyUp at the relea
     press(who, q); release(who, q)
     eq(table.concat(log, ', '), 'down 3 false, up 1 nil, down 0 false, up 0 nil')
     eq(#PRINTED, 0)
-    Input.off(down); Input.off(up)
+    down(); up()
 end)
 
 test('the option repeats passes the repeated downs and says which they are', function()
@@ -134,13 +134,13 @@ test('the option repeats passes the repeated downs and says which they are', fun
         {repeats = false})
     press(who, q); press(who, q); press(who, q); release(who, q); press(who, q)
     eq(table.concat(log, ', '), 'every false, once false, every true, every true, every false, once false')
-    Input.off(every); Input.off(once)
+    every(); once()
 end)
 
 test('a down more than two seconds of game time after the last is a new press: its release was lost', function()
     local who, q, w, log = newPlayer(), numbered(), numbered(), {}
     local function note(name) return function(_, _, repeated) log[#log + 1] = name .. ' ' .. tostring(repeated) end end
-    local tokens = {Input.onKeyDown(who, q, note('once')), Input.onKeyDown(who, q, note('every'), {repeats = true}),
+    local cancels = {Input.onKeyDown(who, q, note('once')), Input.onKeyDown(who, q, note('every'), {repeats = true}),
         Input.onKeyDown(who, w, note('w'))}
     local function at(time, key) gameTime = time; press(who, key) end
     at(100, q)
@@ -159,30 +159,30 @@ test('a down more than two seconds of game time after the last is a new press: i
     log = {}
     release(who, q); at(109, q); at(109, q)
     eq(table.concat(log, ', '), 'once false, every false, every true')
-    for _, token in ipairs(tokens) do Input.off(token) end
+    for _, cancel in ipairs(cancels) do cancel() end
     gameTime = 0
 end)
 
 test('what is held is kept per player and key, and forgotten when the last listener of a key is removed', function()
     local who, other, q, w, log = newPlayer(), newPlayer(), numbered(), numbered(), {}
     local function note(name) return function() log[#log + 1] = name end end
-    local tokens = {Input.onKeyDown(who, q, note('q')), Input.onKeyDown(who, w, note('w')),
+    local cancels = {Input.onKeyDown(who, q, note('q')), Input.onKeyDown(who, w, note('w')),
         Input.onKeyDown(other, q, note('other q'))}
     press(who, q); press(who, w); press(other, q); press(who, q); press(who, w); press(other, q)
     eq(table.concat(log, ', '), 'q, w, other q')
     -- An up listener alone keeps the key's state: the trigger stays enabled.
     local up = Input.onKeyUp(who, q, function() end)
-    Input.off(tokens[1])
-    tokens[1] = Input.onKeyDown(who, q, note('q'))
+    cancels[1]()
+    cancels[1] = Input.onKeyDown(who, q, note('q'))
     press(who, q)
     eq(#log, 3)
     -- With no listener left the release is never seen, so the next listener starts over.
-    Input.off(tokens[1]); Input.off(up)
+    cancels[1](); up()
     release(who, q)
-    tokens[1] = Input.onKeyDown(who, q, note('q again'))
+    cancels[1] = Input.onKeyDown(who, q, note('q again'))
     press(who, q); press(who, q)
     eq(table.concat(log, ', '), 'q, w, other q, q again')
-    for _, token in ipairs(tokens) do Input.off(token) end
+    for _, cancel in ipairs(cancels) do cancel() end
 end)
 
 test('mouse listeners get the point and the button, and a move the point alone', function()
@@ -207,12 +207,12 @@ test('mouse listeners get the point and the button, and a move the point alone',
     deliver(who, EVENT_PLAYER_MOUSE_UP, {x = 3, y = 4, button = left})
     deliver(who, EVENT_PLAYER_MOUSE_MOVE, {x = 5, y = 6, button = left})
     eq(table.concat(log, ', '), 'down 1 2 1 true, also, up 3 4 1 true, move 5 6 0 false')
-    Input.off(move)
+    move()
     eq(triggerOf(who, EVENT_PLAYER_MOUSE_MOVE).enabled, false)
     eq(triggerOf(who, EVENT_PLAYER_MOUSE_DOWN).enabled, true)
     deliver(who, EVENT_PLAYER_MOUSE_MOVE, {x = 7, y = 8})
     eq(#log, 4)
-    Input.off(down); Input.off(up); Input.off(also); Input.off(far)
+    down(); up(); also(); far()
 end)
 
 test('a listener added during a firing waits; a failing one is printed and the next still runs', function()
@@ -225,16 +225,16 @@ test('a listener added during a firing waits; a failing one is printed and the n
     local broken = Input.onKeyDown(who, q, function() error('intentional input probe') end)
     local last = Input.onKeyDown(who, q, function()
         log[#log + 1] = 'last'
-        Input.off(first)
+        first()
     end)
     press(who, q)
     eq(table.concat(log, ','), 'first,last'); eq(#PRINTED, 1)
     assert(PRINTED[1]:find('[wrappers] Input listener callback failed:', 1, true), PRINTED[1])
     assert(PRINTED[1]:find('intentional input probe', 1, true), PRINTED[1])
-    Input.off(broken)
+    broken()
     release(who, q); press(who, q)
     eq(table.concat(log, ','), 'first,last,last,late')
-    Input.off(first); Input.off(last); Input.off(late)
+    first(); last(); late()
 end)
 
 test('arguments are checked at the caller, before any native', function()
@@ -256,13 +256,41 @@ test('arguments are checked at the caller, before any native', function()
         failsAt(function() Input[name]({}, nothing) end, 'Input.' .. name .. ': expected Player wrapper')
         failsAt(function() Input[name](who, nil) end, 'Input.' .. name .. ': expected a callback function')
     end
-    failsAt(function() Input.off({}) end, 'Input.off: expected InputListener token')
-    failsAt(function() Input.off(nil) end, 'Input.off: expected InputListener token')
+    eq(Input.off, nil)
     eq(totalCalls(), 0)
-    local token = Input.onMouseMove(who, nothing)
-    Input.off(token); Input.off(token)
     native('CreateTrigger', function() return nil end)
     failsAt(function() Input.onKeyDown(who, q, nothing) end, 'Input.onKeyDown: native returned nil')
     failsAt(function() Input.onMouseDown(who, nothing) end, 'Input.onMouseDown: native returned nil')
     native('CreateTrigger', function() return {registrations = {}, enabled = true} end)
+end)
+
+test('a registration returns one cancel function: it works once, at once, and never again', function()
+    local who, q, log, cancelSelf = newPlayer(), numbered(), {}, nil
+    local results = table.pack(Input.onKeyUp(who, q, function() log[#log + 1] = 'a' end))
+    eq(results.n, 1); eq(type(results[1]), 'function')
+    local cancelA = results[1]
+    local cancelB = Input.onKeyUp(who, q, function() log[#log + 1] = 'b' end)
+    cancelSelf = Input.onKeyUp(who, q, function() log[#log + 1] = 'self'; cancelSelf() end)
+    local trigger = triggerOf(who, q)
+    eq(select('#', cancelA()), 0)
+    cancelA(); cancelA()
+    release(who, q); release(who, q)
+    eq(table.concat(log, ','), 'b,self,b')
+    -- A key with a listener left stays enabled, however often an old cancel function is called.
+    eq(trigger.enabled, true)
+    cancelB()
+    eq(trigger.enabled, false)
+    -- Nor does an old cancel function disable a key that has a listener again.
+    local again = Input.onKeyUp(who, q, function() log[#log + 1] = 'again' end)
+    eq(trigger.enabled, true)
+    cancelB(); cancelA(); cancelSelf()
+    eq(trigger.enabled, true)
+    release(who, q)
+    eq(table.concat(log, ','), 'b,self,b,again'); eq(#PRINTED, 0)
+    again()
+    eq(trigger.enabled, false)
+    -- A mouse listener has no key state to forget: cancelling it twice is as harmless.
+    local move = Input.onMouseMove(who, function() end)
+    move(); move()
+    eq(triggerOf(who, EVENT_PLAYER_MOUSE_MOVE).enabled, false)
 end)

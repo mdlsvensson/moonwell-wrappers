@@ -28,16 +28,16 @@ mw.on_main ->
   TextTag.float "+1", 0, 0, size: 12, color: {255, 0, 0}
   dialog = Dialog.create!
   dialog\addButton "Stay", (player) -> player\addGold 10
-  listener = Damage.onDamaging (event) ->
+  stopDamaging = Damage.onDamaging (event) ->
     event\setAmount event.amount * 2
     event\setDamageType DAMAGE_TYPE_UNIVERSAL
-  Damage.off listener
+  stopDamaging!
   Sync.on "load", (player, data) -> print player\getName!, data
   print unit\getCollisionSize!
   unit\setPathing false
-  cast = Input.onKeyDown Player.fromIndex(0), OSKEY_Q, (player, meta) ->
+  stopCast = Input.onKeyDown Player.fromIndex(0), OSKEY_Q, (player, meta) ->
     player\addGold 1 if meta == METAKEY_NONE
-  Input.off cast
+  stopCast!
   Input.onMouseDown Player.fromIndex(0), (player, x, y, button) ->
     print player\getName!, x, y if button == MOUSE_BUTTON_TYPE_LEFT
   rain = WeatherEffect.create Rect.create(-512, -512, 512, 512), 1380018290

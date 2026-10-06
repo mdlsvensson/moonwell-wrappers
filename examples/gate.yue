@@ -606,8 +606,8 @@ portGate = (owner) ->
       if storedEvent
         staleOk, staleMessage = pcall storedEvent.setAmount, storedEvent, 1
         print "Wrapper stale damage event", staleOk, staleMessage
-      Damage.off damaging
-      Damage.off damaged
+      damaging!
+      damaged!
     elseif step == 7
       strike!
       print "Wrapper damage listeners removed"
@@ -769,8 +769,8 @@ additionsGate = (owner) ->
         downs: 0, every: 0, repeated: 0, ups: 0, meta: "-", clicks: 0, click: "-", releases: 0, moves: 0
       }
     reset!
-    tokens = {}
-    listen = (token) -> tokens[#tokens + 1] = token
+    cancels = {}
+    listen = (cancel) -> cancels[#cancels + 1] = cancel
     listen Input.onKeyDown owner, OSKEY_Q, (player, meta) ->
       counts.downs += 1
       counts.meta = meta .. (player == owner and "" or " from another player")
@@ -802,8 +802,8 @@ additionsGate = (owner) ->
       reset!
       step += 1
       if step == #ADDITIONS_INPUT
-        for token in *tokens
-          Input.off token
+        for cancel in *cancels
+          cancel!
         say "input: every listener removed"
       if step > #ADDITIONS_INPUT
         self\destroy!

@@ -1,12 +1,11 @@
 local Callback = require('wrappers.internal.callback')
+local Check = require('wrappers.internal.check')
 local Listeners = require('wrappers.internal.listeners')
 local Unit = require('wrappers.unit')
 
 ---Damage events for every unit: listeners before armor (DAMAGING) and after armor (DAMAGED). Each phase has one shared
 ---trigger, created by its first listener. Nothing is created at import.
 local Damage = {}
-
----@class MoonwellWrappers.DamageListener
 
 ---The hit's data, read once when the firing starts. Every listener of one firing gets the same table, so a setter's
 ---change is visible to the listeners after it.
@@ -38,9 +37,7 @@ local live = setmetatable({}, {__mode = 'k'})
 ---@param operation string
 local function setAmount(event, amount, operation)
     if not live[event] then error('[wrappers] ' .. operation .. ': the damage event is over', 3) end
-    if type(amount) ~= 'number' or amount ~= amount or amount == math.huge or amount == -math.huge then
-        error('[wrappers] ' .. operation .. ': expected a finite number', 3)
-    end
+    Check.requireFinite(amount, 'amount', operation, 1)
     BlzSetEventDamage(amount)
     event.amount = amount
 end
@@ -94,8 +91,8 @@ local function register(trigger, class)
 end
 
 ---@param class table DamagingEvent or DamagedEvent.
----@param cells MoonwellWrappers.ListenerCell[]
-local function route(class, cells)
+---@param list MoonwellWrappers.Cells
+local function route(class, list)
     local event = setmetatable({
         source = Unit.fromHandle(GetEventDamageSource()),
         target = Unit.fromHandle(BlzGetEventDamageTarget()),
@@ -106,32 +103,28 @@ local function route(class, cells)
         weaponType = BlzGetEventWeaponType(),
     }, class)
     live[event] = true
-    Listeners.call(cells, 'Damage listener', event)
+    Listeners.call(list, 'Damage listener', event)
     live[event] = nil
 end
 
-local listeners = Listeners.new('DamageListener', register, route)
+local listeners = Listeners.new(register, route)
 
----Runs `callback` for every hit before armor, behind the callback boundary.
+---Runs `callback` for every hit before armor, behind the callback boundary, until the returned function is called.
+---Cancelling takes effect at once, even during a firing; cancelling twice does nothing.
 ---@param callback fun(event: MoonwellWrappers.DamagingEvent): ...
----@return MoonwellWrappers.DamageListener
+---@return MoonwellWrappers.Cancel
 function Damage.onDamaging(callback)
     Callback.check(callback, 'Damage.onDamaging')
     return (Listeners.add(listeners, DamagingEvent, callback, 'Damage.onDamaging'))
 end
 
----Runs `callback` for every hit after armor, behind the callback boundary.
+---Runs `callback` for every hit after armor, behind the callback boundary, until the returned function is called.
+---Cancelling takes effect at once, even during a firing; cancelling twice does nothing.
 ---@param callback fun(event: MoonwellWrappers.DamagedEvent): ...
----@return MoonwellWrappers.DamageListener
+---@return MoonwellWrappers.Cancel
 function Damage.onDamaged(callback)
     Callback.check(callback, 'Damage.onDamaged')
     return (Listeners.add(listeners, DamagedEvent, callback, 'Damage.onDamaged'))
-end
-
----Removes a listener at once, even during a firing. Removing it twice does nothing.
----@param token MoonwellWrappers.DamageListener
-function Damage.off(token)
-    Listeners.remove(listeners, token, 'Damage.off')
 end
 
 return Damage

@@ -117,12 +117,12 @@ local soloEntries = {
     {name = 'trigger', source = 'import "wrappers.trigger" as Trigger\nt = Trigger.create!\nt\\destroy!\n',
         allowed = {}},
     {name = 'damage', source = 'import "wrappers.damage" as Damage\n'
-        .. 't = Damage.onDamaged (event) -> event\\setAmount 0\nDamage.off t\n',
+        .. 't = Damage.onDamaged (event) -> event\\setAmount 0\nt!\n',
         allowed = {'unit', 'player', 'item'}},
     {name = 'sync', source = 'import "wrappers.sync" as Sync\n'
-        .. 't = Sync.on "load", (player, data) -> print data\nSync.off t\n', allowed = {'player'}},
+        .. 't = Sync.on "load", (player, data) -> print data\nt!\n', allowed = {'player'}},
     {name = 'input', source = 'import "wrappers.input" as Input\nimport "wrappers.player" as Player\n'
-        .. 't = Input.onMouseMove Player.fromIndex(0), (player, x, y) -> print x, y\nInput.off t\n',
+        .. 't = Input.onMouseMove Player.fromIndex(0), (player, x, y) -> print x, y\nt!\n',
         allowed = {'player'}},
     {name = 'weathereffect', source = 'import "wrappers.weathereffect" as WeatherEffect\n'
         .. 'w = WeatherEffect.fromHandle AddWeatherEffect GetWorldBounds!, 1380018290\nw\\destroy! if w\n',

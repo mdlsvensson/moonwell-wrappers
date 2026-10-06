@@ -45,13 +45,13 @@ local Damage = require('wrappers.damage')
 local Sync = require('wrappers.sync')
 Damage.onDamaged(function(event) event:setDamageType(DAMAGE_TYPE_UNIVERSAL) end) -- EXPECT undefined-field
 Sync.on('load', function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
-Damage.off(Sync.on('load', function() end)) -- EXPECT param-type-mismatch
+Group.create():add(Sync.on('load', function() end)) -- EXPECT param-type-mismatch
 local Input = require('wrappers.input')
 local WeatherEffect = require('wrappers.weathereffect')
 local owner = PlayerWrapper.fromIndex(0)
 Input.onKeyDown(owner, OSKEY_Q, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
 Input.onMouseDown(unit, function() end) -- EXPECT param-type-mismatch
-Input.off(Sync.on('load', function() end)) -- EXPECT param-type-mismatch
+Input.onMouseMove(owner, function() end)(1) -- EXPECT redundant-parameter
 WeatherEffect.create(unit, 1380018290) -- EXPECT param-type-mismatch
 Effect.flash(Effect.abilityArt(1095267427, EFFECT_TYPE_CASTER), 0, 0) -- EXPECT param-type-mismatch
 trigger:registerTimerExpireEvent(unit) -- EXPECT param-type-mismatch
