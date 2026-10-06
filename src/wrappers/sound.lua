@@ -94,8 +94,9 @@ function Sound:setDistances(min, max) SetSoundDistances(registry.require(self, '
 function Sound:setDistanceCutoff(cutoff)
     SetSoundDistanceCutoff(registry.require(self, 'Sound.setDistanceCutoff'), cutoff)
 end
----@return integer milliseconds
-function Sound:getDuration() return GetSoundDuration(registry.require(self, 'Sound.getDuration')) end
+---The native answers in milliseconds; this divides by 1000. It can be 0 until the file is loaded.
+---@return number seconds
+function Sound:getDuration() return GetSoundDuration(registry.require(self, 'Sound.getDuration')) / 1000 end
 function Sound:destroy()
     local raw = registry.dispose(self, 'Sound.destroy')
     if raw then StopSound(raw, true, false) end

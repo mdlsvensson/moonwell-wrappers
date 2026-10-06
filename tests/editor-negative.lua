@@ -52,7 +52,7 @@ local owner = PlayerWrapper.fromIndex(0)
 Input.onKeyDown(owner, OSKEY_Q, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
 Input.onMouseDown(unit, function() end) -- EXPECT param-type-mismatch
 Input.onMouseMove(owner, function() end)(1) -- EXPECT redundant-parameter
-WeatherEffect.create(unit, 1380018290) -- EXPECT param-type-mismatch
+WeatherEffect.create(1380018290, unit) -- EXPECT param-type-mismatch
 Effect.flash(Effect.abilityArt(1095267427, EFFECT_TYPE_CASTER), 0, 0) -- EXPECT param-type-mismatch
 trigger:registerTimerExpireEvent(unit) -- EXPECT param-type-mismatch
 Unit.autoDispose('fast') -- EXPECT param-type-mismatch

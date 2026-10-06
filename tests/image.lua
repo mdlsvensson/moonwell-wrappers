@@ -22,7 +22,7 @@ end)
 
 test('a wrapped image of unknown size cannot be centered', function()
     local foreign = Image.fromHandle({})
-    fails(function() foreign:setPosition(0, 0) end,
+    failsAt(function() foreign:setPosition(0, 0) end,
         'Image.setPosition: size unknown for a wrapped image; use SetImagePosition')
     eq(callCount('SetImagePosition'), 0)
     foreign:destroy()
@@ -30,12 +30,12 @@ end)
 
 test('image settings and local visibility forward exact arguments', function()
     local image = Image.create('aoe.blp', 64, 64, 0, 0, 2)
-    checkSetters(image, {{'ShowImage', 'show', false}, {'SetImageColor', 'setColor', 1, 2, 3, 4},
+    checkSetters(image, {{'ShowImage', 'setVisible', false}, {'SetImageColor', 'setColor', 1, 2, 3, 4},
         {'SetImageConstantHeight', 'setConstantHeight', true, 10}, {'SetImageAboveWater', 'setAboveWater', true, false},
         {'SetImageType', 'setType', 3}})
     image:setVisibleFor(Player.fromIndex(0)); expectCall('ShowImage', image.handle, true)
     image:setVisibleFor(Player.fromHandle({})); expectCall('ShowImage', image.handle, false)
-    fails(function() image:setVisibleFor(image) end, 'Image.setVisibleFor: expected Player wrapper')
+    failsAt(function() image:setVisibleFor(image) end, 'Image.setVisibleFor: expected Player wrapper')
     image:destroy()
 end)
 
@@ -45,10 +45,10 @@ test('image destruction is idempotent and guards every method', function()
     image:destroy(); image:destroy()
     expectCall('DestroyImage', raw); eq(callCount('DestroyImage'), 1); eq(image.handle, nil)
     eq(image:isDisposed(), true)
-    checkDisposed(image, {'getHandle', 'setPosition', 'show', 'setVisibleFor', 'setColor', 'setConstantHeight',
+    checkDisposed(image, {'getHandle', 'setPosition', 'setVisible', 'setVisibleFor', 'setColor', 'setConstantHeight',
         'setAboveWater', 'setType'})
     native('CreateImage', function() return nil end)
-    fails(function() Image.create('aoe.blp', 64, 64, 0, 0, 1) end, 'Image.create')
+    failsAt(function() Image.create('aoe.blp', 64, 64, 0, 0, 1) end, 'Image.create')
     eq(callCount('SetImageRenderAlways'), 1)
     native('CreateImage', function() return {} end)
 end)
@@ -57,9 +57,28 @@ test('a wrong image path raises and destroys the invalid image', function()
     local invalid = {}
     native('CreateImage', function() return invalid end)
     native('GetHandleId', function(raw) return raw == invalid and -1 or 8 end)
-    fails(function() Image.create('missing.blp', 64, 64, 0, 0, 1) end, 'Image.create: invalid image path')
+    failsAt(function() Image.create('missing.blp', 64, 64, 0, 0, 1) end,
+        'Image.create: invalid image path: missing.blp')
     expectCall('DestroyImage', invalid); eq(callCount('DestroyImage'), 1)
+    failsAt(function() Image.create({}, 64, 64, 0, 0, 1) end, 'Image.create: invalid image path: <table>')
+    eq(callCount('DestroyImage'), 2)
     eq(callCount('SetImageRenderAlways'), 0); eq(callCount('ShowImage'), 0)
     native('CreateImage', function() return {} end)
     native('GetHandleId', function() return 8 end)
+end)
+
+test('create and setPosition refuse a number that is missing or not finite, at the caller', function()
+    resetCalls()
+    failsAt(function() Image.create('aoe.blp', nil, 64, 0, 0, 1) end, 'Image.create: expected a finite width')
+    failsAt(function() Image.create('aoe.blp', 64, 'tall', 0, 0, 1) end, 'Image.create: expected a finite height')
+    failsAt(function() Image.create('aoe.blp', 64, 64, math.huge, 0, 1) end, 'Image.create: expected a finite x')
+    failsAt(function() Image.create('aoe.blp', 64, 64, 0, nil, 1) end, 'Image.create: expected a finite y')
+    eq(totalCalls(), 0)
+    local image = Image.create('aoe.blp', 64, 64, 0, 0, 1)
+    resetCalls()
+    failsAt(function() image:setPosition(nil, 0) end, 'Image.setPosition: expected a finite x')
+    failsAt(function() image:setPosition(0) end, 'Image.setPosition: expected a finite y')
+    eq(totalCalls(), 0)
+    image:destroy()
+    eq(Image.show, nil)
 end)

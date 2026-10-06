@@ -40,8 +40,8 @@ mw.on_main ->
   stopCast!
   Input.onMouseDown Player.fromIndex(0), (player, x, y, button) ->
     print player\getName!, x, y if button == MOUSE_BUTTON_TYPE_LEFT
-  rain = WeatherEffect.create Rect.create(-512, -512, 512, 512), 1380018290
-  rain\enable true
+  rain = WeatherEffect.create 1380018290, Rect.create(-512, -512, 512, 512)
+  rain\setEnabled true
   clap = Effect.abilityArt 1095267427, EFFECT_TYPE_CASTER
   Effect.flash clap, 0, 0 if clap
   gold = Trigger.create!

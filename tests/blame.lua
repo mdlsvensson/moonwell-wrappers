@@ -37,9 +37,6 @@ local ARITHMETIC = {'attempt to perform arithmetic on a', "' with a '"}
 -- misplaced error, listed or not, and on an entry whose error no longer occurs, so the list cannot go stale.
 ---@type table<string, string[]>
 local KNOWN = {
-    ['Image.create'] = ARITHMETIC, -- Task 11
-    ['Image.setPosition'] = ARITHMETIC, -- Task 11
-    ['TextTag.setText'] = ARITHMETIC, -- Task 11
 }
 
 -- A constant, so the stand-in does not answer for it: Sync.on reads it once a shape gives it a prefix and a callback.

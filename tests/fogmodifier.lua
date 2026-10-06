@@ -12,34 +12,46 @@ local visible = {}
 test('fog modifiers from a radius or a rect forward exact arguments', function()
     eq(FogModifier.fromHandle(nil), nil)
     local owner = Player.fromIndex(0)
-    local near = FogModifier.radius(owner, visible, 1, 2, 300, true, false)
+    local near = FogModifier.createRadius(owner, visible, 1, 2, 300, true, false)
     expectCall('CreateFogModifierRadius', PLAYER_RAW, visible, 1, 2, 300, true, false)
     eq(FogModifier.fromHandle(near.handle), near); eq(near:getHandle(), near.handle); eq(near:isDisposed(), false)
     local area = Rect.fromHandle({})
-    local far = FogModifier.rect(owner, visible, area, false, true)
+    local far = FogModifier.createRect(owner, visible, area, false, true)
     expectCall('CreateFogModifierRect', PLAYER_RAW, visible, area.handle, false, true)
     checkSetters(near, {{'FogModifierStart', 'start'}, {'FogModifierStop', 'stop'}})
     near:destroy(); far:destroy()
     eq(area:isDisposed(), false)
+    eq(FogModifier.radius, nil); eq(FogModifier.rect, nil)
+end)
+
+test('the last two arguments are optional and default to false', function()
+    local owner, area = Player.fromIndex(0), Rect.fromHandle({})
+    local near = FogModifier.createRadius(owner, visible, 1, 2, 300)
+    expectCall('CreateFogModifierRadius', PLAYER_RAW, visible, 1, 2, 300, false, false)
+    local far = FogModifier.createRect(owner, visible, area)
+    expectCall('CreateFogModifierRect', PLAYER_RAW, visible, area.handle, false, false)
+    near:destroy(); far:destroy()
 end)
 
 test('fog modifier arguments are validated before the native', function()
     local area = Rect.fromHandle({})
-    fails(function() FogModifier.radius(area, visible, 0, 0, 1, true, true) end,
-        'FogModifier.radius: expected Player wrapper')
-    fails(function() FogModifier.rect(Player.fromIndex(0), visible, {}, true, true) end,
-        'FogModifier.rect: expected Rect wrapper')
+    failsAt(function() FogModifier.createRadius(area, visible, 0, 0, 1, true, true) end,
+        'FogModifier.createRadius: expected Player wrapper')
+    failsAt(function() FogModifier.createRect(Player.fromIndex(0), visible, {}, true, true) end,
+        'FogModifier.createRect: expected Rect wrapper')
     eq(callCount('CreateFogModifierRadius'), 0); eq(callCount('CreateFogModifierRect'), 0)
     native('CreateFogModifierRadius', function() return nil end)
-    fails(function() FogModifier.radius(Player.fromIndex(0), visible, 0, 0, 1, true, true) end, 'FogModifier.radius')
+    failsAt(function() FogModifier.createRadius(Player.fromIndex(0), visible, 0, 0, 1, true, true) end,
+        'FogModifier.createRadius: native returned nil')
     native('CreateFogModifierRadius', function() return {} end)
     native('CreateFogModifierRect', function() return nil end)
-    fails(function() FogModifier.rect(Player.fromIndex(0), visible, area, true, true) end, 'FogModifier.rect')
+    failsAt(function() FogModifier.createRect(Player.fromIndex(0), visible, area, true, true) end,
+        'FogModifier.createRect: native returned nil')
     native('CreateFogModifierRect', function() return {} end)
 end)
 
 test('fog modifier destruction is idempotent and guards every method', function()
-    local fog = FogModifier.radius(Player.fromIndex(0), visible, 0, 0, 1, true, true)
+    local fog = FogModifier.createRadius(Player.fromIndex(0), visible, 0, 0, 1, true, true)
     local raw = fog.handle
     fog:destroy(); fog:destroy()
     expectCall('DestroyFogModifier', raw); eq(callCount('DestroyFogModifier'), 1); eq(fog.handle, nil)

@@ -1,5 +1,6 @@
 local Handle = require('wrappers.internal.handle')
 local Options = require('wrappers.internal.options')
+local Check = require('wrappers.internal.check')
 
 ---@class MoonwellWrappers.TextTag
 ---@field handle texttag? Read-only by convention; nil after destruction.
@@ -68,7 +69,11 @@ function TextTag:getHandle() return (registry.require(self, 'TextTag.getHandle')
 function TextTag:isDisposed() return (registry.isDisposed(self, 'TextTag.isDisposed')) end
 ---@param text string
 ---@param size number Font size, as in World Editor.
-function TextTag:setText(text, size) SetTextTagText(registry.require(self, 'TextTag.setText'), text, height(size)) end
+function TextTag:setText(text, size)
+    local raw = registry.require(self, 'TextTag.setText')
+    Check.requireFinite(size, 'size', 'TextTag.setText')
+    SetTextTagText(raw, text, height(size))
+end
 ---@param r integer 0-255
 ---@param g integer 0-255
 ---@param b integer 0-255
@@ -93,7 +98,7 @@ function TextTag:setVelocity(xvel, yvel) SetTextTagVelocity(registry.require(sel
 ---@param flag boolean
 function TextTag:setSuspended(flag) SetTextTagSuspended(registry.require(self, 'TextTag.setSuspended'), flag) end
 ---@param flag boolean
-function TextTag:show(flag) SetTextTagVisibility(registry.require(self, 'TextTag.show'), flag) end
+function TextTag:setVisible(flag) SetTextTagVisibility(registry.require(self, 'TextTag.setVisible'), flag) end
 ---Shows the tag on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function TextTag:setVisibleFor(player)

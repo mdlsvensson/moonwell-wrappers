@@ -16,26 +16,26 @@ function FogModifier.fromHandle(raw) return registry.wrap(raw) end
 ---@param x number
 ---@param y number
 ---@param radius number
----@param useSharedVision boolean
----@param afterUnits boolean
+---@param useSharedVision boolean? Default false.
+---@param afterUnits boolean? Default false.
 ---@return MoonwellWrappers.FogModifier
-function FogModifier.radius(player, state, x, y, radius, useSharedVision, afterUnits)
-    local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.radius')
-    local raw = CreateFogModifierRadius(rawPlayer, state, x, y, radius, useSharedVision, afterUnits)
-    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.radius'))
+function FogModifier.createRadius(player, state, x, y, radius, useSharedVision, afterUnits)
+    local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.createRadius')
+    local raw = CreateFogModifierRadius(rawPlayer, state, x, y, radius, useSharedVision or false, afterUnits or false)
+    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.createRadius'))
 end
 ---Creates a stopped modifier; call start(). The modifier does not own the rect.
 ---@param player MoonwellWrappers.Player
 ---@param state fogstate
 ---@param rect MoonwellWrappers.Rect
----@param useSharedVision boolean
----@param afterUnits boolean
+---@param useSharedVision boolean? Default false.
+---@param afterUnits boolean? Default false.
 ---@return MoonwellWrappers.FogModifier
-function FogModifier.rect(player, state, rect, useSharedVision, afterUnits)
-    local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.rect')
-    local rawRect = Handle.unwrap(rect, 'Rect', 'FogModifier.rect')
-    local raw = CreateFogModifierRect(rawPlayer, state, rawRect, useSharedVision, afterUnits)
-    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.rect'))
+function FogModifier.createRect(player, state, rect, useSharedVision, afterUnits)
+    local rawPlayer = Handle.unwrap(player, 'Player', 'FogModifier.createRect')
+    local rawRect = Handle.unwrap(rect, 'Rect', 'FogModifier.createRect')
+    local raw = CreateFogModifierRect(rawPlayer, state, rawRect, useSharedVision or false, afterUnits or false)
+    return (Handle.created(FogModifier.fromHandle(raw), 'FogModifier.createRect'))
 end
 ---@return fogmodifier
 function FogModifier:getHandle() return (registry.require(self, 'FogModifier.getHandle')) end

@@ -247,7 +247,7 @@ presentationGate = (owner) ->
   marker = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
   -- Reveal the gate's area; the far radius and rect reveals below stay outside it.
   sight = Rect.create -1100, -500, 700, 900
-  view = FogModifier.rect owner, FOG_OF_WAR_VISIBLE, sight, true, false
+  view = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, sight, true, false
   view\start!
   tag = TextTag.create!
   tag\setText "Wrapper text tag", 12
@@ -258,16 +258,15 @@ presentationGate = (owner) ->
   bolt = Lightning.create "DRAL", -300, -250, 60, 300, -250, 60
   aoe = Image.create "ReplaceableTextures\\Selection\\SpellAreaOfEffect.blp", 256, 256, 0, 0, 1
   splat = Ubersplat.create "HMED", 350, 250
-  near = FogModifier.radius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
+  near = FogModifier.createRadius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
   area = Rect.create -1200, -1200, -900, -900
-  far = FogModifier.rect owner, FOG_OF_WAR_VISIBLE, area, true, false
+  far = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, area, true, false
   near\start!
   far\start!
   tinted = Effect.create "units\\human\\Footman\\Footman.mdl", -400, 0
-  tinted\setColor 255, 0, 0
-  tinted\setAlpha 160
+  tinted\setColor 255, 0, 0, 160
   tinted\setTimeScale 0.5
-  tinted\setOrientation math.pi / 2, 0, 0
+  tinted\setOrientation 90, 0, 0
   tinted\setHeight 100
   tinted\playAnimation ANIM_TYPE_ATTACK
   blue = Effect.create "units\\human\\Footman\\Footman.mdl", -550, 0
@@ -320,7 +319,7 @@ presentationGate = (owner) ->
       tag\setPositionOnUnit marker, 0
       tag\setText "Wrapper tag moved", 10
       bolt\move -300, 250, 60, 300, 250, 60
-      bolt\setColor 1, 0, 0, 1
+      bolt\setColor 255, 0, 0, 255
       aoe\setColor 0, 255, 0, 255
       aoe\setPosition 0, 300
       splat\finish!
@@ -746,7 +745,7 @@ additionsGate = (owner) ->
   field = Rect.create -1024, -1024, 1024, 1024
   created, refused = {}, {}
   for code in *ADDITIONS_WEATHER
-    ok, made = pcall WeatherEffect.create, field, FourCC code
+    ok, made = pcall WeatherEffect.create, FourCC(code), field
     if ok
       made\destroy!
       created[#created + 1] = code
@@ -754,9 +753,9 @@ additionsGate = (owner) ->
       refused[#refused + 1] = code
   say "weather ids created:", #created, table.concat created, " "
   say "weather ids refused:", #refused, table.concat refused, " "
-  unknownOk, unknownMessage = pcall WeatherEffect.create, field, FourCC "zzzz"
+  unknownOk, unknownMessage = pcall WeatherEffect.create, FourCC("zzzz"), field
   say "weather: an unknown id refused", not unknownOk, unknownMessage
-  rain = WeatherEffect.create field, $FourCC "RAhr"
+  rain = WeatherEffect.create $FourCC("RAhr"), field
   field\destroy!
   say "rain: created and its rect destroyed. Not enabled: no rain yet"
   save!
@@ -818,13 +817,13 @@ additionsGate = (owner) ->
   steps\start 1, true, (self) ->
     tick += 1
     if tick == 4
-      rain\enable true
+      rain\setEnabled true
       say "rain 1: enabled for everyone NOW"
     elseif tick == 10
-      rain\enableFor other
+      rain\setEnabledFor other
       say "rain 2: enabled for another player only NOW"
     elseif tick == 16
-      rain\enableFor owner
+      rain\setEnabledFor owner
       say "rain 3: enabled for you only NOW"
     elseif tick == 22
       rain\destroy!

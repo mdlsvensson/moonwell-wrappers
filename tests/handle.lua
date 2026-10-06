@@ -203,3 +203,11 @@ test('keep returns the array itself without a filter, and a new array of the acc
     eq(#Handle.keep({}, function() return true end), 0)
     fails(function() Handle.keep(all, function() error('boom') end) end, 'boom')
 end)
+
+test('invalid is true only for a handle whose id is -1, and false for nil without a native call', function()
+    local bad, good = {}, {}
+    native('GetHandleId', function(raw) return raw == bad and -1 or 7 end)
+    eq(Handle.invalid(bad), true); eq(Handle.invalid(good), false)
+    resetCalls()
+    eq(Handle.invalid(nil), false); eq(totalCalls(), 0)
+end)

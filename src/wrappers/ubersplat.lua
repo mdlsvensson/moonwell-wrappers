@@ -40,7 +40,7 @@ function Ubersplat:getHandle() return (registry.require(self, 'Ubersplat.getHand
 ---@return boolean
 function Ubersplat:isDisposed() return (registry.isDisposed(self, 'Ubersplat.isDisposed')) end
 ---@param flag boolean
-function Ubersplat:show(flag) ShowUbersplat(registry.require(self, 'Ubersplat.show'), flag) end
+function Ubersplat:setVisible(flag) ShowUbersplat(registry.require(self, 'Ubersplat.setVisible'), flag) end
 ---Shows the splat on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function Ubersplat:setVisibleFor(player)

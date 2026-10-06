@@ -16,7 +16,7 @@ test('ubersplats use documented defaults and options and are always rendered', f
     eq(Ubersplat.fromHandle(splat.handle), splat); eq(splat:getHandle(), splat.handle); eq(splat:isDisposed(), false)
     local tinted = Ubersplat.create('OLAR', 3, 4, {color = {10, 20, 30}, forcePaused = true, noBirthTime = true})
     expectCall('CreateUbersplat', 3, 4, 'OLAR', 10, 20, 30, 255, true, true)
-    fails(function() Ubersplat.create('HMED', 0, 0, {colour = {1, 2, 3}}) end,
+    failsAt(function() Ubersplat.create('HMED', 0, 0, {colour = {1, 2, 3}}) end,
         "Ubersplat.create: unknown option 'colour'")
     eq(callCount('CreateUbersplat'), 2)
     splat:destroy(); tinted:destroy()
@@ -24,11 +24,11 @@ end)
 
 test('ubersplat controls and local visibility forward exact arguments', function()
     local splat = Ubersplat.create('HMED', 0, 0)
-    checkSetters(splat, {{'ShowUbersplat', 'show', false}, {'FinishUbersplat', 'finish'},
+    checkSetters(splat, {{'ShowUbersplat', 'setVisible', false}, {'FinishUbersplat', 'finish'},
         {'ResetUbersplat', 'reset'}})
     splat:setVisibleFor(Player.fromIndex(0)); expectCall('ShowUbersplat', splat.handle, true)
     splat:setVisibleFor(Player.fromHandle({})); expectCall('ShowUbersplat', splat.handle, false)
-    fails(function() splat:setVisibleFor(splat) end, 'Ubersplat.setVisibleFor: expected Player wrapper')
+    failsAt(function() splat:setVisibleFor(splat) end, 'Ubersplat.setVisibleFor: expected Player wrapper')
     splat:destroy()
 end)
 
@@ -38,9 +38,9 @@ test('ubersplat destruction is idempotent and guards every method', function()
     splat:destroy(); splat:destroy()
     expectCall('DestroyUbersplat', raw); eq(callCount('DestroyUbersplat'), 1); eq(splat.handle, nil)
     eq(splat:isDisposed(), true)
-    checkDisposed(splat, {'getHandle', 'show', 'setVisibleFor', 'finish', 'reset'})
+    checkDisposed(splat, {'getHandle', 'setVisible', 'setVisibleFor', 'finish', 'reset'})
     native('CreateUbersplat', function() return nil end)
-    fails(function() Ubersplat.create('HMED', 0, 0) end, 'Ubersplat.create')
+    failsAt(function() Ubersplat.create('HMED', 0, 0) end, 'Ubersplat.create')
     eq(callCount('SetUbersplatRenderAlways'), 1)
     native('CreateUbersplat', function() return {} end)
 end)

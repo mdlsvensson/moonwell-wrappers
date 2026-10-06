@@ -165,4 +165,11 @@ function Handle.keep(wrappers, filter)
     return kept
 end
 
+---True for the invalid handle Warcraft returns in place of nil when CreateImage is given a path it cannot load or
+---AddWeatherEffect an id it does not know: its handle id is -1. The id is only compared with -1, which every machine
+---gets for the same bad argument; no other handle id is read.
+---@param raw handle?
+---@return boolean
+function Handle.invalid(raw) return raw ~= nil and GetHandleId(raw) == -1 end
+
 return Handle

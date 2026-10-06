@@ -1,4 +1,5 @@
 local Handle = require('wrappers.internal.handle')
+local Check = require('wrappers.internal.check')
 
 ---@class MoonwellWrappers.Image
 ---@field handle image? Read-only by convention; nil after destruction.
@@ -23,11 +24,15 @@ function Image.fromHandle(raw) return registry.wrap(raw) end
 ---@param imageType integer 1 selection, 2 indicator, 3 occlusion mask, 4 ubersplat.
 ---@return MoonwellWrappers.Image
 function Image.create(path, width, height, x, y, imageType)
+    Check.requireFinite(width, 'width', 'Image.create')
+    Check.requireFinite(height, 'height', 'Image.create')
+    Check.requireFinite(x, 'x', 'Image.create')
+    Check.requireFinite(y, 'y', 'Image.create')
     local raw = CreateImage(path, width, height, 0, x - width / 2, y - height / 2, 0, 0, 0, 0, imageType)
-    -- Only compared with -1, which every machine gets for the same bad path; DestroyImage on it was safe in game.
-    if raw ~= nil and GetHandleId(raw) == -1 then
+    -- DestroyImage on the invalid image was safe in game.
+    if Handle.invalid(raw) then
         DestroyImage(raw)
-        error('[wrappers] Image.create: invalid image path: ' .. tostring(path), 2)
+        error('[wrappers] Image.create: invalid image path: ' .. Check.show(path), 2)
     end
     local image = Handle.created(Image.fromHandle(raw), 'Image.create')
     sizes[image] = {width, height}
@@ -45,6 +50,8 @@ function Image:isDisposed() return (registry.isDisposed(self, 'Image.isDisposed'
 ---@param z number? Default 0.
 function Image:setPosition(x, y, z)
     local raw = registry.require(self, 'Image.setPosition')
+    Check.requireFinite(x, 'x', 'Image.setPosition')
+    Check.requireFinite(y, 'y', 'Image.setPosition')
     local size = sizes[self]
     if size == nil then
         error('[wrappers] Image.setPosition: size unknown for a wrapped image; use SetImagePosition', 2)
@@ -52,7 +59,7 @@ function Image:setPosition(x, y, z)
     SetImagePosition(raw, x - size[1] / 2, y - size[2] / 2, z or 0)
 end
 ---@param flag boolean
-function Image:show(flag) ShowImage(registry.require(self, 'Image.show'), flag) end
+function Image:setVisible(flag) ShowImage(registry.require(self, 'Image.setVisible'), flag) end
 ---Shows the image on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function Image:setVisibleFor(player)

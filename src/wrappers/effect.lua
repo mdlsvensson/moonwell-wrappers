@@ -1,17 +1,11 @@
 local Handle = require('wrappers.internal.handle')
+local Check = require('wrappers.internal.check')
 
 ---@class MoonwellWrappers.Effect
 ---@field handle effect? Read-only by convention; nil after destruction.
 local Effect = {}
 ---@type MoonwellWrappers.Registry<MoonwellWrappers.Effect, effect>
 local registry = Handle.new(Effect, 'Effect')
-
----A model that is not a string, such as a missing Effect.abilityArt, fails at the caller instead of drawing nothing.
----@param model unknown
----@param operation string
-local function checkModel(model, operation)
-    if type(model) ~= 'string' then error('[wrappers] ' .. operation .. ': expected a model path', 3) end
-end
 
 ---@param raw effect?
 ---@return MoonwellWrappers.Effect?
@@ -25,19 +19,19 @@ function Effect.fromHandle(raw) return registry.wrap(raw) end
 ---@return string?
 function Effect.abilityArt(abilityId, effectType, index)
     if index == nil then index = 1 end
-    if type(index) ~= 'number' or index % 1 ~= 0 or index < 1 then
-        error('[wrappers] Effect.abilityArt: expected a positive integer index', 2)
-    end
+    Check.requireInteger(index, 'index', 'Effect.abilityArt', 0, 1)
     local art = GetAbilityEffectById(abilityId, effectType, index - 1)
     if art == '' then return nil end
     return art
 end
+---A model that is not a string, such as a missing Effect.abilityArt, fails at the caller instead of drawing nothing.
+---The same holds for attach, flash and flashOn.
 ---@param model string
 ---@param x number
 ---@param y number
 ---@return MoonwellWrappers.Effect
 function Effect.create(model, x, y)
-    checkModel(model, 'Effect.create')
+    Check.requireText(model, 'a model path', 'Effect.create')
     return (Handle.created(Effect.fromHandle(AddSpecialEffect(model, x, y)), 'Effect.create'))
 end
 ---Takes a Unit in the editor: Warcraft draws no effect attached to an item or a destructable (v0.3.0 gate). The
@@ -47,7 +41,7 @@ end
 ---@param attachmentPoint string
 ---@return MoonwellWrappers.Effect
 function Effect.attach(model, target, attachmentPoint)
-    checkModel(model, 'Effect.attach')
+    Check.requireText(model, 'a model path', 'Effect.attach')
     local raw = Handle.unwrapWidget(target, 'Effect.attach')
     return (Handle.created(Effect.fromHandle(AddSpecialEffectTarget(model, raw, attachmentPoint)), 'Effect.attach'))
 end
@@ -56,7 +50,7 @@ end
 ---@param x number
 ---@param y number
 function Effect.flash(model, x, y)
-    checkModel(model, 'Effect.flash')
+    Check.requireText(model, 'a model path', 'Effect.flash')
     DestroyEffect(Handle.created(AddSpecialEffect(model, x, y), 'Effect.flash'))
 end
 ---Attaches and destroys an effect at once, which plays its death animation. Returns nothing. Takes a Unit in the
@@ -65,7 +59,7 @@ end
 ---@param target MoonwellWrappers.Unit
 ---@param attachmentPoint string
 function Effect.flashOn(model, target, attachmentPoint)
-    checkModel(model, 'Effect.flashOn')
+    Check.requireText(model, 'a model path', 'Effect.flashOn')
     local raw = Handle.unwrapWidget(target, 'Effect.flashOn')
     DestroyEffect(Handle.created(AddSpecialEffectTarget(model, raw, attachmentPoint), 'Effect.flashOn'))
 end
@@ -81,10 +75,16 @@ function Effect:setPosition(x, y, z)
 end
 ---@param scale number
 function Effect:setScale(scale) BlzSetSpecialEffectScale(registry.require(self, 'Effect.setScale'), scale) end
+---Tints the effect. With `a` it also sets the alpha, as setAlpha does.
 ---@param r integer 0-255
 ---@param g integer 0-255
 ---@param b integer 0-255
-function Effect:setColor(r, g, b) BlzSetSpecialEffectColor(registry.require(self, 'Effect.setColor'), r, g, b) end
+---@param a integer? 0-255; the alpha stays as it is when this is left out.
+function Effect:setColor(r, g, b, a)
+    local raw = registry.require(self, 'Effect.setColor')
+    BlzSetSpecialEffectColor(raw, r, g, b)
+    if a ~= nil then BlzSetSpecialEffectAlpha(raw, a) end
+end
 ---@param alpha integer 0-255
 function Effect:setAlpha(alpha) BlzSetSpecialEffectAlpha(registry.require(self, 'Effect.setAlpha'), alpha) end
 ---@param player MoonwellWrappers.Player
@@ -96,11 +96,16 @@ end
 function Effect:setTimeScale(scale)
     BlzSetSpecialEffectTimeScale(registry.require(self, 'Effect.setTimeScale'), scale)
 end
----@param yaw number Radians.
----@param pitch number Radians.
----@param roll number Radians.
+---The native takes radians; this converts.
+---@param yaw number Degrees.
+---@param pitch number Degrees.
+---@param roll number Degrees.
 function Effect:setOrientation(yaw, pitch, roll)
-    BlzSetSpecialEffectOrientation(registry.require(self, 'Effect.setOrientation'), yaw, pitch, roll)
+    local raw = registry.require(self, 'Effect.setOrientation')
+    Check.requireFinite(yaw, 'yaw', 'Effect.setOrientation')
+    Check.requireFinite(pitch, 'pitch', 'Effect.setOrientation')
+    Check.requireFinite(roll, 'roll', 'Effect.setOrientation')
+    BlzSetSpecialEffectOrientation(raw, math.rad(yaw), math.rad(pitch), math.rad(roll))
 end
 ---@param height number
 function Effect:setHeight(height) BlzSetSpecialEffectHeight(registry.require(self, 'Effect.setHeight'), height) end
