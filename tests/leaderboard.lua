@@ -72,7 +72,7 @@ test('one item per player: misuse fails before any change', function()
     fails(function() board:hasItem(board) end, 'Leaderboard.hasItem: expected Player wrapper')
     fails(function() board:setItemStyle(red, {icons = false}) end, "Leaderboard.setItemStyle: unknown option 'icons'")
     fails(function() board:setStyle({labels = true}) end, "Leaderboard.setStyle: unknown option 'labels'")
-    fails(function() board:setStyle({names = 1}) end, "option 'names' expected a boolean")
+    failsAt(function() board:setStyle({names = 1}) end, "Leaderboard.setStyle: 'names' expected a boolean")
     for _, name in ipairs(mutating) do eq(callCount(name), 0) end
     board:destroy()
 end)

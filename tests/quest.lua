@@ -25,7 +25,7 @@ end)
 
 test('bad options fail before CreateQuest', function()
     fails(function() Quest.create({titel = 'x'}) end, "Quest.create: unknown option 'titel'")
-    fails(function() Quest.create({required = 'yes'}) end, "Quest.create: option 'required' expected a boolean")
+    failsAt(function() Quest.create({required = 'yes'}) end, "Quest.create: 'required' expected a boolean")
     fails(function() Quest.create('Rescue') end, 'Quest.create: expected an options table')
     eq(totalCalls(), 0)
 end)

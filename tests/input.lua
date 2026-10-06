@@ -248,7 +248,7 @@ test('arguments are checked at the caller, before any native', function()
     failsAt(function() Input.onKeyDown(who, q, nothing, {repeat_ = true}) end,
         "Input.onKeyDown: unknown option 'repeat_'")
     failsAt(function() Input.onKeyDown(who, q, nothing, {repeats = 1}) end,
-        "Input.onKeyDown: option 'repeats' expected a boolean")
+        "Input.onKeyDown: 'repeats' expected a boolean")
     failsAt(function() Input.onKeyUp({}, q, nothing) end, 'Input.onKeyUp: expected Player wrapper')
     failsAt(function() Input.onKeyUp(who, nil, nothing) end, 'Input.onKeyUp: expected a key, such as OSKEY_Q')
     failsAt(function() Input.onKeyUp(who, q, nil) end, 'Input.onKeyUp: expected a callback function')
