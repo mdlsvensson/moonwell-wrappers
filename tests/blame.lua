@@ -26,18 +26,8 @@
 -- - a function that fails for none of the shapes (every fromHandle and fromEvent, a create without a checked
 --   argument).
 -- The sweep says nothing about any of these: each needs a test in its module's own suite.
-
--- Arithmetic on an argument that nothing checked: a raw Lua error at a library line. Lua words it one way for a nil,
--- a boolean, a function or a table ("attempt to perform arithmetic on a nil value") and another for a string that is
--- no number ("attempt to div a 'string' with a 'number'").
-local ARITHMETIC = {'attempt to perform arithmetic on a', "' with a '"}
-
--- Functions that misplace an error today, each with the fragments of that error's message and the task of the 0.10.0
--- plan that fixes it. An entry shields only failures that hold one of its fragments: the sweep fails on any other
--- misplaced error, listed or not, and on an entry whose error no longer occurs, so the list cannot go stale.
----@type table<string, string[]>
-local KNOWN = {
-}
+--
+-- No function is excepted: one misplaced error, in any function of any class, fails the suite.
 
 -- A constant, so the stand-in does not answer for it: Sync.on reads it once a shape gives it a prefix and a callback.
 bj_MAX_PLAYERS = 24
@@ -52,7 +42,7 @@ for _, name in ipairs({'CreateImage', 'CreateQuest', 'CreateTrigger', 'DialogAdd
     native(name, function() return {} end)
 end
 
--- {label, module}: the label is the class name the error messages and KNOWN use.
+-- {label, module}: the label is the class name the error messages use.
 local CLASSES = {
     {'Damage', 'damage'}, {'DefeatCondition', 'defeatcondition'}, {'Destructable', 'destructable'},
     {'Dialog', 'dialog'}, {'Effect', 'effect'}, {'FogModifier', 'fogmodifier'}, {'Force', 'force'},
@@ -102,9 +92,7 @@ end
 
 ---@class BlameResult
 ---@field raised integer How many of the calls failed.
----@field known string[]? The function's fragments in KNOWN.
----@field shielded boolean? A failure was misplaced and held one of those fragments.
----@field unexpected string? The first misplaced failure that held none of them.
+---@field misplaced string? The first failure that was no wrappers error at the line of its attempt.
 
 -- This file, as a stack frame names it.
 local HERE = debug.getinfo(1, 'S').short_src
@@ -140,13 +128,7 @@ local function try(result, attempt, above)
         error('line ' .. line .. ' defines an attempt and a frame above it runs there: give the attempt its own line')
     end
     if message:find('^%./tests/blame%.lua:' .. line .. ': %[wrappers%] ') then return end
-    for _, fragment in ipairs(result.known or {}) do
-        if message:find(fragment, 1, true) then
-            result.shielded = true
-            return
-        end
-    end
-    if not result.unexpected then result.unexpected = message end
+    if not result.misplaced then result.misplaced = message end
 end
 
 ---Calls every function of `class` with every shape and records its failures under '<label>.<key>'.
@@ -162,7 +144,7 @@ local function sweep(label, class, receiver, results, shapes)
             local name = label .. '.' .. key
             local result = results[name]
             if not result then
-                result = {raised = 0, known = KNOWN[name]}
+                result = {raised = 0}
                 results[name] = result
             end
             for index = 1, #shapes do
@@ -235,28 +217,15 @@ test('every failure the sweep provokes is a wrappers error at the line that call
     local function item() return Quest.create():addItem('text') end
     sweep('QuestItem', getmetatable(item()), item, results, shapes)
 
-    local raised, wrong, stale = {}, {}, {}
+    local raised, wrong = {}, {}
     for name, result in pairs(results) do
         local label = name:match('^[^.]+')
         raised[label] = (raised[label] or 0) + result.raised
-        if result.unexpected then wrong[#wrong + 1] = name .. ' -> ' .. result.unexpected end
-    end
-    for name in pairs(KNOWN) do
-        if not (results[name] and results[name].shielded) then stale[#stale + 1] = name end
+        if result.misplaced then wrong[#wrong + 1] = name .. ' -> ' .. result.misplaced end
     end
     for _, label in ipairs(labels) do assert((raised[label] or 0) > 0, label .. ': no function raised') end
     table.sort(wrong)
-    table.sort(stale)
-    -- Both lists in one failure: a change that fixes one known function and breaks another shows both at once.
-    local report = {}
-    if #wrong > 0 then
-        report[#report + 1] = #wrong .. ' functions misplace an error that KNOWN does not name:\n'
-            .. table.concat(wrong, '\n')
-    end
-    if #stale > 0 then
-        report[#report + 1] = 'KNOWN names errors that no longer occur: ' .. table.concat(stale, ', ')
-    end
-    assert(#report == 0, table.concat(report, '\n'))
+    assert(#wrong == 0, #wrong .. ' functions misplace an error:\n' .. table.concat(wrong, '\n'))
 end)
 
 test('every function of damage, sync and input refuses a table as its first argument', function()

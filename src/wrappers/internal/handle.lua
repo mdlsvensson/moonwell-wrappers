@@ -6,7 +6,6 @@
 ---@field isDisposed fun(value: unknown, operation: string): boolean
 ---@field live fun(value: unknown, operation: string): H?
 ---@field sweep fun(gone: fun(raw: H): boolean)
----@field member fun(value: unknown): H|false|nil
 
 ---@class MoonwellWrappers.RegistryOptions
 ---@field weak boolean? Weak-valued cache: an unreferenced wrapper may be collected and recreated later.
@@ -44,7 +43,6 @@ function Handle.new(class, name, options)
         byHandle[raw] = nil
         value.handle = nil
     end
-    function registry.member(value) return members[value] end
     ---One cache lookup for a handle that already has its wrapper.
     function registry.wrap(raw)
         if raw == nil then return nil end

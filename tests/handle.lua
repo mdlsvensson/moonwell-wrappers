@@ -30,7 +30,7 @@ test('unwrapWidget accepts every widget class and rejects others', function()
 end)
 
 test('duplicate registry names are rejected', function()
-    fails(function() Handle.new({}, 'Unit') end, 'duplicate registry: Unit')
+    failsAt(function() Handle.new({}, 'Unit') end, 'duplicate registry: Unit')
 end)
 
 test('live gives the handle, nil once disposed, and raises for a stranger at the public caller', function()
@@ -201,7 +201,7 @@ test('keep returns the array itself without a filter, and a new array of the acc
     eq(#seen, 3); eq(seen[1], a); eq(seen[2], b); eq(seen[3], c)
     eq(#kept, 2); eq(kept[1], a); eq(kept[2], c); eq(#all, 3)
     eq(#Handle.keep({}, function() return true end), 0)
-    fails(function() Handle.keep(all, function() error('boom') end) end, 'boom')
+    failsAt(function() Handle.keep(all, function() error('boom') end) end, 'boom')
 end)
 
 test('invalid is true only for a handle whose id is -1, and false for nil without a native call', function()
@@ -210,4 +210,12 @@ test('invalid is true only for a handle whose id is -1, and false for nil withou
     eq(Handle.invalid(bad), true); eq(Handle.invalid(good), false)
     resetCalls()
     eq(Handle.invalid(nil), false); eq(totalCalls(), 0)
+end)
+
+test('a registry offers no member function: membership is read inside handle.lua only', function()
+    local Fake = {}
+    local fakes = Handle.new(Fake, 'FakeNoMember')
+    eq(fakes.member, nil)
+    local f = fakes.wrap({})
+    eq(fakes.require(f, 'Test.op'), f.handle); eq(Handle.unwrap(f, 'FakeNoMember', 'Test.op'), f.handle)
 end)

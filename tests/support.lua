@@ -96,6 +96,6 @@ function checkSetters(wrapper, rows)
 end
 function checkDisposed(wrapper, methods)
     local before = totalCalls()
-    for _, name in ipairs(methods) do fails(function() wrapper[name](wrapper) end, 'disposed') end
+    for _, name in ipairs(methods) do failsAt(function() wrapper[name](wrapper) end, 'disposed') end
     eq(totalCalls(), before)
 end

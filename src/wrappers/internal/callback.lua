@@ -20,14 +20,6 @@ function Callback.optional(value, operation, depth)
     end
 end
 
----@param value unknown
----@param operation string
-function Callback.nonnegative(value, operation)
-    if type(value) ~= 'number' or value ~= value or value < 0 or value == math.huge then
-        error('[wrappers] ' .. operation .. ': expected a finite non-negative number', 3)
-    end
-end
-
 ---@param label string
 ---@param message unknown
 local function report(label, message)
