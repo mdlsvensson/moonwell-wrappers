@@ -145,4 +145,24 @@ function Handle.created(raw, operation, depth)
     return raw
 end
 
+---Keeps the wrappers a filter accepts, in their order: the one filtering pass of Item.enumInRect and
+---Destructable.enumInRect. Without a filter the array itself comes back; with one, a new array. The filter runs as
+---ordinary Lua, after every wrapper was made, and its error propagates.
+---@generic T
+---@param wrappers T[]
+---@param filter (fun(wrapper: T): any)?
+---@return T[]
+function Handle.keep(wrappers, filter)
+    if filter == nil then return wrappers end
+    local kept, count = {}, 0
+    for index = 1, #wrappers do
+        local wrapper = wrappers[index]
+        if filter(wrapper) then
+            count = count + 1
+            kept[count] = wrapper
+        end
+    end
+    return kept
+end
+
 return Handle

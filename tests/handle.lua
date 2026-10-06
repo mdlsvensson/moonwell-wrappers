@@ -2,7 +2,6 @@ native('CreateTimer', function() return {} end)
 native('RemoveItem', function() end)
 native('RemoveDestructable', function() end)
 local Handle = require('wrappers.internal.handle')
-local Widget = require('wrappers.internal.widget')
 local Unit = require('wrappers.unit')
 local Item = require('wrappers.item')
 local Destructable = require('wrappers.destructable')
@@ -32,23 +31,6 @@ end)
 
 test('duplicate registry names are rejected', function()
     fails(function() Handle.new({}, 'Unit') end, 'duplicate registry: Unit')
-end)
-
-test('widget install copies shared methods without replacing class methods', function()
-    local Fake = {}
-    function Fake:getX() return 'own' end
-    local fakes = Handle.new(Fake, 'FakeInstall', {widget = true})
-    Widget.install(Fake, fakes)
-    local f = fakes.wrap({})
-    eq(f:getX(), 'own')
-    native('GetWidgetY', function() return 9 end)
-    eq(f:getY(), 9); expectCall('GetWidgetY', f.handle)
-    native('GetWidgetLife', function() return 5 end)
-    eq(f:getLife(), 5); expectCall('GetWidgetLife', f.handle)
-    native('SetWidgetLife', function() end)
-    f:setLife(3); expectCall('SetWidgetLife', f.handle, 3)
-    fakes.dispose(f, 'Test.dispose')
-    fails(function() f:getY() end, '[wrappers] FakeInstall.getY: FakeInstall is disposed')
 end)
 
 test('live gives the handle, nil once disposed, and raises for a stranger at the public caller', function()
@@ -204,4 +186,20 @@ test('dispose and sweep leave a wrapper in the same state', function()
         local again = fakes.wrap(raw)
         eq(again == value, false); eq(again.handle, raw); eq(fakes.isDisposed(again, 'Test.op'), false)
     end
+end)
+
+test('keep returns the array itself without a filter, and a new array of the accepted wrappers with one', function()
+    local a, b, c = {}, {}, {}
+    local all = {a, b, c}
+    eq(Handle.keep(all, nil), all)
+    local seen = {}
+    local kept = Handle.keep(all, function(wrapper)
+        seen[#seen + 1] = wrapper
+        return wrapper ~= b
+    end)
+    assert(kept ~= all, 'a filtered result must be a new array')
+    eq(#seen, 3); eq(seen[1], a); eq(seen[2], b); eq(seen[3], c)
+    eq(#kept, 2); eq(kept[1], a); eq(kept[2], c); eq(#all, 3)
+    eq(#Handle.keep({}, function() return true end), 0)
+    fails(function() Handle.keep(all, function() error('boom') end) end, 'boom')
 end)

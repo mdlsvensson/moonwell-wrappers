@@ -12,7 +12,7 @@ test('destructable identity, factory and widget family', function()
     eq(Destructable.fromHandle(d.handle), d); eq(d:getHandle(), d.handle)
     eq(Handle.unwrapWidget(d, 'Test.op'), d.handle)
     native('CreateDestructable', function() return nil end)
-    fails(function() Destructable.create(1, 0, 0, 0, 1, 0) end, 'Destructable.create')
+    failsAt(function() Destructable.create(1, 0, 0, 0, 1, 0) end, 'Destructable.create')
     native('CreateDestructable', function() return {} end)
     d:remove()
 end)
@@ -24,7 +24,7 @@ test('destructable natives receive exact arguments', function()
         {'GetWidgetLife', 'getLife', 40}, {'GetWidgetX', 'getX', 1}, {'GetWidgetY', 'getY', 2}})
     checkSetters(d, {{'SetDestructableMaxLife', 'setMaxLife', 500}, {'KillDestructable', 'kill'},
         {'DestructableRestoreLife', 'restore', 100, true}, {'SetDestructableInvulnerable', 'setInvulnerable', true},
-        {'ShowDestructable', 'show', false}, {'SetDestructableAnimation', 'setAnimation', 'death'},
+        {'ShowDestructable', 'setVisible', false}, {'SetDestructableAnimation', 'setAnimation', 'death'},
         {'QueueDestructableAnimation', 'queueAnimation', 'stand'}, {'SetWidgetLife', 'setLife', 10}})
     eq(d:isDisposed(), false)
     d:remove()
@@ -37,7 +37,7 @@ test('destructable removal is idempotent and guards every method', function()
     expectCall('RemoveDestructable', raw); eq(callCount('RemoveDestructable'), 1); eq(d.handle, nil)
     eq(d:isDisposed(), true)
     checkDisposed(d, {'getHandle', 'getTypeId', 'getName', 'getMaxLife', 'setMaxLife', 'kill', 'restore',
-        'isInvulnerable', 'setInvulnerable', 'show', 'setAnimation', 'queueAnimation', 'getLife', 'setLife',
+        'isInvulnerable', 'setInvulnerable', 'setVisible', 'setAnimation', 'queueAnimation', 'getLife', 'setLife',
         'getX', 'getY'})
 end)
 
@@ -65,12 +65,34 @@ test('enumInRect filters after the native returns, as ordinary Lua', function()
         return tree.handle == a
     end)
     eq(#kept, 1); eq(kept[1], Destructable.fromHandle(a))
-    fails(function() Destructable.enumInRect(area, function() error('boom') end) end, 'boom')
+    failsAt(function() Destructable.enumInRect(area, function() error('boom') end) end, 'boom')
+end)
+
+test('enumInRect wraps every destructable before the filter runs: one the filter removes stays disposed', function()
+    local area, a, b = Rect.fromHandle({}), {}, {}
+    enumerated = {a, b}
+    local states = {}
+    local kept = Destructable.enumInRect(area, function(tree)
+        if tree.handle == a then Destructable.fromHandle(b):remove() end
+        states[#states + 1] = tree:isDisposed()
+        return true
+    end)
+    eq(#states, 2); eq(states[1], false); eq(states[2], true)
+    eq(#kept, 2); eq(kept[2]:isDisposed(), true); eq(callCount('RemoveDestructable'), 1)
+    Destructable.fromHandle(a):remove()
+end)
+
+test('the shared widget methods are the class own and blame their caller', function()
+    for _, method in ipairs({'getLife', 'setLife', 'getX', 'getY'}) do
+        eq(type(rawget(Destructable, method)), 'function')
+        failsAt(function() Destructable[method]({}) end, 'Destructable.' .. method .. ': expected Destructable wrapper')
+    end
+    eq(Destructable.show, nil)
 end)
 
 test('enumInRect validates its rect and filter before the native', function()
-    fails(function() Destructable.enumInRect({}) end, 'Destructable.enumInRect: expected Rect wrapper')
-    fails(function() Destructable.enumInRect(Rect.fromHandle({}), 1) end,
+    failsAt(function() Destructable.enumInRect({}) end, 'Destructable.enumInRect: expected Rect wrapper')
+    failsAt(function() Destructable.enumInRect(Rect.fromHandle({}), 1) end,
         'Destructable.enumInRect: expected a callback function')
     eq(callCount('EnumDestructablesInRect'), 0)
 end)

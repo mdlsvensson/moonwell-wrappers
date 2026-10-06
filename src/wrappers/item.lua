@@ -1,5 +1,4 @@
 local Handle = require('wrappers.internal.handle')
-local Widget = require('wrappers.internal.widget')
 local Callback = require('wrappers.internal.callback')
 local PlayerWrapper = require('wrappers.player')
 
@@ -74,32 +73,36 @@ function Item:setInvulnerable(flag) SetItemInvulnerable(registry.require(self, '
 function Item:setDroppable(flag) SetItemDroppable(registry.require(self, 'Item.setDroppable'), flag) end
 ---@param flag boolean
 function Item:setPawnable(flag) SetItemPawnable(registry.require(self, 'Item.setPawnable'), flag) end
+---@return number
+function Item:getLife() return GetWidgetLife(registry.require(self, 'Item.getLife')) end
+---@param value number
+function Item:setLife(value) SetWidgetLife(registry.require(self, 'Item.setLife'), value) end
+---@return number
+function Item:getX() return GetWidgetX(registry.require(self, 'Item.getX')) end
+---@return number
+function Item:getY() return GetWidgetY(registry.require(self, 'Item.getY')) end
 function Item:remove()
     local raw = registry.dispose(self, 'Item.remove')
     if raw then RemoveItem(raw) end
 end
 
----Returns a new array of the items in the rect. `filter` runs afterwards, as ordinary Lua, and keeps the items for
----which it returns truthy; its errors propagate.
+---Returns a new array of the items in the rect. Every item is wrapped while the game enumerates; `filter` runs
+---afterwards, as ordinary Lua, and keeps the items for which it returns truthy; its errors propagate.
 ---@param rect MoonwellWrappers.Rect
 ---@param filter (fun(item: MoonwellWrappers.Item): any)?
 ---@return MoonwellWrappers.Item[]
 function Item.enumInRect(rect, filter)
     local rawRect = Handle.unwrap(rect, 'Rect', 'Item.enumInRect')
     Callback.optional(filter, 'Item.enumInRect')
-    local raws = {}
+    ---@type MoonwellWrappers.Item[]
+    local items = {}
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
-    EnumItemsInRect(rawRect, nil, function() raws[#raws + 1] = GetEnumItem() end)
-    local items = {}
-    for index, raw in ipairs(raws) do items[index] = assert(Item.fromHandle(raw)) end
-    if filter == nil then return items end
-    local kept = {}
-    for _, item in ipairs(items) do
-        if filter(item) then kept[#kept + 1] = item end
-    end
-    return kept
+    EnumItemsInRect(rawRect, nil, function()
+        local item = registry.wrap(GetEnumItem())
+        if item then items[#items + 1] = item end
+    end)
+    return Handle.keep(items, filter)
 end
 
-Widget.install(Item, registry)
 return Item

@@ -13,7 +13,7 @@ test('item identity, factory and widget family', function()
     eq(Item.fromHandle(i.handle), i); eq(i:getHandle(), i.handle); eq(i:isDisposed(), false)
     eq(Handle.unwrapWidget(i, 'Test.op'), i.handle)
     native('CreateItem', function() return nil end)
-    fails(function() Item.create(1, 0, 0) end, 'Item.create')
+    failsAt(function() Item.create(1, 0, 0) end, 'Item.create')
     native('CreateItem', function() return {} end)
     i:remove()
 end)
@@ -28,7 +28,7 @@ test('item getters read current native state', function()
     native('GetItemPlayer', function() return owner end)
     eq(i:getOwner(), Player.fromHandle(owner)); expectCall('GetItemPlayer', i.handle)
     native('GetItemPlayer', function() return nil end)
-    fails(function() i:getOwner() end, 'Item.getOwner')
+    failsAt(function() i:getOwner() end, 'Item.getOwner')
     i:remove()
 end)
 
@@ -40,7 +40,7 @@ test('item mutations forward exact arguments', function()
         {'SetWidgetLife', 'setLife', 30}})
     native('SetItemPlayer', function() end)
     i:setOwner(p, true); expectCall('SetItemPlayer', i.handle, PLAYER_RAW, true)
-    fails(function() i:setOwner(i, true) end, 'Item.setOwner: expected Player wrapper')
+    failsAt(function() i:setOwner(i, true) end, 'Item.setOwner: expected Player wrapper')
     eq(callCount('SetItemPlayer'), 1)
     i:remove()
 end)
@@ -83,12 +83,33 @@ test('enumInRect filters after the native returns, as ordinary Lua', function()
         return item.handle == b
     end)
     eq(#seen, 2); eq(#kept, 1); eq(kept[1], Item.fromHandle(b))
-    fails(function() Item.enumInRect(area, function() error('boom') end) end, 'boom')
+    failsAt(function() Item.enumInRect(area, function() error('boom') end) end, 'boom')
+end)
+
+test('enumInRect wraps every item before the filter runs: one the filter removes stays disposed', function()
+    local area, a, b = Rect.fromHandle({}), {}, {}
+    enumerated = {a, b}
+    local states = {}
+    local kept = Item.enumInRect(area, function(item)
+        if item.handle == a then Item.fromHandle(b):remove() end
+        states[#states + 1] = item:isDisposed()
+        return true
+    end)
+    eq(#states, 2); eq(states[1], false); eq(states[2], true)
+    eq(#kept, 2); eq(kept[2]:isDisposed(), true); eq(callCount('RemoveItem'), 1)
+    Item.fromHandle(a):remove()
+end)
+
+test('the shared widget methods are the class own and blame their caller', function()
+    for _, method in ipairs({'getLife', 'setLife', 'getX', 'getY'}) do
+        eq(type(rawget(Item, method)), 'function')
+        failsAt(function() Item[method]({}) end, 'Item.' .. method .. ': expected Item wrapper')
+    end
 end)
 
 test('enumInRect validates its rect and filter before the native', function()
-    fails(function() Item.enumInRect({}) end, 'Item.enumInRect: expected Rect wrapper')
-    fails(function() Item.enumInRect(Rect.fromHandle({}), 'all') end, 'Item.enumInRect: expected a callback function')
+    failsAt(function() Item.enumInRect({}) end, 'Item.enumInRect: expected Rect wrapper')
+    failsAt(function() Item.enumInRect(Rect.fromHandle({}), 'all') end, 'Item.enumInRect: expected a callback function')
     eq(callCount('EnumItemsInRect'), 0)
 end)
 

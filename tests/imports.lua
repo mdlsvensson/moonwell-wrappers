@@ -43,3 +43,8 @@ test('the damage module loads Unit and what Unit loads, and nothing else', funct
     eq(package.loaded['wrappers.unit'] ~= nil, true)
     for _, name in ipairs({'group', 'force'}) do eq(package.loaded['wrappers.' .. name], nil) end
 end)
+
+test('internal/widget is annotations only: no module loads it', function()
+    require('wrappers.unit'); require('wrappers.item'); require('wrappers.destructable')
+    eq(package.loaded['wrappers.internal.widget'], nil)
+end)

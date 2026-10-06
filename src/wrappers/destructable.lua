@@ -1,5 +1,4 @@
 local Handle = require('wrappers.internal.handle')
-local Widget = require('wrappers.internal.widget')
 local Callback = require('wrappers.internal.callback')
 
 ---@class MoonwellWrappers.Destructable: MoonwellWrappers.Widget
@@ -62,7 +61,9 @@ function Destructable:setInvulnerable(flag)
     SetDestructableInvulnerable(registry.require(self, 'Destructable.setInvulnerable'), flag)
 end
 ---@param visible boolean
-function Destructable:show(visible) ShowDestructable(registry.require(self, 'Destructable.show'), visible) end
+function Destructable:setVisible(visible)
+    ShowDestructable(registry.require(self, 'Destructable.setVisible'), visible)
+end
 ---@param animation string
 function Destructable:setAnimation(animation)
     SetDestructableAnimation(registry.require(self, 'Destructable.setAnimation'), animation)
@@ -71,32 +72,37 @@ end
 function Destructable:queueAnimation(animation)
     QueueDestructableAnimation(registry.require(self, 'Destructable.queueAnimation'), animation)
 end
+---@return number
+function Destructable:getLife() return GetWidgetLife(registry.require(self, 'Destructable.getLife')) end
+---@param value number
+function Destructable:setLife(value) SetWidgetLife(registry.require(self, 'Destructable.setLife'), value) end
+---@return number
+function Destructable:getX() return GetWidgetX(registry.require(self, 'Destructable.getX')) end
+---@return number
+function Destructable:getY() return GetWidgetY(registry.require(self, 'Destructable.getY')) end
 function Destructable:remove()
     local raw = registry.dispose(self, 'Destructable.remove')
     if raw then RemoveDestructable(raw) end
 end
 
----Returns a new array of the destructables in the rect. `filter` runs afterwards, as ordinary Lua, and keeps the
----destructables for which it returns truthy; its errors propagate.
+---Returns a new array of the destructables in the rect. Every destructable is wrapped while the game enumerates;
+---`filter` runs afterwards, as ordinary Lua, and keeps the destructables for which it returns truthy; its errors
+---propagate.
 ---@param rect MoonwellWrappers.Rect
 ---@param filter (fun(destructable: MoonwellWrappers.Destructable): any)?
 ---@return MoonwellWrappers.Destructable[]
 function Destructable.enumInRect(rect, filter)
     local rawRect = Handle.unwrap(rect, 'Rect', 'Destructable.enumInRect')
     Callback.optional(filter, 'Destructable.enumInRect')
-    local raws = {}
+    ---@type MoonwellWrappers.Destructable[]
+    local destructables = {}
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
-    EnumDestructablesInRect(rawRect, nil, function() raws[#raws + 1] = GetEnumDestructable() end)
-    local destructables = {}
-    for index, raw in ipairs(raws) do destructables[index] = assert(Destructable.fromHandle(raw)) end
-    if filter == nil then return destructables end
-    local kept = {}
-    for _, destructable in ipairs(destructables) do
-        if filter(destructable) then kept[#kept + 1] = destructable end
-    end
-    return kept
+    EnumDestructablesInRect(rawRect, nil, function()
+        local destructable = registry.wrap(GetEnumDestructable())
+        if destructable then destructables[#destructables + 1] = destructable end
+    end)
+    return Handle.keep(destructables, filter)
 end
 
-Widget.install(Destructable, registry)
 return Destructable
