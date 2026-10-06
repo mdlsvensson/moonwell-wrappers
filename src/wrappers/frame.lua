@@ -34,6 +34,7 @@ local byTypeFields = {name = {'string', ''}, inherits = {'string', ''}}
 ---@field context integer An owned frame's create context; a part's is its owner's; 0 when borrowed.
 ---@field children MoonwellWrappers.Frame[] Owned frames under an owned frame, in creation order.
 ---@field parts MoonwellWrappers.Frame[] Template parts found through an owned frame, in the order found.
+---@field origin boolean? True for a frame Frame.origin returned: it is the game's and never becomes a part.
 ---@field trigger trigger? Created by the first on().
 ---@field lists MoonwellWrappers.Cells[] One list of callbacks per event type, in the order the types were first used.
 ---@field byType table<frameeventtype, MoonwellWrappers.Cells> The same lists by event type; lookup only.
@@ -70,14 +71,17 @@ local function newState(kind, owner, context)
 end
 
 ---Wraps a raw handle the game gave us. A new frame becomes a part of `owner`, or borrowed when `owner` is nil. A known
----frame keeps its wrapper, and its kind with one exception: a borrowed frame found through an owned frame is a
----template part that Frame.byName or Frame.fromHandle reached first, so it becomes a part of `owner`. That is sound:
----getChild gives direct children and findChild looks in the owner's create context, so what they find is in the
----owner's subtree, where a frame of the game's can never be.
+---frame keeps its wrapper and its kind, with one exception that only getChild and findChild ask for (`convert`): a
+---borrowed frame they find through an owned frame is a template part that Frame.byName or Frame.fromHandle reached
+---first, so it becomes a part of `owner`. That is sound for those two: a direct child is in the owner's subtree, and
+---so is a name found in the owner's create context. getParent never converts, because a parent is not in the subtree
+---(a part may have been moved under a frame of the game's), and a frame from Frame.origin is the game's, so no path
+---converts it.
 ---@param raw framehandle
 ---@param owner MoonwellWrappers.Frame?
+---@param convert boolean? True when a known borrowed frame may become a part of `owner`.
 ---@return MoonwellWrappers.Frame
-local function adopt(raw, owner)
+local function adopt(raw, owner, convert)
     local frame = assert(registry.wrap(raw))
     local state = states[frame]
     if not state then
@@ -88,7 +92,7 @@ local function adopt(raw, owner)
         else
             states[frame] = newState('borrowed', frame, 0)
         end
-    elseif owner and state.kind == 'borrowed' then
+    elseif convert and owner and state.kind == 'borrowed' and not state.origin then
         local owned = states[owner]
         state.kind, state.owner, state.context = 'part', owner, owned.context
         owned.parts[#owned.parts + 1] = frame
@@ -193,7 +197,10 @@ function Frame.origin(originType, index)
     if index ~= nil then Check.requireInteger(index, 'index', 'Frame.origin') end
     local raw = BlzGetOriginFrame(originType, index or 0)
     if raw == nil then error('[wrappers] Frame.origin: no frame', 2) end
-    return adopt(raw, nil)
+    local frame = adopt(raw, nil)
+    local state = states[frame]
+    if state.kind == 'borrowed' then state.origin = true end
+    return frame
 end
 ---The frame with that name and create context: the existing wrapper, or a borrowed one.
 ---@param name string
@@ -243,7 +250,7 @@ function Frame:getChild(index)
     if raw == nil then error('[wrappers] Frame.getChild: no child ' .. index, 2) end
     local state = states[self]
     if state.kind == 'borrowed' then return adopt(raw, nil) end
-    return adopt(raw, state.owner)
+    return adopt(raw, state.owner, true)
 end
 ---Finds a template part by name, with the create context of the owned frame this frame belongs to.
 ---@param name string
@@ -258,7 +265,7 @@ function Frame:findChild(name)
     if raw == nil then
         error('[wrappers] Frame.findChild: no frame named ' .. Check.show(name) .. ' in this frame', 2)
     end
-    return adopt(raw, state.owner)
+    return adopt(raw, state.owner, true)
 end
 ---Moves the frame under another frame. An owned frame moves in the tree; a borrowed frame may only move under another
 ---borrowed frame; a template part cannot move.
