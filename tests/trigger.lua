@@ -24,8 +24,9 @@ test('trigger identity and exact native registrations', function()
     for _, name in ipairs({'EnableTrigger', 'DisableTrigger', 'TriggerRegisterUnitEvent',
         'TriggerRegisterPlayerUnitEvent', 'TriggerRegisterTimerEvent'}) do native(name, function() end) end
     native('IsTriggerEnabled', function() return false end)
-    t:enable(); expectCall('EnableTrigger', t.handle)
-    t:disable(); expectCall('DisableTrigger', t.handle)
+    t:setEnabled(true); expectCall('EnableTrigger', t.handle); eq(callCount('DisableTrigger'), 0)
+    t:setEnabled(false); expectCall('DisableTrigger', t.handle); eq(callCount('EnableTrigger'), 1)
+    eq(t.enable, nil); eq(t.disable, nil)
     eq(t:isEnabled(), false); expectCall('IsTriggerEnabled', t.handle)
     t:registerUnitEvent(u, event); expectCall('TriggerRegisterUnitEvent', t.handle, u.handle, event)
     t:registerPlayerUnitEvent(p, event)
@@ -34,7 +35,7 @@ test('trigger identity and exact native registrations', function()
     local raw = t:getHandle()
     t:destroy(); t:destroy(); expectCall('DestroyTrigger', raw); eq(callCount('DestroyTrigger'), 1)
     eq(t.handle, nil); eq(t:isDisposed(), true)
-    for _, method in ipairs({'getHandle', 'enable', 'disable', 'isEnabled', 'registerUnitEvent',
+    for _, method in ipairs({'getHandle', 'setEnabled', 'isEnabled', 'registerUnitEvent',
         'registerPlayerUnitEvent', 'registerTimerEvent', 'addAction'}) do
         fails(function() t[method](t) end, 'disposed')
     end
@@ -49,7 +50,8 @@ test('trigger validates arguments before registrations', function()
     fails(function() t:registerPlayerUnitEvent(u, {}) end, 'Player')
     u:remove(); fails(function() t:registerUnitEvent(u, {}) end, 'disposed')
     for _, bad in ipairs({-1, math.huge, 0/0, '1'}) do
-        fails(function() t:registerTimerEvent(bad, true) end, 'Trigger.registerTimerEvent')
+        failsAt(function() t:registerTimerEvent(bad, true) end,
+            'Trigger.registerTimerEvent: expected a finite non-negative timeout')
     end
     fails(function() t:addAction(nil) end, 'callback')
     eq(callCount('TriggerRegisterUnitEvent'), 0); eq(callCount('TriggerRegisterPlayerUnitEvent'), 0)
@@ -119,8 +121,20 @@ test('new registrations validate before natives', function()
     fails(function() t:registerPlayerEvent(u, {}) end, 'Trigger.registerPlayerEvent: expected Player wrapper')
     fails(function() t:registerUnitStateEvent(p, {}, {}, 1) end, 'Trigger.registerUnitStateEvent: expected Unit wrapper')
     for _, bad in ipairs({-1, math.huge, 0/0, '1'}) do
-        fails(function() t:registerUnitInRange(u, bad) end, 'Trigger.registerUnitInRange')
+        failsAt(function() t:registerUnitInRange(u, bad) end,
+            'Trigger.registerUnitInRange: expected a finite non-negative range')
     end
+    local state, op = {}, {}
+    for _, bad in ipairs({math.huge, -math.huge, 0/0, '1', false}) do
+        failsAt(function() t:registerUnitStateEvent(u, state, op, bad) end,
+            'Trigger.registerUnitStateEvent: expected a finite value')
+        failsAt(function() t:registerPlayerStateEvent(p, state, op, bad) end,
+            'Trigger.registerPlayerStateEvent: expected a finite value')
+        failsAt(function() t:registerGameStateEvent(state, op, bad) end,
+            'Trigger.registerGameStateEvent: expected a finite value')
+    end
+    failsAt(function() t:registerGameStateEvent(state, op) end,
+        'Trigger.registerGameStateEvent: expected a finite value')
     fails(function() t:addCondition(nil) end, 'callback')
     item:remove()
     fails(function() t:registerDeathEvent(item) end, 'Trigger.registerDeathEvent: Item is disposed')
@@ -130,7 +144,7 @@ end)
 
 test('conditions own boolexprs and failures evaluate false', function()
     local t, pass = Trigger.create(), nil
-    local token = t:addCondition(function(self) eq(self, t); return pass end)
+    local cancel = t:addCondition(function(self) eq(self, t); return pass end)
     local boolexpr, nativeCondition, check = lastBoolexpr, lastCondition, conditions[#conditions]
     expectCall('TriggerAddCondition', t.handle, boolexpr)
     eq(check(), false)
@@ -139,19 +153,19 @@ test('conditions own boolexprs and failures evaluate false', function()
     eq(conditions[#conditions](), false); eq(#PRINTED, 1)
     assert(PRINTED[1]:find('[wrappers] Trigger condition failed:', 1, true))
     assert(PRINTED[1]:find('condition probe', 1, true))
-    t:removeCondition(token)
+    cancel()
     expectCall('TriggerRemoveCondition', t.handle, nativeCondition); expectCall('DestroyCondition', boolexpr)
     eq(check(), false)
-    t:removeCondition(token); eq(callCount('TriggerRemoveCondition'), 1); eq(callCount('DestroyCondition'), 1)
+    cancel(); eq(callCount('TriggerRemoveCondition'), 1); eq(callCount('DestroyCondition'), 1)
     native('Condition', function() return nil end)
     fails(function() t:addCondition(function() return true end) end, 'Trigger.addCondition')
     native('Condition', function(fn) conditions[#conditions + 1] = fn; lastBoolexpr = {}; return lastBoolexpr end)
     t:destroy()
 end)
 
-test('a condition that removes itself keeps its result for that evaluation', function()
-    local t, token, runs = Trigger.create(), nil, 0
-    token = t:addCondition(function(self) runs = runs + 1; self:removeCondition(token); return true end)
+test('a condition that cancels itself keeps its result for that evaluation', function()
+    local t, cancel, runs = Trigger.create(), nil, 0
+    cancel = t:addCondition(function() runs = runs + 1; cancel(); return true end)
     local boolexpr, nativeCondition, check = lastBoolexpr, lastCondition, conditions[#conditions]
     resetCalls()
     eq(check(), true); eq(runs, 1); eq(#PRINTED, 0)
@@ -159,7 +173,7 @@ test('a condition that removes itself keeps its result for that evaluation', fun
     eq(callCount('DestroyCondition'), 1); expectCall('DestroyCondition', boolexpr)
     eq(callName(1), 'TriggerRemoveCondition'); eq(callName(2), 'DestroyCondition'); eq(totalCalls(), 2)
     eq(check(), false); eq(check(), false); eq(runs, 1)
-    t:removeCondition(token); eq(callCount('TriggerRemoveCondition'), 1); eq(callCount('DestroyCondition'), 1)
+    cancel(); eq(callCount('TriggerRemoveCondition'), 1); eq(callCount('DestroyCondition'), 1)
     t:destroy()
 end)
 
@@ -180,29 +194,36 @@ test('a condition that destroys its trigger keeps the destroy order', function()
     t:destroy(); eq(callCount('DestroyTrigger'), 1); eq(#PRINTED, 0)
 end)
 
-test('action tokens remove individual actions, even mid-firing', function()
+test('a cancel function removes its own action, even mid-firing', function()
     local t, hits, second = Trigger.create(), {}, nil
-    t:addAction(function(self) hits[#hits + 1] = 'first'; self:removeAction(second) end)
+    t:addAction(function() hits[#hits + 1] = 'first'; second() end)
     local runFirst = actions[#actions]
     second = t:addAction(function() hits[#hits + 1] = 'second' end)
     local runSecond, secondNative = actions[#actions], lastAction
     runFirst(); runSecond()
     eq(#hits, 1); eq(hits[1], 'first')
     expectCall('TriggerRemoveAction', t.handle, secondNative)
-    t:removeAction(second); eq(callCount('TriggerRemoveAction'), 1)
+    second(); eq(callCount('TriggerRemoveAction'), 1)
     t:destroy()
 end)
 
-test('tokens are checked for kind and owner', function()
-    local a, b = Trigger.create(), Trigger.create()
-    local action, condition = a:addAction(function() end), a:addCondition(function() return true end)
+test('a registration returns one cancel function, and the token methods are gone', function()
+    local t = Trigger.create()
+    local action = table.pack(t:addAction(function() end))
+    local actionNative = lastAction
+    local condition = table.pack(t:addCondition(function() return true end))
+    local conditionNative, boolexpr = lastCondition, lastBoolexpr
+    eq(action.n, 1); eq(type(action[1]), 'function'); eq(condition.n, 1); eq(type(condition[1]), 'function')
     resetCalls()
-    fails(function() b:removeAction(action) end, 'Trigger.removeAction: token belongs to another trigger')
-    fails(function() a:removeAction(condition) end, 'Trigger.removeAction: expected TriggerAction token')
-    fails(function() a:removeCondition(action) end, 'Trigger.removeCondition: expected TriggerCondition token')
-    fails(function() a:removeAction({}) end, 'Trigger.removeAction: expected TriggerAction token')
-    eq(totalCalls(), 0)
-    a:destroy(); b:destroy()
+    eq(select('#', action[1]()), 0)
+    eq(totalCalls(), 1); expectCall('TriggerRemoveAction', t.handle, actionNative)
+    eq(select('#', condition[1]()), 0)
+    eq(callName(2), 'TriggerRemoveCondition'); eq(callName(3), 'DestroyCondition'); eq(totalCalls(), 3)
+    expectCall('TriggerRemoveCondition', t.handle, conditionNative); expectCall('DestroyCondition', boolexpr)
+    action[1](); condition[1]()
+    eq(totalCalls(), 3)
+    eq(Trigger.removeAction, nil); eq(Trigger.removeCondition, nil)
+    t:destroy()
 end)
 
 test('clear operations release callbacks and owned boolexprs', function()
@@ -212,44 +233,54 @@ test('clear operations release callbacks and owned boolexprs', function()
     local kept = t:addCondition(function() return true end)
     local keptBoolexpr, keptCheck = lastBoolexpr, conditions[#conditions]
     local removed = t:addCondition(function() return true end)
-    t:removeCondition(removed)
+    removed()
     resetCalls()
     t:clearConditions()
     eq(callName(1), 'TriggerClearConditions'); expectCall('TriggerClearConditions', t.handle)
     expectCall('DestroyCondition', keptBoolexpr); eq(callCount('DestroyCondition'), 1)
     eq(keptCheck(), false)
-    t:removeCondition(kept); eq(callCount('TriggerRemoveCondition'), 0)
+    kept(); removed(); eq(callCount('TriggerRemoveCondition'), 0); eq(callCount('DestroyCondition'), 1)
     t:clearActions(); expectCall('TriggerClearActions', t.handle)
     runAction(); eq(hits, 0)
-    t:removeAction(action); eq(callCount('TriggerRemoveAction'), 0)
+    action(); eq(callCount('TriggerRemoveAction'), 0)
     t:destroy()
+    -- A trigger that never had an action or a condition is cleared natively all the same.
+    local bare = Trigger.create()
+    resetCalls()
+    bare:clearActions(); bare:clearConditions()
+    eq(callName(1), 'TriggerClearActions'); eq(callName(2), 'TriggerClearConditions'); eq(totalCalls(), 2)
+    bare:destroy()
+    eq(callName(3), 'TriggerClearConditions'); eq(callName(4), 'DestroyTrigger'); eq(totalCalls(), 4)
 end)
 
 test('destroy clears conditions, destroys boolexprs, then the trigger', function()
     local t = Trigger.create()
     local condition = t:addCondition(function() return true end)
     local boolexpr = lastBoolexpr
-    t:addAction(function() end)
+    local action = t:addAction(function() end)
     local raw = t.handle
     resetCalls()
     t:destroy(); t:destroy()
     eq(callName(1), 'TriggerClearConditions'); eq(callName(2), 'DestroyCondition'); eq(callName(3), 'DestroyTrigger')
     eq(totalCalls(), 3)
     expectCall('TriggerClearConditions', raw); expectCall('DestroyCondition', boolexpr); expectCall('DestroyTrigger', raw)
-    fails(function() t:removeCondition(condition) end, 'disposed')
+    -- A cancel function called after destroy does nothing and calls no native.
+    condition(); action(); condition()
+    eq(totalCalls(), 3)
     checkDisposed(t, {'registerAnyUnitEvent', 'registerPlayerEvent', 'registerChatEvent', 'registerEnterRegion',
         'registerLeaveRegion', 'registerDeathEvent', 'registerUnitInRange', 'registerUnitStateEvent',
-        'registerGameEvent', 'addCondition', 'removeAction', 'removeCondition', 'clearActions', 'clearConditions',
-        'evaluate', 'execute'})
+        'registerGameEvent', 'addCondition', 'clearActions', 'clearConditions', 'evaluate', 'execute'})
 end)
 
-test('token and callback errors point at the caller', function()
-    local trigger, other = Trigger.create(), Trigger.create()
-    local token = other:addAction(function() end)
-    failsAt(function() trigger:removeAction({}) end, 'Trigger.removeAction: expected TriggerAction token')
-    failsAt(function() trigger:removeAction(token) end, 'Trigger.removeAction: token belongs to another trigger')
+test('callback, number and disposal errors point at the caller', function()
+    local trigger = Trigger.create()
     failsAt(function() trigger:addAction(nil) end, 'Trigger.addAction: expected a callback function')
-    failsAt(function() trigger:registerTimerEvent(-1, false) end, 'expected a finite non-negative number')
+    failsAt(function() trigger:addCondition('x') end, 'Trigger.addCondition: expected a callback function')
+    failsAt(function() trigger:registerTimerEvent(-1, false) end,
+        'Trigger.registerTimerEvent: expected a finite non-negative timeout')
+    trigger:destroy()
+    failsAt(function() trigger:setEnabled(true) end, 'Trigger.setEnabled: Trigger is disposed')
+    failsAt(function() trigger:addAction(function() end) end, 'Trigger.addAction: Trigger is disposed')
 end)
 
 test('player state, alliance, game state and timer expiry registrations forward exact arguments', function()

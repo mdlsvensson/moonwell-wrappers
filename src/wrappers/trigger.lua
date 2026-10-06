@@ -1,11 +1,7 @@
 local Handle = require('wrappers.internal.handle')
 local Callback = require('wrappers.internal.callback')
-
----Opaque token returned by Trigger:addAction; pass it to Trigger:removeAction.
----@class MoonwellWrappers.TriggerAction
-
----Opaque token returned by Trigger:addCondition; pass it to Trigger:removeCondition.
----@class MoonwellWrappers.TriggerCondition
+local Cells = require('wrappers.internal.cells')
+local Check = require('wrappers.internal.check')
 
 ---@class MoonwellWrappers.Trigger
 ---@field handle trigger? Read-only by convention; nil after destruction.
@@ -13,63 +9,60 @@ local Trigger = {}
 ---@type MoonwellWrappers.Registry<MoonwellWrappers.Trigger, trigger>
 local registry = Handle.new(Trigger, 'Trigger')
 
----@class MoonwellWrappers.TriggerCell
----@field trigger MoonwellWrappers.Trigger
----@field kind 'TriggerAction'|'TriggerCondition'
----@field native? any
----@field callback (fun(trigger: MoonwellWrappers.Trigger): ...)?
----@field predicate (fun(trigger: MoonwellWrappers.Trigger): any)?
----@field boolexpr conditionfunc?
+---What Trigger keeps on the cells of its lists, beside the callback. The class is declared in internal/cells.lua, which
+---lets a module keep fields of its own on a cell; this block names and types the three of Trigger.
+---@class MoonwellWrappers.Cell
+---@field triggerAction triggeraction? An action's native handle.
+---@field triggerCondition triggercondition? A condition's native handle.
+---@field conditionFunc conditionfunc? A condition's boolexpr, which the trigger owns and destroys.
 
--- Arrays, not sets: clearing calls natives in order, and pairs order over table keys differs between clients.
----@type table<MoonwellWrappers.Trigger, {actions: MoonwellWrappers.TriggerCell[], conditions: MoonwellWrappers.TriggerCell[]}>
+---@class MoonwellWrappers.TriggerState
+---@field actions MoonwellWrappers.Cells In the order added.
+---@field conditions MoonwellWrappers.Cells In the order added: clearing destroys their boolexprs in that order.
+
+-- Keyed by wrapper; only indexed, never iterated. A trigger gets its state with its first action or condition.
+---@type table<MoonwellWrappers.Trigger, MoonwellWrappers.TriggerState>
 local states = {}
----@type table<table, MoonwellWrappers.TriggerCell>
-local cells = setmetatable({}, {__mode = 'k'})
 
+---The state of a live trigger. Its two `cancelled` functions run when one cell is cancelled, and that only happens
+---while the trigger is live: clearing a list and destroying the trigger empty the lists first.
 ---@param trigger MoonwellWrappers.Trigger
-local function stateOf(trigger)
+---@param raw trigger
+---@return MoonwellWrappers.TriggerState
+local function stateOf(trigger, raw)
     local state = states[trigger]
     if not state then
-        state = {actions = {}, conditions = {}}
+        state = {
+            actions = Cells.new(function(cell)
+                local action = cell.triggerAction
+                if action then TriggerRemoveAction(raw, action) end
+            end),
+            conditions = Cells.new(function(cell)
+                local condition, boolexpr = cell.triggerCondition, cell.conditionFunc
+                if condition then TriggerRemoveCondition(raw, condition) end
+                if boolexpr then DestroyCondition(boolexpr) end
+            end),
+        }
         states[trigger] = state
     end
     return state
 end
 
----@param list MoonwellWrappers.TriggerCell[]
----@param cell MoonwellWrappers.TriggerCell
----@return MoonwellWrappers.TriggerCell[]
-local function without(list, cell)
-    local result = {}
-    for _, item in ipairs(list) do
-        if item ~= cell then result[#result + 1] = item end
-    end
-    return result
-end
-
----@param trigger MoonwellWrappers.Trigger
----@param token unknown
----@param kind string
----@param operation string
----@return MoonwellWrappers.TriggerCell
-local function ownedCell(trigger, token, kind, operation)
-    local cell = cells[token]
-    if not cell or cell.kind ~= kind then error('[wrappers] ' .. operation .. ': expected ' .. kind .. ' token', 3) end
-    if cell.trigger ~= trigger then error('[wrappers] ' .. operation .. ': token belongs to another trigger', 3) end
-    return cell
-end
-
----Makes every condition closure a no-op and returns the boolexprs to destroy, in insertion order.
----@param state {conditions: MoonwellWrappers.TriggerCell[]}
+---Empties the list of conditions, so that none runs again and no cancel function does anything, and returns the
+---boolexprs to destroy, in the order added.
+---@param state MoonwellWrappers.TriggerState
 ---@return conditionfunc[]
 local function releaseConditions(state)
-    local boolexprs = {}
-    for _, cell in ipairs(state.conditions) do
-        cell.predicate = nil
-        boolexprs[#boolexprs + 1] = cell.boolexpr
+    local boolexprs, count = {}, 0
+    local items = state.conditions.items
+    for index = 1, #items do
+        local boolexpr = items[index].conditionFunc
+        if boolexpr then
+            count = count + 1
+            boolexprs[count] = boolexpr
+        end
     end
-    state.conditions = {}
+    Cells.clear(state.conditions)
     return boolexprs
 end
 
@@ -83,8 +76,12 @@ function Trigger.create() return (Handle.created(Trigger.fromHandle(CreateTrigge
 function Trigger:getHandle() return (registry.require(self, 'Trigger.getHandle')) end
 ---@return boolean
 function Trigger:isDisposed() return (registry.isDisposed(self, 'Trigger.isDisposed')) end
-function Trigger:enable() EnableTrigger(registry.require(self, 'Trigger.enable')) end
-function Trigger:disable() DisableTrigger(registry.require(self, 'Trigger.disable')) end
+---Enables (true) or disables (false) the trigger: EnableTrigger or DisableTrigger.
+---@param flag boolean
+function Trigger:setEnabled(flag)
+    local raw = registry.require(self, 'Trigger.setEnabled')
+    if flag then EnableTrigger(raw) else DisableTrigger(raw) end
+end
 ---@return boolean
 function Trigger:isEnabled() return IsTriggerEnabled(registry.require(self, 'Trigger.isEnabled')) end
 ---@return boolean
@@ -156,7 +153,7 @@ end
 function Trigger:registerUnitInRange(unit, range)
     local raw = registry.require(self, 'Trigger.registerUnitInRange')
     local rawUnit = Handle.unwrap(unit, 'Unit', 'Trigger.registerUnitInRange')
-    Callback.nonnegative(range, 'Trigger.registerUnitInRange')
+    Check.requireNonNegative(range, 'range', 'Trigger.registerUnitInRange')
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.
     ---@diagnostic disable-next-line: param-type-mismatch
     TriggerRegisterUnitInRange(raw, rawUnit, range, nil)
@@ -167,13 +164,15 @@ end
 ---@param value number
 function Trigger:registerUnitStateEvent(unit, state, op, value)
     local raw = registry.require(self, 'Trigger.registerUnitStateEvent')
-    TriggerRegisterUnitStateEvent(raw, Handle.unwrap(unit, 'Unit', 'Trigger.registerUnitStateEvent'), state, op, value)
+    local rawUnit = Handle.unwrap(unit, 'Unit', 'Trigger.registerUnitStateEvent')
+    Check.requireFinite(value, 'value', 'Trigger.registerUnitStateEvent')
+    TriggerRegisterUnitStateEvent(raw, rawUnit, state, op, value)
 end
 ---@param timeout number
 ---@param periodic boolean
 function Trigger:registerTimerEvent(timeout, periodic)
     local raw = registry.require(self, 'Trigger.registerTimerEvent')
-    Callback.nonnegative(timeout, 'Trigger.registerTimerEvent')
+    Check.requireNonNegative(timeout, 'timeout', 'Trigger.registerTimerEvent')
     TriggerRegisterTimerEvent(raw, timeout, periodic)
 end
 ---@param event gameevent
@@ -188,6 +187,7 @@ end
 function Trigger:registerPlayerStateEvent(player, state, op, value)
     local raw = registry.require(self, 'Trigger.registerPlayerStateEvent')
     local rawPlayer = Handle.unwrap(player, 'Player', 'Trigger.registerPlayerStateEvent')
+    Check.requireFinite(value, 'value', 'Trigger.registerPlayerStateEvent')
     TriggerRegisterPlayerStateEvent(raw, rawPlayer, state, op, value)
 end
 ---Fires inside SetPlayerAlliance when this player's setting of this kind toward any player really changes. The event
@@ -205,7 +205,9 @@ end
 ---@param op limitop
 ---@param value number
 function Trigger:registerGameStateEvent(state, op, value)
-    TriggerRegisterGameStateEvent(registry.require(self, 'Trigger.registerGameStateEvent'), state, op, value)
+    local raw = registry.require(self, 'Trigger.registerGameStateEvent')
+    Check.requireFinite(value, 'value', 'Trigger.registerGameStateEvent')
+    TriggerRegisterGameStateEvent(raw, state, op, value)
 end
 ---Fires at every expiry of the timer, before the timer's own callback (measured on 3.0.0.24268). The trigger does not
 ---own the timer.
@@ -215,92 +217,77 @@ function Trigger:registerTimerExpireEvent(timer)
     TriggerRegisterTimerExpireEvent(raw, Handle.unwrap(timer, 'Timer', 'Trigger.registerTimerExpireEvent'))
 end
 
+---Runs `callback` with the trigger when it fires, behind the callback boundary, until the returned function is called.
+---That function removes the action at once, even during a firing; calling it again, after clearActions or after
+---destroy does nothing.
 ---@param callback fun(trigger: MoonwellWrappers.Trigger): ...
----@return MoonwellWrappers.TriggerAction
+---@return MoonwellWrappers.Cancel
 function Trigger:addAction(callback)
     local raw = registry.require(self, 'Trigger.addAction')
     Callback.check(callback, 'Trigger.addAction')
-    ---@type MoonwellWrappers.TriggerCell
-    local cell = {trigger = self, kind = 'TriggerAction', callback = callback}
-    local state = stateOf(self)
-    state.actions[#state.actions + 1] = cell
-    cell.native = TriggerAddAction(raw, function()
+    local cell, cancel = Cells.add(stateOf(self, raw).actions, callback)
+    cell.triggerAction = TriggerAddAction(raw, function()
         local current = cell.callback
         if current then Callback.call('Trigger', current, self) end
     end)
-    ---@type MoonwellWrappers.TriggerAction
-    local token = {}
-    cells[token] = cell
-    return token
-end
----Removing a token twice, or after clearActions, does nothing.
----@param token MoonwellWrappers.TriggerAction
-function Trigger:removeAction(token)
-    local raw = registry.require(self, 'Trigger.removeAction')
-    local cell = ownedCell(self, token, 'TriggerAction', 'Trigger.removeAction')
-    if not cell.callback then return end
-    cell.callback = nil
-    local state = stateOf(self)
-    state.actions = without(state.actions, cell)
-    TriggerRemoveAction(raw, cell.native)
+    return cancel
 end
 function Trigger:clearActions()
     local raw = registry.require(self, 'Trigger.clearActions')
-    local state = stateOf(self)
-    for _, cell in ipairs(state.actions) do cell.callback = nil end
-    state.actions = {}
+    local state = states[self]
+    if state then Cells.clear(state.actions) end
     TriggerClearActions(raw)
 end
 
----The predicate's result counts as truthy or falsy. An error is printed and counts as false.
+---The predicate's result counts as truthy or falsy. An error is printed and counts as false. The returned function
+---removes the condition at once and destroys its boolexpr; calling it again, after clearConditions or after destroy
+---does nothing.
 ---@param predicate fun(trigger: MoonwellWrappers.Trigger): any
----@return MoonwellWrappers.TriggerCondition
+---@return MoonwellWrappers.Cancel
 function Trigger:addCondition(predicate)
     local raw = registry.require(self, 'Trigger.addCondition')
     Callback.check(predicate, 'Trigger.addCondition')
-    ---@type MoonwellWrappers.TriggerCell
-    local cell = {trigger = self, kind = 'TriggerCondition', predicate = predicate}
-    cell.boolexpr = Handle.created(Condition(function()
-        local current = cell.predicate
+    -- Set below, before the game can evaluate the condition; the cell joins the list only once its boolexpr exists.
+    ---@type MoonwellWrappers.Cell
+    local cell
+    local boolexpr = Handle.created(Condition(function()
+        local current = cell.callback
         if not current then return false end
         return Callback.test('Trigger condition', current, self)
     end), 'Trigger.addCondition')
-    local state = stateOf(self)
-    state.conditions[#state.conditions + 1] = cell
-    cell.native = TriggerAddCondition(raw, cell.boolexpr)
-    ---@type MoonwellWrappers.TriggerCondition
-    local token = {}
-    cells[token] = cell
-    return token
-end
----Removing a token twice, or after clearConditions, does nothing.
----@param token MoonwellWrappers.TriggerCondition
-function Trigger:removeCondition(token)
-    local raw = registry.require(self, 'Trigger.removeCondition')
-    local cell = ownedCell(self, token, 'TriggerCondition', 'Trigger.removeCondition')
-    if not cell.predicate then return end
-    cell.predicate = nil
-    local state = stateOf(self)
-    state.conditions = without(state.conditions, cell)
-    TriggerRemoveCondition(raw, cell.native)
-    DestroyCondition(cell.boolexpr)
+    local cancel
+    cell, cancel = Cells.add(stateOf(self, raw).conditions, predicate)
+    cell.conditionFunc = boolexpr
+    cell.triggerCondition = TriggerAddCondition(raw, boolexpr)
+    return cancel
 end
 function Trigger:clearConditions()
     local raw = registry.require(self, 'Trigger.clearConditions')
-    local boolexprs = releaseConditions(stateOf(self))
+    local state = states[self]
+    local boolexprs = state and releaseConditions(state)
     TriggerClearConditions(raw)
-    for _, boolexpr in ipairs(boolexprs) do DestroyCondition(boolexpr) end
+    if boolexprs then
+        for _, boolexpr in ipairs(boolexprs) do DestroyCondition(boolexpr) end
+    end
 end
 
+---Clears both lists first, so that no callback runs again and no cancel function calls a native. Conditions are then
+---cleared natively and their boolexprs destroyed; the native actions are left to DestroyTrigger.
 function Trigger:destroy()
     local raw = registry.dispose(self, 'Trigger.destroy')
     if not raw then return end
-    local state = stateOf(self)
+    local state = states[self]
     states[self] = nil
-    for _, cell in ipairs(state.actions) do cell.callback = nil end
-    local boolexprs = releaseConditions(state)
+    ---@type conditionfunc[]?
+    local boolexprs
+    if state then
+        Cells.clear(state.actions)
+        boolexprs = releaseConditions(state)
+    end
     TriggerClearConditions(raw)
-    for _, boolexpr in ipairs(boolexprs) do DestroyCondition(boolexpr) end
+    if boolexprs then
+        for _, boolexpr in ipairs(boolexprs) do DestroyCondition(boolexpr) end
+    end
     DestroyTrigger(raw)
 end
 

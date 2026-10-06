@@ -171,18 +171,18 @@ broadGate = (owner) ->
   chat = Trigger.create!
   chat\registerChatEvent owner, "-gate", true
   chat\addCondition -> hero\isAlive!
-  -- Removes itself during its first evaluation; that evaluation still counts its result.
+  -- Cancels itself during its first evaluation; that evaluation still counts its result.
   local gateOnce
-  gateOnce = chat\addCondition (self) ->
-    self\removeCondition gateOnce
+  gateOnce = chat\addCondition ->
+    gateOnce!
     true
   removed = chat\addAction -> print "ERROR removed action ran"
   local once
-  once = chat\addAction (self) ->
+  once = chat\addAction ->
     print "Wrapper chat once"
-    self\removeAction once
+    once!
   chat\addAction -> print "Wrapper chat accepted"
-  chat\removeAction removed
+  removed!
   probe = Trigger.create!
   if probes
     probe\registerTimerEvent 1, false

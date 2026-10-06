@@ -26,7 +26,7 @@ if maybe then
 end
 local trigger = Trigger.create()
 trigger:registerDeathEvent(Timer.create()) -- EXPECT param-type-mismatch
-trigger:removeAction(trigger:addCondition(function() return true end)) -- EXPECT param-type-mismatch
+trigger:addCondition(function() return true end)(trigger) -- EXPECT redundant-parameter
 Item.create(1, 0, 0):nonexistentMethod() -- EXPECT undefined-field
 -- LuaLS 3.19.1 reports need-check-nil on a nullable local, not on a chained call result.
 local slotItem = unit:getItemInSlot(0)
