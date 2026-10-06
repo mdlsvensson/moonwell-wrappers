@@ -108,9 +108,9 @@ test('a callback cancelled during a call is skipped at once, itself or another',
     Cells.add(list, mark(log, 'kept'))
     _, cancelLast = Cells.add(list, mark(log, 'last'))
     Cells.call(list, 'Test')
-    eq(table.concat(log, ','), 'self,kept'); eq(Cells.count(list), 1)
+    eq(table.concat(log, ','), 'self,kept'); eq(Cells.count(list), 1); eq(#PRINTED, 0)
     Cells.call(list, 'Test')
-    eq(table.concat(log, ','), 'self,kept,kept')
+    eq(table.concat(log, ','), 'self,kept,kept'); eq(#PRINTED, 0)
     -- Cancelled and added in the same call: the old array is not appended to.
     local other, seen = Cells.new(), {}
     local cancelFirst
@@ -121,9 +121,9 @@ test('a callback cancelled during a call is skipped at once, itself or another',
     end)
     Cells.add(other, mark(seen, 'second'))
     Cells.call(other, 'Test')
-    eq(table.concat(seen, ','), 'first,second')
+    eq(table.concat(seen, ','), 'first,second'); eq(#PRINTED, 0)
     Cells.call(other, 'Test')
-    eq(table.concat(seen, ','), 'first,second,second,new')
+    eq(table.concat(seen, ','), 'first,second,second,new'); eq(#PRINTED, 0)
 end)
 
 test('clear during a call stops the callbacks after it', function()
@@ -134,9 +134,9 @@ test('clear during a call stops the callbacks after it', function()
     end)
     Cells.add(list, mark(log, 'b'))
     Cells.call(list, 'Test')
-    eq(table.concat(log, ','), 'a'); eq(Cells.count(list), 0)
+    eq(table.concat(log, ','), 'a'); eq(Cells.count(list), 0); eq(#PRINTED, 0)
     Cells.call(list, 'Test')
-    eq(table.concat(log, ','), 'a')
+    eq(table.concat(log, ','), 'a'); eq(#PRINTED, 0)
 end)
 
 test('an error in one callback is printed with the label and the next one runs', function()
@@ -164,4 +164,28 @@ test('a caller that needs results walks items itself and skips cancelled cells',
         if callback then sum = sum + callback() end
     end
     eq(sum, 4); eq(Cells.count(list), 2)
+end)
+
+test('a callback may call its own list once: the inner call runs every live callback, a cancel in it holds', function()
+    local list, log = Cells.new(), {}
+    local depth, cancelC = 0, nil
+    Cells.add(list, function()
+        log[#log + 1] = 'a' .. depth
+        if depth == 0 then
+            depth = 1
+            Cells.add(list, mark(log, 'd'))
+            Cells.call(list, 'Test')
+            depth = 0
+        end
+    end)
+    Cells.add(list, function()
+        log[#log + 1] = 'b'
+        if depth == 1 then cancelC() end
+    end)
+    local _
+    _, cancelC = Cells.add(list, mark(log, 'c'))
+    Cells.call(list, 'Test')
+    -- The inner call ran a, b, d and skipped the cancelled c; the outer walk went on with b and skipped c, and d
+    -- (added after it read its length) waited.
+    eq(table.concat(log, ','), 'a0,a1,b,d,b'); eq(Cells.count(list), 3); eq(#PRINTED, 0)
 end)

@@ -17,7 +17,9 @@ local Cells = {}
 ---@field items MoonwellWrappers.Cell[] Live cells in the order added: appended in place, copied on a cancel.
 ---@field cancelled (fun(cell: MoonwellWrappers.Cell))? Runs once after a cell is cancelled singly; not on clear.
 
----@param cancelled (fun(cell: MoonwellWrappers.Cell))? Runs after a cell is cancelled by its cancel function.
+---@param cancelled (fun(cell: MoonwellWrappers.Cell))? Runs after a cell is cancelled by its cancel function. An error
+---it raises propagates to whoever called the cancel function, after the list is already updated, and is not retried:
+---a hook must not raise.
 ---@return MoonwellWrappers.Cells
 function Cells.new(cancelled) return {items = {}, cancelled = cancelled} end
 
@@ -62,7 +64,8 @@ end
 
 ---Runs the live callbacks of one firing, in the order added, behind the callback boundary: an error is printed with
 ---`label` and the next callback still runs. A caller that needs the callbacks' results walks `list.items` itself and
----skips the cells whose `callback` is nil.
+---skips the cells whose `callback` is nil, in a numeric `for` whose bound is read once (an `ipairs` walk would run a
+---callback added during the firing, because `Cells.add` appends in place).
 ---@param list MoonwellWrappers.Cells
 ---@param label string
 ---@param ... any Passed to every callback.
