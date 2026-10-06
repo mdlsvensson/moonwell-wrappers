@@ -133,7 +133,7 @@ local soloEntries = {
         .. 'b\\destroy!\n', allowed = {}},
     {name = 'dialog', source = 'import "wrappers.dialog" as Dialog\nd = Dialog.create!\nd\\destroy!\n',
         allowed = {'player'}},
-    {name = 'frame', source = 'import "wrappers.frame" as Frame\nFrame.hideOrigin false\n', allowed = {'player'}},
+    {name = 'frame', source = 'import "wrappers.frame" as Frame\nFrame.setOriginHidden false\n', allowed = {'player'}},
 }
 -- "wrappers.timer" is a prefix of "wrappers.timerdialog": match whole module names by the closing quote.
 local function bundles(text, name)

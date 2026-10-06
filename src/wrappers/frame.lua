@@ -1,11 +1,14 @@
 local Handle = require('wrappers.internal.handle')
 local Options = require('wrappers.internal.options')
 local Callback = require('wrappers.internal.callback')
+local Cells = require('wrappers.internal.cells')
+local Check = require('wrappers.internal.check')
 local PlayerWrapper = require('wrappers.player')
 
 ---A Blz frame. Owned frames (made by Frame.create, createSimple or createByType) can be destroyed, which disposes
----their whole subtree. Template parts (findChild, getChild) belong to the owned frame they were found through.
----Borrowed frames are the game's and are never destroyed through a wrapper.
+---their whole subtree. Template parts (findChild, getChild) belong to the owned frame they were found through, also
+---when Frame.byName or Frame.fromHandle reached them first. Borrowed frames are the game's and are never destroyed
+---through a wrapper.
 ---@class MoonwellWrappers.Frame
 ---@field handle framehandle? Read-only by convention; nil after disposal.
 local Frame = {}
@@ -24,11 +27,6 @@ local createFields = {priority = {'integer', 0}}
 ---@type MoonwellWrappers.OptionFields
 local byTypeFields = {name = {'string', ''}, inherits = {'string', ''}}
 
----@class MoonwellWrappers.FrameCell
----@field frame MoonwellWrappers.Frame
----@field eventType frameeventtype
----@field callback function? Nil once removed or disposed.
-
 ---@class MoonwellWrappers.FrameState
 ---@field kind 'owned'|'part'|'borrowed'
 ---@field owner MoonwellWrappers.Frame A part's owned frame; an owned or borrowed frame's owner is itself.
@@ -37,8 +35,8 @@ local byTypeFields = {name = {'string', ''}, inherits = {'string', ''}}
 ---@field children MoonwellWrappers.Frame[] Owned frames under an owned frame, in creation order.
 ---@field parts MoonwellWrappers.Frame[] Template parts found through an owned frame, in the order found.
 ---@field trigger trigger? Created by the first on().
----@field cells MoonwellWrappers.FrameCell[] Live event callbacks, in the order added.
----@field byType table<frameeventtype, MoonwellWrappers.FrameCell[]> Callbacks by event type; lookup only.
+---@field lists MoonwellWrappers.Cells[] One list of callbacks per event type, in the order the types were first used.
+---@field byType table<frameeventtype, MoonwellWrappers.Cells> The same lists by event type; lookup only.
 
 -- Keyed by wrapper; only indexed, never iterated.
 ---@type table<MoonwellWrappers.Frame, MoonwellWrappers.FrameState>
@@ -68,17 +66,21 @@ end
 ---@param context integer
 ---@return MoonwellWrappers.FrameState
 local function newState(kind, owner, context)
-    return {kind = kind, owner = owner, context = context, children = {}, parts = {}, cells = {}, byType = {}}
+    return {kind = kind, owner = owner, context = context, children = {}, parts = {}, lists = {}, byType = {}}
 end
 
----Wraps a raw handle the game gave us. A known frame keeps its wrapper and kind; a new one becomes a part of `owner`,
----or borrowed when `owner` is nil.
+---Wraps a raw handle the game gave us. A new frame becomes a part of `owner`, or borrowed when `owner` is nil. A known
+---frame keeps its wrapper, and its kind with one exception: a borrowed frame found through an owned frame is a
+---template part that Frame.byName or Frame.fromHandle reached first, so it becomes a part of `owner`. That is sound:
+---getChild gives direct children and findChild looks in the owner's create context, so what they find is in the
+---owner's subtree, where a frame of the game's can never be.
 ---@param raw framehandle
 ---@param owner MoonwellWrappers.Frame?
 ---@return MoonwellWrappers.Frame
 local function adopt(raw, owner)
     local frame = assert(registry.wrap(raw))
-    if not states[frame] then
+    local state = states[frame]
+    if not state then
         if owner then
             states[frame] = newState('part', owner, states[owner].context)
             local parts = states[owner].parts
@@ -86,6 +88,10 @@ local function adopt(raw, owner)
         else
             states[frame] = newState('borrowed', frame, 0)
         end
+    elseif owner and state.kind == 'borrowed' then
+        local owned = states[owner]
+        state.kind, state.owner, state.context = 'part', owner, owned.context
+        owned.parts[#owned.parts + 1] = frame
     end
     return frame
 end
@@ -118,8 +124,9 @@ end
 ---Clears a frame's callbacks, then destroys its internal trigger.
 ---@param state MoonwellWrappers.FrameState
 local function releaseEvents(state)
-    for _, cell in ipairs(state.cells) do cell.callback = nil end
-    state.cells, state.byType = {}, {}
+    local lists = state.lists
+    for index = 1, #lists do Cells.clear(lists[index]) end
+    state.lists, state.byType = {}, {}
     if state.trigger then DestroyTrigger(state.trigger) end
 end
 
@@ -183,6 +190,7 @@ end
 ---@param index integer? Default 0.
 ---@return MoonwellWrappers.Frame
 function Frame.origin(originType, index)
+    if index ~= nil then Check.requireInteger(index, 'index', 'Frame.origin') end
     local raw = BlzGetOriginFrame(originType, index or 0)
     if raw == nil then error('[wrappers] Frame.origin: no frame', 2) end
     return adopt(raw, nil)
@@ -192,20 +200,22 @@ end
 ---@param context integer? Default 0.
 ---@return MoonwellWrappers.Frame
 function Frame.byName(name, context)
+    if context ~= nil then Check.requireInteger(context, 'context', 'Frame.byName') end
     local raw = BlzGetFrameByName(name, context or 0)
-    if raw == nil then error('[wrappers] Frame.byName: no frame named ' .. tostring(name), 2) end
+    if raw == nil then error('[wrappers] Frame.byName: no frame named ' .. Check.show(name), 2) end
     return adopt(raw, nil)
 end
 ---Loads a .toc file that lists .fdf files, so their templates can be created.
 ---@param path string In-map path, for example "war3mapImported\\templates.toc".
 function Frame.loadTOC(path)
-    if not BlzLoadTOCFile(path) then error('[wrappers] Frame.loadTOC: could not load ' .. tostring(path), 2) end
+    if not BlzLoadTOCFile(path) then error('[wrappers] Frame.loadTOC: could not load ' .. Check.show(path), 2) end
 end
 ---Hides (true) or shows (false) the game's own UI, for everyone.
 ---@param flag boolean
-function Frame.hideOrigin(flag) BlzHideOriginFrames(flag) end
+function Frame.setOriginHidden(flag) BlzHideOriginFrames(flag) end
+---Turns the game's automatic placing of its own UI on (true) or off (false): BlzEnableUIAutoPosition.
 ---@param flag boolean
-function Frame.enableAutoPosition(flag) BlzEnableUIAutoPosition(flag) end
+function Frame.setAutoPosition(flag) BlzEnableUIAutoPosition(flag) end
 
 ---@return framehandle
 function Frame:getHandle() return (registry.require(self, 'Frame.getHandle')) end
@@ -227,8 +237,10 @@ function Frame:getChildrenCount() return BlzFrameGetChildrenCount(registry.requi
 ---@param index integer
 ---@return MoonwellWrappers.Frame
 function Frame:getChild(index)
-    local raw = BlzFrameGetChild(registry.require(self, 'Frame.getChild'), index)
-    if raw == nil then error('[wrappers] Frame.getChild: no child ' .. tostring(index), 2) end
+    local selfRaw = registry.require(self, 'Frame.getChild')
+    Check.requireInteger(index, 'index', 'Frame.getChild')
+    local raw = BlzFrameGetChild(selfRaw, index)
+    if raw == nil then error('[wrappers] Frame.getChild: no child ' .. index, 2) end
     local state = states[self]
     if state.kind == 'borrowed' then return adopt(raw, nil) end
     return adopt(raw, state.owner)
@@ -244,7 +256,7 @@ function Frame:findChild(name)
     end
     local raw = BlzGetFrameByName(name, states[state.owner].context)
     if raw == nil then
-        error('[wrappers] Frame.findChild: no frame named ' .. tostring(name) .. ' in this frame', 2)
+        error('[wrappers] Frame.findChild: no frame named ' .. Check.show(name) .. ' in this frame', 2)
     end
     return adopt(raw, state.owner)
 end
@@ -338,12 +350,13 @@ function Frame:setTextColor(r, g, b, a)
     local raw = registry.require(self, 'Frame.setTextColor')
     BlzFrameSetTextColor(raw, BlzConvertColor(a, r, g, b))
 end
+---Tints the frame (BlzFrameSetVertexColor).
 ---@param r integer 0-255
 ---@param g integer 0-255
 ---@param b integer 0-255
 ---@param a integer 0-255
-function Frame:setVertexColor(r, g, b, a)
-    local raw = registry.require(self, 'Frame.setVertexColor')
+function Frame:setColor(r, g, b, a)
+    local raw = registry.require(self, 'Frame.setColor')
     BlzFrameSetVertexColor(raw, BlzConvertColor(a, r, g, b))
 end
 ---@param path string
@@ -398,7 +411,7 @@ function Frame:setTooltip(tooltip)
     BlzFrameSetTooltip(raw, registry.require(tooltip, 'Frame.setTooltip'))
 end
 ---@param flag boolean
-function Frame:show(flag) BlzFrameSetVisible(registry.require(self, 'Frame.show'), flag) end
+function Frame:setVisible(flag) BlzFrameSetVisible(registry.require(self, 'Frame.setVisible'), flag) end
 ---Shows the frame on that player's machine only. Only local visuals differ.
 ---@param player MoonwellWrappers.Player
 function Frame:setVisibleFor(player)
@@ -416,9 +429,7 @@ function Frame:releaseFocusFor(player)
     end
 end
 
----Opaque token returned by Frame:on; pass it to Frame:off.
----@class MoonwellWrappers.FrameHandler
-
+---The data of one firing. Every callback of that firing gets the same table.
 ---@class MoonwellWrappers.FrameEvent
 ---@field type frameeventtype
 ---@field frame MoonwellWrappers.Frame
@@ -427,70 +438,47 @@ end
 
 ---@alias MoonwellWrappers.FrameCallback fun(player: MoonwellWrappers.Player, event: MoonwellWrappers.FrameEvent): ...
 
----@type table<MoonwellWrappers.FrameHandler, MoonwellWrappers.FrameCell>
-local handlers = setmetatable({}, {__mode = 'k'})
-
 ---The internal trigger's action: runs the live callbacks for the event type that fired, in the order added. Callbacks
----added during this firing wait for the next one; removed or disposed ones are skipped at once.
+---added during this firing wait for the next one; cancelled or disposed ones are skipped at once.
 ---@param frame MoonwellWrappers.Frame
 local function route(frame)
     local state = states[frame]
     if not state then return end
     local eventType = BlzGetTriggerFrameEvent()
     local list = state.byType[eventType]
-    if not list then return end
+    if not list or Cells.count(list) == 0 then return end
     local player = PlayerWrapper.fromHandle(GetTriggerPlayer())
-    local text, value = BlzGetTriggerFrameText(), BlzGetTriggerFrameValue()
-    for index = 1, #list do
-        local callback = list[index].callback
-        if callback then
-            Callback.call('Frame event', callback, player, {type = eventType, frame = frame, text = text, value = value})
-        end
-    end
+    ---@type MoonwellWrappers.FrameEvent
+    local event = {type = eventType, frame = frame, text = BlzGetTriggerFrameText(), value = BlzGetTriggerFrameValue()}
+    Cells.call(list, 'Frame event', player, event)
 end
 
----Runs `callback` when the event fires for this frame, behind the callback boundary. It receives the Player who caused
----the event and the event's synced data.
+---Runs `callback` when the event fires for this frame, behind the callback boundary, until the returned function is
+---called. It receives the Player who caused the event and the event's synced data. The returned function removes the
+---callback at once, even during a firing; calling it again, or after the frame was destroyed, does nothing.
 ---@param eventType frameeventtype For example FRAMEEVENT_CONTROL_CLICK.
 ---@param callback MoonwellWrappers.FrameCallback
----@return MoonwellWrappers.FrameHandler
+---@return MoonwellWrappers.Cancel
 function Frame:on(eventType, callback)
     local raw = registry.require(self, 'Frame.on')
     if eventType == nil then error('[wrappers] Frame.on: expected a frame event type', 2) end
     Callback.check(callback, 'Frame.on')
     local state = states[self]
-    if not state.trigger then
-        local trigger = Handle.created(CreateTrigger(), 'Frame.on')
+    local trigger = state.trigger
+    if not trigger then
+        trigger = Handle.created(CreateTrigger(), 'Frame.on')
         TriggerAddAction(trigger, function() route(self) end)
         state.trigger = trigger
     end
     local list = state.byType[eventType]
     if not list then
-        list = {}
+        list = Cells.new()
         state.byType[eventType] = list
-        BlzTriggerRegisterFrameEvent(state.trigger, raw, eventType)
+        state.lists[#state.lists + 1] = list
+        BlzTriggerRegisterFrameEvent(trigger, raw, eventType)
     end
-    ---@type MoonwellWrappers.FrameCell
-    local cell = {frame = self, eventType = eventType, callback = callback}
-    list[#list + 1] = cell
-    state.cells[#state.cells + 1] = cell
-    ---@type MoonwellWrappers.FrameHandler
-    local token = {}
-    handlers[token] = cell
-    return token
-end
----Removes a callback at once, even during a firing. Removing it twice does nothing.
----@param token MoonwellWrappers.FrameHandler
-function Frame:off(token)
-    registry.require(self, 'Frame.off')
-    local cell = handlers[token]
-    if not cell then error('[wrappers] Frame.off: expected FrameHandler token', 2) end
-    if cell.frame ~= self then error('[wrappers] Frame.off: token belongs to another frame', 2) end
-    if not cell.callback then return end
-    cell.callback = nil
-    local state = states[self]
-    state.byType[cell.eventType] = without(state.byType[cell.eventType], cell)
-    state.cells = without(state.cells, cell)
+    local _, cancel = Cells.add(list, callback)
+    return cancel
 end
 
 return Frame

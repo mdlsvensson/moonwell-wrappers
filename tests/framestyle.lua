@@ -17,13 +17,14 @@ local setters = {{'BlzFrameSetAbsPoint', 'setAbsPoint', 'center', 0.4, 0.3}, {'B
     {'BlzTextAreaFrameSetAutoScroll', 'setAutoScroll', true}, {'BlzFrameSetValue', 'setValue', 3},
     {'BlzFrameSetMinMaxValue', 'setMinMaxValue', 0, 10}, {'BlzFrameSetStepSize', 'setStepSize', 1},
     {'BlzFrameSetAlpha', 'setAlpha', 128}, {'BlzFrameSetEnable', 'setEnabled', false},
-    {'BlzFrameSetVisible', 'show', true}}
+    {'BlzFrameSetVisible', 'setVisible', true}}
 
 test('setters forward exact arguments on owned and borrowed frames', function()
     local ui = Frame.origin(ORIGIN_FRAME_GAME_UI)
     local frame = Frame.createByType('TEXT', ui)
     checkSetters(frame, setters)
-    checkSetters(ui, {{'BlzFrameSetVisible', 'show', false}, {'BlzFrameSetAlpha', 'setAlpha', 200}})
+    checkSetters(ui, {{'BlzFrameSetVisible', 'setVisible', false}, {'BlzFrameSetAlpha', 'setAlpha', 200}})
+    eq(frame.show, nil); eq(frame.setVertexColor, nil)
     frame:destroy()
 end)
 
@@ -36,7 +37,7 @@ test('colors convert with BlzConvertColor and defaults fill optional arguments',
     frame:setTextColor(255, 204, 0, 128)
     expectCall('BlzConvertColor', 128, 255, 204, 0)
     expectCall('BlzFrameSetTextColor', frame.handle, ((128 * 256 + 255) * 256 + 204) * 256 + 0)
-    frame:setVertexColor(1, 2, 3, 4)
+    frame:setColor(1, 2, 3, 4)
     expectCall('BlzConvertColor', 4, 1, 2, 3)
     expectCall('BlzFrameSetVertexColor', frame.handle, ((4 * 256 + 1) * 256 + 2) * 256 + 3)
     frame:setFont('font.ttf', 0.012); expectCall('BlzFrameSetFont', frame.handle, 'font.ttf', 0.012, 0)
@@ -87,7 +88,7 @@ test('disposed frames guard every setter', function()
     local frame = Frame.createByType('TEXT', Frame.origin(ORIGIN_FRAME_GAME_UI))
     frame:destroy()
     checkDisposed(frame, {'setPoint', 'setAbsPoint', 'setAllPoints', 'clearPoints', 'setSize', 'setScale', 'setLevel',
-        'setText', 'addText', 'setTextColor', 'setVertexColor', 'setFont', 'setTextAlignment', 'setTextSizeLimit',
+        'setText', 'addText', 'setTextColor', 'setColor', 'setFont', 'setTextAlignment', 'setTextSizeLimit',
         'setTexture', 'setModel', 'setSpriteAnimate', 'setAutoScroll', 'setValue', 'setMinMaxValue', 'setStepSize',
-        'setAlpha', 'setEnabled', 'setTooltip', 'show', 'setVisibleFor', 'releaseFocusFor'})
+        'setAlpha', 'setEnabled', 'setTooltip', 'setVisible', 'setVisibleFor', 'releaseFocusFor'})
 end)
