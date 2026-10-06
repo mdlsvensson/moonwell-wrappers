@@ -37,8 +37,6 @@ local ARITHMETIC = {'attempt to perform arithmetic on a', "' with a '"}
 local KNOWN = {
     ['Image.create'] = ARITHMETIC, -- Task 11
     ['Image.setPosition'] = ARITHMETIC, -- Task 11
-    ['Player.addGold'] = ARITHMETIC, -- Task 9
-    ['Player.addLumber'] = ARITHMETIC, -- Task 9
     ['TextTag.setText'] = ARITHMETIC, -- Task 11
 }
 

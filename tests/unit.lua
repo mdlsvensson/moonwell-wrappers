@@ -20,8 +20,8 @@ test('identity and nil conversion', function()
 end)
 
 test('player index boundaries and nil factory', function()
-    for _, bad in ipairs({-1, 28, 0.5, math.huge, 0/0, '0', false}) do
-        fails(function() Player.fromIndex(bad) end, 'Player.fromIndex')
+    for _, bad in ipairs({-1, 28, 0.5, 2 ^ 31, math.huge, 0/0, '0', false}) do
+        failsAt(function() Player.fromIndex(bad) end, 'Player.fromIndex: expected an integer player slot from 0 to 27')
     end
     eq(callCount('Player'), 0)
     Player.fromIndex(27)
@@ -75,7 +75,7 @@ test('unit mutations and order arguments', function()
     u:setPosition(30, 40); expectCall('SetUnitPosition', u.handle, 30, 40)
     u:setFacing(180); expectCall('SetUnitFacing', u.handle, 180)
     u:setLife(70); expectCall('SetWidgetLife', u.handle, 70)
-    u:setColor(color); expectCall('SetUnitColor', u.handle, color)
+    u:setPlayerColor(color); expectCall('SetUnitColor', u.handle, color)
     native('IssueImmediateOrder', function() return false end)
     eq(u:issueOrder('stop'), false); expectCall('IssueImmediateOrder', u.handle, 'stop')
     native('IssuePointOrder', function() return true end)
@@ -94,7 +94,7 @@ test('disposal is idempotent and guards all receiver operations', function()
     eq(u:isDisposed(), true); eq(u.handle, nil)
     u:remove(); eq(callCount('RemoveUnit'), 1)
     for _, name in ipairs({'getHandle', 'getTypeId', 'getOwner', 'setOwner', 'getX', 'getY', 'setPosition',
-        'getFacing', 'setFacing', 'getLife', 'setLife', 'getMaxLife', 'setColor', 'kill',
+        'getFacing', 'setFacing', 'getLife', 'setLife', 'getMaxLife', 'setPlayerColor', 'kill',
         'issueOrder', 'issuePointOrder', 'issueTargetOrder'}) do
         fails(function() u[name](u) end, 'disposed')
     end
@@ -151,13 +151,16 @@ test('ability methods forward exact arguments', function()
         {'GetUnitAbilityLevel', 'getAbilityLevel', 2, 1097361000},
         {'SetUnitAbilityLevel', 'setAbilityLevel', 3, 1097361000, 3},
         {'BlzGetUnitAbilityCooldownRemaining', 'getCooldownRemaining', 1.5, 1097361000}})
-    checkSetters(u, {{'BlzUnitHideAbility', 'hideAbility', 1097361000, true},
-        {'BlzUnitDisableAbility', 'disableAbility', 1097361000, true, false},
+    checkSetters(u, {{'BlzUnitHideAbility', 'setAbilityHidden', 1097361000, true},
+        {'BlzUnitDisableAbility', 'setAbilityDisabled', 1097361000, true, false},
         {'BlzStartUnitAbilityCooldown', 'startCooldown', 1097361000, 5},
         {'BlzEndUnitAbilityCooldown', 'endCooldown', 1097361000}})
     native('UnitMakeAbilityPermanent', function() return true end)
-    eq(u:makeAbilityPermanent(1097361000, true), true)
+    eq(u:setAbilityPermanent(1097361000, true), true)
     expectCall('UnitMakeAbilityPermanent', u.handle, true, 1097361000)
+    native('UnitMakeAbilityPermanent', function() return false end)
+    eq(u:setAbilityPermanent(1097361000, false), false)
+    expectCall('UnitMakeAbilityPermanent', u.handle, false, 1097361000)
     u:remove()
 end)
 
@@ -169,11 +172,16 @@ test('inventory validates slots and wraps items', function()
     local item = u:getItemInSlot(2)
     eq(item, Item.fromHandle(rawItem)); expectCall('UnitItemInSlot', u.handle, 2)
     eq(u:getItemInSlot(0), nil)
-    for _, bad in ipairs({-1, 6, 1.5, 0/0, math.huge, '1'}) do
-        fails(function() u:getItemInSlot(bad) end, 'Unit.getItemInSlot: expected an inventory slot index')
-        fails(function() u:removeItemFromSlot(bad) end, 'Unit.removeItemFromSlot: expected an inventory slot index')
-        fails(function() u:dropItemToSlot(item, bad) end, 'Unit.dropItemToSlot: expected an inventory slot index')
+    for _, bad in ipairs({-1, 6, 1.5, 2 ^ 31, 0/0, math.huge, '1'}) do
+        failsAt(function() u:getItemInSlot(bad) end, 'Unit.getItemInSlot: expected an inventory slot index')
+        failsAt(function() u:removeItemFromSlot(bad) end, 'Unit.removeItemFromSlot: expected an inventory slot index')
+        failsAt(function() u:dropItemToSlot(item, bad) end, 'Unit.dropItemToSlot: expected an inventory slot index')
     end
+    -- A slot that is no integer is refused without asking the game for the inventory's size.
+    local asked = callCount('UnitInventorySize')
+    failsAt(function() u:getItemInSlot('1') end, 'Unit.getItemInSlot: expected an inventory slot index')
+    failsAt(function() u:getItemInSlot(2 ^ 31) end, 'Unit.getItemInSlot: expected an inventory slot index')
+    eq(callCount('UnitInventorySize'), asked)
     eq(callCount('UnitItemInSlot'), 2); eq(callCount('UnitRemoveItemFromSlot'), 0); eq(callCount('UnitDropItemSlot'), 0)
     native('UnitRemoveItemFromSlot', function() return rawItem end)
     eq(u:removeItemFromSlot(2), item); expectCall('UnitRemoveItemFromSlot', u.handle, 2)
@@ -205,14 +213,24 @@ test('state and presentation methods', function()
     u:setMana(10); expectCall('SetUnitState', u.handle, UNIT_STATE_MANA, 10)
     checkGetters(u, {{'BlzGetUnitMaxMana', 'getMaxMana', 100}, {'GetUnitMoveSpeed', 'getMoveSpeed', 270},
         {'IsUnitPaused', 'isPaused', false}, {'BlzIsUnitInvulnerable', 'isInvulnerable', true},
-        {'IsUnitHidden', 'isHidden', false}, {'GetUnitName', 'getName', 'Footman'},
+        {'GetUnitName', 'getName', 'Footman'},
         {'GetUnitCurrentOrder', 'getCurrentOrder', 851983}, {'IsUnitType', 'isType', true, kind},
         {'BlzGetUnitCollisionSize', 'getCollisionSize', 16}})
     checkSetters(u, {{'BlzSetUnitMaxMana', 'setMaxMana', 150}, {'BlzSetUnitMaxHP', 'setMaxLife', 500},
         {'SetUnitMoveSpeed', 'setMoveSpeed', 300}, {'SetUnitX', 'setX', 5}, {'SetUnitY', 'setY', 6},
-        {'SetUnitVertexColor', 'setVertexColor', 255, 128, 0, 200}, {'SetUnitAnimation', 'setAnimation', 'attack'},
-        {'PauseUnit', 'pause', true}, {'SetUnitInvulnerable', 'setInvulnerable', false}, {'ShowUnit', 'show', false},
+        {'SetUnitVertexColor', 'setColor', 255, 128, 0, 200}, {'SetUnitAnimation', 'setAnimation', 'attack'},
+        {'PauseUnit', 'setPaused', true}, {'SetUnitInvulnerable', 'setInvulnerable', false},
+        {'ShowUnit', 'setVisible', false},
         {'UnitApplyTimedLife', 'applyTimedLife', 1112045413, 5}, {'SetUnitPathing', 'setPathing', false}})
+    -- isVisible is the opposite of IsUnitHidden.
+    native('IsUnitHidden', function() return false end)
+    eq(u:isVisible(), true); expectCall('IsUnitHidden', u.handle)
+    native('IsUnitHidden', function() return true end)
+    eq(u:isVisible(), false)
+    for _, old in ipairs({'show', 'isHidden', 'pause', 'setVertexColor', 'hideAbility', 'disableAbility',
+        'makeAbilityPermanent'}) do
+        eq(Unit[old], nil)
+    end
     native('SetUnitScale', function() end)
     u:setScale(1.5); expectCall('SetUnitScale', u.handle, 1.5, 1.5, 1.5)
     native('IsUnitAlly', function() return true end)
@@ -270,6 +288,8 @@ test('autoDispose sweeps on one repeating timer; starting again changes the inte
     native('GetUnitTypeId', function(raw) return types[raw] end)
     local stop = Unit.autoDispose()
     eq(#timers, 1); eq(started.timer, timers[1]); eq(started.interval, 0.25); eq(started.periodic, true)
+    -- The sweep is written once: the timer runs Unit.sweep itself.
+    eq(started.callback, Unit.sweep)
     local gone, living = Unit.fromHandle({}), Unit.fromHandle({})
     types[gone.handle], types[living.handle] = 0, 1751543663
     started.callback()
@@ -326,12 +346,14 @@ test('new unit methods reject a removed receiver', function()
     u:remove()
     checkDisposed(u, {'isHero', 'getHeroName', 'getLevel', 'setLevel', 'getXP', 'setXP', 'addXP', 'getStr', 'setStr',
         'getAgi', 'setAgi', 'getInt', 'setInt', 'getSkillPoints', 'modifySkillPoints', 'selectSkill', 'revive',
-        'addAbility', 'removeAbility', 'getAbilityLevel', 'setAbilityLevel', 'makeAbilityPermanent', 'hideAbility',
-        'disableAbility', 'startCooldown', 'endCooldown', 'getCooldownRemaining', 'getInventorySize', 'getItemInSlot',
+        'addAbility', 'removeAbility', 'getAbilityLevel', 'setAbilityLevel', 'setAbilityPermanent',
+        'setAbilityHidden', 'setAbilityDisabled', 'startCooldown', 'endCooldown', 'getCooldownRemaining',
+        'getInventorySize', 'getItemInSlot',
         'addItem', 'addItemById', 'removeItem', 'removeItemFromSlot', 'hasItem', 'dropItemAt', 'dropItemToSlot',
         'useItem', 'getMana', 'setMana', 'getMaxMana', 'setMaxMana', 'setMaxLife', 'getMoveSpeed', 'setMoveSpeed',
-        'setX', 'setY', 'setScale', 'setVertexColor', 'setAnimation', 'pause', 'isPaused', 'setInvulnerable',
-        'isInvulnerable', 'show', 'isHidden', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder', 'isAlive',
+        'setX', 'setY', 'setScale', 'setColor', 'setAnimation', 'setPaused', 'isPaused', 'setInvulnerable',
+        'isInvulnerable', 'setVisible', 'isVisible', 'isType', 'isAlly', 'isEnemy', 'getName', 'getCurrentOrder',
+        'isAlive',
         'damageTarget', 'applyTimedLife', 'issueOrderById', 'issuePointOrderById', 'issueTargetOrderById'})
 end)
 

@@ -1,4 +1,5 @@
 local Handle = require('wrappers.internal.handle')
+local Check = require('wrappers.internal.check')
 
 ---@class MoonwellWrappers.Player
 ---@field handle player? Read-only by convention. Use getHandle for a non-null native handle.
@@ -17,9 +18,7 @@ function PlayerWrapper.fromEvent() return registry.wrap(GetTriggerPlayer()) end
 ---@param index integer Zero-based, including neutral player slots.
 ---@return MoonwellWrappers.Player
 function PlayerWrapper.fromIndex(index)
-    if type(index) ~= 'number' or index % 1 ~= 0 or index < 0 or index >= bj_MAX_PLAYER_SLOTS then
-        error('[wrappers] Player.fromIndex: expected an integer player slot', 2)
-    end
+    Check.requireInteger(index, 'player slot', 'Player.fromIndex', 0, 0, bj_MAX_PLAYER_SLOTS - 1)
     return (Handle.created(PlayerWrapper.fromHandle(Player(index)), 'Player.fromIndex'))
 end
 
@@ -51,6 +50,7 @@ end
 ---@param amount integer
 function PlayerWrapper:addGold(amount)
     local raw = registry.require(self, 'Player.addGold')
+    Check.requireInteger(amount, 'amount', 'Player.addGold')
     SetPlayerState(raw, PLAYER_STATE_RESOURCE_GOLD, GetPlayerState(raw, PLAYER_STATE_RESOURCE_GOLD) + amount)
 end
 ---@return integer
@@ -65,6 +65,7 @@ end
 ---@param amount integer
 function PlayerWrapper:addLumber(amount)
     local raw = registry.require(self, 'Player.addLumber')
+    Check.requireInteger(amount, 'amount', 'Player.addLumber')
     SetPlayerState(raw, PLAYER_STATE_RESOURCE_LUMBER, GetPlayerState(raw, PLAYER_STATE_RESOURCE_LUMBER) + amount)
 end
 ---@param other MoonwellWrappers.Player

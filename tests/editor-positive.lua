@@ -26,6 +26,13 @@ local Frame = require('wrappers.frame')
 local unit = Unit.create(PlayerWrapper.fromIndex(0), 1751543663, 0, 0, 270)
 unit:setPosition(1, 2)
 unit:setLife(unit:getMaxLife())
+unit:setVisible(unit:isVisible())
+unit:setPaused(unit:isPaused())
+unit:setPlayerColor(PLAYER_COLOR_RED)
+unit:setColor(255, 255, 255, 255)
+unit:setAbilityHidden(1097361000, false)
+unit:setAbilityDisabled(1097361000, false, false)
+if unit:setAbilityPermanent(1097361000, true) then print('permanent') end
 local group = Group.create()
 group:add(unit)
 for _, member in ipairs(group:getUnits()) do member:setLife(100) end

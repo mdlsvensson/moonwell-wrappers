@@ -48,7 +48,7 @@ test('range validation preserves group on failure and enumeration clears first',
     local g = Group.create()
     native('GroupEnumUnitsInRange', function() end)
     for _, radius in ipairs({-1, math.huge, 0/0, '1'}) do
-        fails(function() g:enumInRange(0, 0, radius) end, 'Group.enumInRange')
+        failsAt(function() g:enumInRange(0, 0, radius) end, 'Group.enumInRange: expected a finite non-negative radius')
     end
     eq(callCount('GroupClear'), 0)
     resetCalls(); g:enumInRange(10, 20, 0)
@@ -127,6 +127,35 @@ test('a failing filter clears the group and re-raises', function()
     local g = Group.create()
     fails(function() g:enumOfPlayer(Player.fromIndex(0), function() error('filter probe') end) end, 'filter probe')
     eq(#members(), 0); eq(#PRINTED, 0)
+    -- The error object passes through unchanged.
+    local thrown = {}
+    local ok, caught = pcall(function() g:enumOfPlayer(Player.fromIndex(0), function() error(thrown) end) end)
+    eq(ok, false); eq(caught, thrown); eq(#members(), 0)
+    g:destroy()
+end)
+
+test('a filter keeps what it returns truthy for; nil entries of the native group are skipped', function()
+    local a, b, c, d = {}, {}, {}, {}
+    local members = nativeGroup({a, b, c, d})
+    local g, seen = Group.create(), {}
+    g:enumInRange(0, 0, 1, function(unit)
+        seen[#seen + 1] = unit.handle
+        if unit.handle == a then return nil end
+        if unit.handle == c then return false end
+        return 'kept'
+    end)
+    eq(#seen, 4); eq(seen[1], a); eq(seen[4], d)
+    eq(#members(), 2); eq(members()[1], b); eq(members()[2], d)
+    eq(callCount('GroupRemoveUnit'), 2)
+    -- A hole in the native group: the handle removed is the rejected unit's, not its neighbour's.
+    native('GroupClear', function() end)
+    native('GroupEnumUnitsInRange', function() end)
+    native('BlzGroupGetSize', function() return 3 end)
+    native('BlzGroupUnitAt', function(_, index) return ({[0] = a, [2] = b})[index] end)
+    native('GroupRemoveUnit', function() end)
+    resetCalls()
+    g:enumInRange(0, 0, 1, function(unit) return unit.handle ~= b end)
+    eq(callCount('GroupRemoveUnit'), 1); expectCall('GroupRemoveUnit', g.handle, b)
     g:destroy()
 end)
 

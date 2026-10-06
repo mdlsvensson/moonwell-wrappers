@@ -1,5 +1,5 @@
 local Handle = require('wrappers.internal.handle')
-local Widget = require('wrappers.internal.widget')
+local Check = require('wrappers.internal.check')
 local PlayerWrapper = require('wrappers.player')
 local Item = require('wrappers.item')
 
@@ -81,31 +81,32 @@ function Unit:setMaxMana(value) BlzSetUnitMaxMana(registry.require(self, 'Unit.s
 function Unit:getMoveSpeed() return GetUnitMoveSpeed(registry.require(self, 'Unit.getMoveSpeed')) end
 ---@param speed number
 function Unit:setMoveSpeed(speed) SetUnitMoveSpeed(registry.require(self, 'Unit.setMoveSpeed'), speed) end
+---Gives the unit a player's colour (SetUnitColor). With ally colour mode on, the game paints over it.
 ---@param color playercolor
-function Unit:setColor(color) SetUnitColor(registry.require(self, 'Unit.setColor'), color) end
+function Unit:setPlayerColor(color) SetUnitColor(registry.require(self, 'Unit.setPlayerColor'), color) end
 ---@param scale number Uniform scale.
 function Unit:setScale(scale) SetUnitScale(registry.require(self, 'Unit.setScale'), scale, scale, scale) end
----@param red integer 0-255
----@param green integer 0-255
----@param blue integer 0-255
----@param alpha integer 0-255
-function Unit:setVertexColor(red, green, blue, alpha)
-    SetUnitVertexColor(registry.require(self, 'Unit.setVertexColor'), red, green, blue, alpha)
-end
+---Tints the unit (SetUnitVertexColor).
+---@param r integer 0-255
+---@param g integer 0-255
+---@param b integer 0-255
+---@param a integer 0-255
+function Unit:setColor(r, g, b, a) SetUnitVertexColor(registry.require(self, 'Unit.setColor'), r, g, b, a) end
 ---@param animation string
 function Unit:setAnimation(animation) SetUnitAnimation(registry.require(self, 'Unit.setAnimation'), animation) end
 ---@param flag boolean
-function Unit:pause(flag) PauseUnit(registry.require(self, 'Unit.pause'), flag) end
+function Unit:setPaused(flag) PauseUnit(registry.require(self, 'Unit.setPaused'), flag) end
 ---@return boolean
 function Unit:isPaused() return IsUnitPaused(registry.require(self, 'Unit.isPaused')) end
 ---@param flag boolean
 function Unit:setInvulnerable(flag) SetUnitInvulnerable(registry.require(self, 'Unit.setInvulnerable'), flag) end
 ---@return boolean
 function Unit:isInvulnerable() return BlzIsUnitInvulnerable(registry.require(self, 'Unit.isInvulnerable')) end
----@param visible boolean
-function Unit:show(visible) ShowUnit(registry.require(self, 'Unit.show'), visible) end
+---@param flag boolean
+function Unit:setVisible(flag) ShowUnit(registry.require(self, 'Unit.setVisible'), flag) end
+---The opposite of IsUnitHidden.
 ---@return boolean
-function Unit:isHidden() return IsUnitHidden(registry.require(self, 'Unit.isHidden')) end
+function Unit:isVisible() return not IsUnitHidden(registry.require(self, 'Unit.isVisible')) end
 ---The unit's collision radius, as the game uses it for pathing.
 ---@return number
 function Unit:getCollisionSize() return BlzGetUnitCollisionSize(registry.require(self, 'Unit.getCollisionSize')) end
@@ -146,12 +147,11 @@ end
 ---@param raw unit
 local function removed(raw) return GetUnitTypeId(raw) == 0 end
 ---Disposes the wrapper of every unit the game has removed (decay, or removal by code that bypassed the wrapper), as
----`remove()` would have: its methods raise from then on. One native call per Unit wrapper still in use; a corpse is
----still a unit. A removal shows from the next frame.
+---`remove()` would have: its methods raise from then on. One native call per cached Unit wrapper, which includes the
+---ones the collector has not freed yet; a corpse is still a unit. A removal shows from the next frame.
 function Unit.sweep() registry.sweep(removed) end
 ---@type timer?
 local sweeper
-local function sweep() registry.sweep(removed) end
 local function stopSweeper()
     local timer = sweeper
     if not timer then return end
@@ -165,11 +165,9 @@ end
 ---@return fun() stop Idempotent.
 function Unit.autoDispose(interval)
     if interval == nil then interval = 0.25 end
-    if type(interval) ~= 'number' or interval ~= interval or interval <= 0 or interval == math.huge then
-        error('[wrappers] Unit.autoDispose: expected a finite positive interval', 2)
-    end
+    Check.requirePositive(interval, 'interval', 'Unit.autoDispose')
     if not sweeper then sweeper = Handle.created(CreateTimer(), 'Unit.autoDispose') end
-    TimerStart(sweeper, interval, true, sweep)
+    TimerStart(sweeper, interval, true, Unit.sweep)
     return stopSweeper
 end
 function Unit:kill() KillUnit(registry.require(self, 'Unit.kill')) end
@@ -272,19 +270,19 @@ end
 ---@param abilityId integer
 ---@param permanent boolean
 ---@return boolean
-function Unit:makeAbilityPermanent(abilityId, permanent)
-    return UnitMakeAbilityPermanent(registry.require(self, 'Unit.makeAbilityPermanent'), permanent, abilityId)
+function Unit:setAbilityPermanent(abilityId, permanent)
+    return UnitMakeAbilityPermanent(registry.require(self, 'Unit.setAbilityPermanent'), permanent, abilityId)
 end
 ---@param abilityId integer
 ---@param hidden boolean
-function Unit:hideAbility(abilityId, hidden)
-    BlzUnitHideAbility(registry.require(self, 'Unit.hideAbility'), abilityId, hidden)
+function Unit:setAbilityHidden(abilityId, hidden)
+    BlzUnitHideAbility(registry.require(self, 'Unit.setAbilityHidden'), abilityId, hidden)
 end
 ---@param abilityId integer
 ---@param disabled boolean
 ---@param hideUI boolean
-function Unit:disableAbility(abilityId, disabled, hideUI)
-    BlzUnitDisableAbility(registry.require(self, 'Unit.disableAbility'), abilityId, disabled, hideUI)
+function Unit:setAbilityDisabled(abilityId, disabled, hideUI)
+    BlzUnitDisableAbility(registry.require(self, 'Unit.setAbilityDisabled'), abilityId, disabled, hideUI)
 end
 ---@param abilityId integer
 ---@param seconds number
@@ -305,7 +303,7 @@ end
 ---@param slot unknown
 ---@param operation string
 local function checkSlot(raw, slot, operation)
-    if type(slot) ~= 'number' or slot % 1 ~= 0 or slot < 0 or slot >= UnitInventorySize(raw) then
+    if not Check.integer(slot) or slot < 0 or slot >= UnitInventorySize(raw) then
         error('[wrappers] ' .. operation .. ': expected an inventory slot index', 3)
     end
 end
@@ -410,6 +408,4 @@ function Unit:issueTargetOrderById(orderId, target)
     return IssueTargetOrderById(raw, orderId, Handle.unwrapWidget(target, 'Unit.issueTargetOrderById'))
 end
 
--- Unit defines all four shared methods itself (GetUnitX/GetUnitY keep v0.1.0's mapping); install is a no-op here.
-Widget.install(Unit, registry)
 return Unit

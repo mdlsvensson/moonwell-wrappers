@@ -30,17 +30,25 @@ test('timer identity, factory and native mappings', function()
     native('CreateTimer', function() return {} end)
 end)
 
-test('periodic callbacks receive self and old schedules cannot fire', function()
+-- In the game TimerStart replaces a timer's schedule, so one timer has one schedule at a time. A Timer therefore
+-- gives every TimerStart the same function, and that function runs the callback of the latest start.
+test('periodic callbacks receive self; a new start replaces the callback and reuses the one tick function', function()
     local t, hits = Timer.create(), 0
     t:start(1, true, function(self) eq(self, t); hits = hits + 1 end)
-    local first = ticks[#ticks]
-    expectCall('TimerStart', t.handle, 1, true, first)
-    first(); first(); eq(hits, 2)
-    t:pause(); t:resume(); first(); eq(hits, 3)
+    local tick = ticks[#ticks]
+    expectCall('TimerStart', t.handle, 1, true, tick)
+    tick(); tick(); eq(hits, 2)
+    t:pause(); t:resume(); tick(); eq(hits, 3)
     t:start(0, false, function(self) self:destroy() end)
-    first(); eq(hits, 3)
-    ticks[#ticks](); eq(t:isDisposed(), true)
-    ticks[#ticks](); eq(callCount('DestroyTimer'), 1)
+    eq(#ticks, 2); eq(ticks[2], tick); expectCall('TimerStart', t.handle, 0, false, tick)
+    tick(); eq(hits, 3); eq(t:isDisposed(), true)
+    tick(); eq(callCount('DestroyTimer'), 1)
+    -- Each Timer has a tick function of its own.
+    local other = Timer.create()
+    other:start(1, true, function() hits = hits + 100 end)
+    eq(ticks[#ticks] ~= tick, true)
+    tick(); eq(hits, 3)
+    other:destroy()
 end)
 
 test('one shot retains timer and restart from callback survives', function()
@@ -49,13 +57,15 @@ test('one shot retains timer and restart from callback survives', function()
         hits = hits + 1
         self:start(2, true, function() hits = hits + 10 end)
     end)
-    local first = ticks[#ticks]
-    first(); first(); eq(hits, 1)
+    local tick = ticks[#ticks]
+    tick(); eq(hits, 1)
     eq(t:isDisposed(), false)
-    ticks[#ticks](); ticks[#ticks](); eq(hits, 21)
+    eq(ticks[#ticks], tick); expectCall('TimerStart', t.handle, 2, true, tick)
+    tick(); tick(); eq(hits, 21)
     t:destroy()
     t = Timer.create()
     t:start(0, false, function() hits = hits + 1 end)
+    -- A one-shot delivery releases its callback: an expiry with no start before it runs nothing.
     ticks[#ticks](); ticks[#ticks](); eq(hits, 22)
     eq(t:isDisposed(), false); t:destroy()
 end)
@@ -65,9 +75,10 @@ test('invalid start cannot replace an existing schedule', function()
     t:start(1, true, function() hits = hits + 1 end)
     local valid = ticks[#ticks]
     for _, value in ipairs({-1, math.huge, -math.huge, 0/0, '1', false}) do
-        fails(function() t:start(value, true, function() end) end, 'Timer.start')
+        failsAt(function() t:start(value, true, function() end) end,
+            'Timer.start: expected a finite non-negative timeout')
     end
-    fails(function() t:start(1, true, nil) end, 'callback')
+    failsAt(function() t:start(1, true, nil) end, 'Timer.start: expected a callback function')
     eq(callCount('TimerStart'), 1); valid(); eq(hits, 1); t:destroy()
 end)
 

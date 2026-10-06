@@ -51,7 +51,7 @@ foundationGate = (owner) ->
   unit = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
   assert Unit.fromHandle(unit\getHandle!) == unit
   unit\setPosition 100, 0
-  unit\setColor PLAYER_COLOR_RED
+  unit\setPlayerColor PLAYER_COLOR_RED
   unit\setLife 200
   unit\issuePointOrder "move", 300, 0
   group = Group.create!
@@ -555,8 +555,8 @@ portGate = (owner) ->
   hostile = Player.fromIndex 12
   striker = Unit.create owner, $FourCC("hfoo"), -200, 0, 0
   dummy = Unit.create hostile, $FourCC("hfoo"), 0, 0, 180
-  striker\pause true
-  dummy\pause true
+  striker\setPaused true
+  dummy\setPaused true
   dummy\setMaxLife 5000
   dummy\setLife 5000
   print "Wrapper collision size", striker\getCollisionSize!

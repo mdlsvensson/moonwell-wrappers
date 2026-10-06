@@ -1,5 +1,6 @@
 local Handle = require('wrappers.internal.handle')
 local Callback = require('wrappers.internal.callback')
+local Check = require('wrappers.internal.check')
 local Unit = require('wrappers.unit')
 
 ---@class MoonwellWrappers.Group
@@ -11,18 +12,31 @@ local registry = Handle.new(Group, 'Group')
 ---Wrappers of the members in native order, skipping nil entries. Every unit is wrapped before any callback runs, so a
 ---unit removed mid-iteration keeps its disposed wrapper. `raws`, when given, receives the raw handle at each index.
 ---@param raw group
----@param raws unit[]?
+---@param raws (unit|false)[]?
 ---@return MoonwellWrappers.Unit[]
 local function snapshot(raw, raws)
-    local result = {}
+    local result, count = {}, 0
     for index = 0, BlzGroupGetSize(raw) - 1 do
         local unit = BlzGroupUnitAt(raw, index)
-        if unit then
-            result[#result + 1] = assert(Unit.fromHandle(unit))
-            if raws then raws[#result] = unit end
+        local wrapper = Unit.fromHandle(unit)
+        if wrapper then
+            count = count + 1
+            result[count] = wrapper
+            if raws then raws[count] = unit end
         end
     end
     return result
+end
+
+---Runs the filter over every unit of a snapshot and puts false in `raws` at the index of each unit it keeps, so that
+---`raws` is left with the handles to remove. A file-level function, so that a filtered enumeration makes no closure.
+---@param units MoonwellWrappers.Unit[]
+---@param raws (unit|false)[]
+---@param filter fun(unit: MoonwellWrappers.Unit): any
+local function sift(units, raws, filter)
+    for index = 1, #units do
+        if filter(units[index]) then raws[index] = false end
+    end
 end
 
 ---Runs the filter over a snapshot, then removes rejected units. If the filter raises, the group is cleared and the
@@ -31,18 +45,18 @@ end
 ---@param filter (fun(unit: MoonwellWrappers.Unit): any)?
 local function applyFilter(raw, filter)
     if filter == nil then return end
+    ---@type (unit|false)[]
     local raws = {}
-    local units, rejected = snapshot(raw, raws), {}
-    local ok, message = pcall(function()
-        for index, unit in ipairs(units) do
-            if not filter(unit) then rejected[#rejected + 1] = raws[index] end
-        end
-    end)
+    local units = snapshot(raw, raws)
+    local ok, message = pcall(sift, units, raws, filter)
     if not ok then
         GroupClear(raw)
         error(message, 0)
     end
-    for _, unit in ipairs(rejected) do GroupRemoveUnit(raw, unit) end
+    for index = 1, #units do
+        local rejected = raws[index]
+        if rejected then GroupRemoveUnit(raw, rejected) end
+    end
 end
 
 ---@param raw group?
@@ -79,7 +93,7 @@ function Group:clear() GroupClear(registry.require(self, 'Group.clear')) end
 ---@param filter (fun(unit: MoonwellWrappers.Unit): any)?
 function Group:enumInRange(x, y, radius, filter)
     local raw = registry.require(self, 'Group.enumInRange')
-    Callback.nonnegative(radius, 'Group.enumInRange')
+    Check.requireNonNegative(radius, 'radius', 'Group.enumInRange')
     Callback.optional(filter, 'Group.enumInRange')
     GroupClear(raw)
     -- Warcraft accepts a null filter; the generated JASS signature cannot express that.

@@ -17,6 +17,18 @@ test('resources read, set and add through player state', function()
     p:setLumber(20); expectCall('SetPlayerState', PLAYER_RAW, PLAYER_STATE_RESOURCE_LUMBER, 20)
     p:addGold(5); eq(gold, 15)
     p:addLumber(-5); eq(lumber, 15); expectCall('SetPlayerState', PLAYER_RAW, PLAYER_STATE_RESOURCE_LUMBER, 15)
+    -- A wrong amount is refused at the caller, before any native; an integral float is an integer.
+    resetCalls()
+    for _, bad in ipairs({1.5, 2 ^ 31, -2 ^ 31 - 1, 0/0, math.huge, '5', false, {}}) do
+        failsAt(function() p:addGold(bad) end, 'Player.addGold: expected an integer amount')
+        failsAt(function() p:addLumber(bad) end, 'Player.addLumber: expected an integer amount')
+    end
+    failsAt(function() p:addGold() end, 'Player.addGold: expected an integer amount')
+    failsAt(function() p:addLumber() end, 'Player.addLumber: expected an integer amount')
+    eq(totalCalls(), 0); eq(gold, 15); eq(lumber, 15)
+    p:addGold(5.0); eq(gold, 20)
+    -- The edges of the 32-bit range are amounts.
+    p:addGold(2 ^ 31 - 1); p:addGold(-2 ^ 31); eq(gold, 19)
 end)
 
 test('alliances take player wrappers', function()
@@ -29,8 +41,8 @@ test('alliances take player wrappers', function()
     eq(p:isAlly(other), false); expectCall('IsPlayerAlly', PLAYER_RAW, other.handle)
     native('IsPlayerEnemy', function() return true end)
     eq(p:isEnemy(other), true); expectCall('IsPlayerEnemy', PLAYER_RAW, other.handle)
-    fails(function() p:isAlly({}) end, 'Player.isAlly: expected Player wrapper')
-    fails(function() p:setAlliance({}, setting, true) end, 'Player.setAlliance: expected Player wrapper')
+    failsAt(function() p:isAlly({}) end, 'Player.isAlly: expected Player wrapper')
+    failsAt(function() p:setAlliance({}, setting, true) end, 'Player.setAlliance: expected Player wrapper')
     eq(callCount('IsPlayerAlly'), 1); eq(callCount('SetPlayerAlliance'), 1)
 end)
 
