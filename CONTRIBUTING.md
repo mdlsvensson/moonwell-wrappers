@@ -69,13 +69,25 @@ conservatively nullable in LuaLS 3.19.1; narrow it or assert it. Factories valid
 
 Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual versions if different.
 
-1. Create a disposable Moonwell map and configure this checkout with the local path example in README. Copy
-   `examples/gate.yue` to its `src/main.yue`; run check and test. The gate starts just after the map loads (times below
-   count from there). Play each run until `Wrapper weak cache probe` prints (about 50 seconds); the presentation run
-   (step 7) never prints it and ends at about 20 seconds with `Wrapper presentation cleanup passed`; the classic UI run
-   (step 8) never prints it either and ends about 45 seconds after its dialog is destroyed, with
-   `Wrapper ui cleanup passed`; the frames run (step 9) never prints it either and ends when you click its `Close`
-   button. Then read the whole message log (F12); opening it pauses a single-player game.
+The maintainer runs each gate run in a throwaway map and reads the printed lines against the steps below. The
+workspace's release skill (`.claude/skills/release/SKILL.md`, "Building a throwaway gate map") writes the map's
+files: a Moonwell project linked to the Moonwell checkout, whose `moonwell.local.pkl` names this library by a local
+path, with the skill's object data (the unit and ability types the example uses) and the frames run's
+`war3mapImported\wrappers-gate.toc`, and whose `src/main.yue` is a copy of `examples/gate.yue` with the run's switch
+set and one camera line added (`SetCameraPosition 0, 0`, after `owner = Player.fromIndex 0`). The map is built with
+`moonwell build --entry src/main.yue` (`--minify` for a minified run), and the game is started on `dist/bin/map.w3x`.
+One map is built per run. The runs are the seven switches near the top of the example (`probes = false` and the six
+lines after it): `core` leaves them all false (steps 2 to 5), and `probes` (step 6), `presentation` (step 7), `ui`
+(step 8), `frames` (step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to
+`true`. A printed line shows on screen for a few seconds: take a screenshot, or read the file that the additions and
+dispose runs also write.
+
+1. The gate starts just after the map loads (times below count from there). Play each run until
+   `Wrapper weak cache probe` prints (about 50 seconds); the presentation run (step 7) never prints it and ends at about
+   20 seconds with `Wrapper presentation cleanup passed`; the classic UI run (step 8) never prints it either and ends
+   about 45 seconds after its dialog is destroyed, with `Wrapper ui cleanup passed`; the frames run (step 9) never
+   prints it either and ends when you click its `Close` button. Then read the whole message log (F12); opening it pauses
+   a single-player game.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
@@ -113,19 +125,19 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    Restore `probes = false`.
 7. Presentation (v0.3.0): set `presentation = true` and run again; only the presentation gate runs, around the map
    centre, and a fog modifier reveals that area. At start `Wrapper presentation started; sound duration <n>` prints
-   (record `n`; 0 can mean the file was not loaded yet), then `Wrapper enumerated potions 2` and
-   `Wrapper enumerated trees 2`. Visible at once: a yellow `Wrapper text tag` upper left; a drain-life lightning bolt
-   below the footman that stays (chain lightning faded right after creation in an earlier run); the area-of-effect
-   circle centred under the footman; a building-base splat upper right; a red, half-transparent, slowed Footman model
-   turned 90 degrees (yaw π/2) from the blue one, raised and attacking, and a blue (player 2 colour) Footman model
-   beside it; the potions and two trees further up and left. The minimap shows a revealed circle towards the top right
-   and a revealed square towards the bottom left. `Wrapper float for another player` never appears. At 2 s
-   `Wrapper float` rises and fades, and the warning sound plays (`Wrapper sound play`). At 4 s
-   `Wrapper sound duration after play <n>` prints (record whether it differs from the start value), the sound stops,
-   `Wrapper playOnce first call` prints and a knight's voice plays. If it is silent then but audible at 6 s
-   (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the fix is decided with the
-   maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At 10 s
-   `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
+   (record `n`; 0 can mean the file was not loaded yet; it is in seconds since v0.10.0), then
+   `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2`. Visible at once: a yellow `Wrapper text tag` upper
+   left; a drain-life lightning bolt below the footman that stays (chain lightning faded right after creation in an
+   earlier run); the area-of-effect circle centred under the footman; a building-base splat upper right; a red,
+   half-transparent, slowed Footman model turned 90 degrees (yaw 90) from the blue one, raised and attacking, and a blue
+   (player 2 colour) Footman model beside it; the potions and two trees further up and left. The minimap shows a
+   revealed circle towards the top right and a revealed square towards the bottom left.
+   `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound plays
+   (`Wrapper sound play`). At 4 s `Wrapper sound duration after play <n>` prints (record whether it differs from the
+   start value), the sound stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it is silent then
+   but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the fix is
+   decided with the maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At
+   10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
    volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
    `Wrapper tag moved`, the bolt moves above the footman (its `setColor` red showed no visible change on 3.0.0.24268;
    see README), the circle turns green and moves up, the splat fades out, the bottom-left reveal ends and a thunder clap
@@ -136,45 +148,41 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
    If a sound, model or splat never appears or plays in any run, its path or name may not exist in this game version:
    substitute one from World Editor and record it. Record whether the bolt stays visible and moves at 12 s. Restore
    `presentation = false`.
-8. Classic UI (v0.4.0): first run the gate map's `ui-init` probe (`../wrappers-gate`, `yue -e gate.lua ui-init`,
-   instructions in its `PROBE-UI.md`) and record its answers in the results below and in README. Then set `ui = true`
-   and run again; only the classic UI gate runs. A dialog titled `Wrapper dialog` appears with `Keyed (K)`, `Plain` and
-   `Rebuild` (`Wrapper dialog shown: ...` prints). Press K: the dialog closes, `Wrapper dialog keyed by <your name>`
-   prints and the dialog comes back half a second later. Click `Plain`: `Wrapper dialog plain by <your name>`. Click
-   `Rebuild`: `Wrapper dialog rebuilt` prints and the dialog comes back with only `After clear` and `Destroy dialog`.
-   Click `After clear`: `Wrapper dialog after clear by <your name>`. Click `Destroy dialog`:
-   `Wrapper dialog destroyed from its own button` prints, the dialog never comes back, and no `[wrappers] ... failed`
-   line prints. Times below count from that click. At once a multiboard titled `Wrapper multiboard` (yellow) appears top
-   right with 3 × 3 cells: a yellow `Name` and `Kills` in row 1; `Footman` with its icon in row 2; `Row 3` in row 3;
-   footman icons down column 3; a wider first column. `Wrapper multiboard Wrapper multiboard 3 3` prints. At 3 s it
-   grows to 6 rows with `Row 6` in the last (`Wrapper multiboard rows 6`); at 6 s it shrinks to 2
-   (`Wrapper multiboard rows 2`); at 9 s it minimizes to its title; at 12 s it expands, then disappears
-   (`Wrapper multiboard hidden for another player`). At 15 s a leaderboard titled `Wrapper leaderboard` (yellow) appears
-   with `Other 9` (blue value) above `You 5`; `Wrapper leaderboard items 2` prints. At 18 s `You (12)` moves to the top
-   and the icons disappear. At 21 s `Other` is removed and the board shrinks to one row
-   (`Wrapper leaderboard items 1 has other false`). At 24 s the leaderboard disappears, the quest button flashes and
-   `Wrapper quests created: open the quest log (F9)` prints: the log lists `Wrapper quest` (required, footman icon, two
-   items), `Wrapper optional quest` (optional) and the defeat condition `Wrapper defeat condition`. At 27 s the first
-   item shows as completed (`Wrapper quest item completed true`); at 30 s the quest shows completed and the optional
-   quest failed (`Wrapper quest completed true optional failed true`). At 33 s a timer dialog `Wrapper timer dialog`
-   (yellow title, green time) counts down from about 1:00; at 36 s it counts faster (`speed 4`; record what it shows);
-   at 39 s it shows about 0:10; at 42 s it disappears. At 45 s `Wrapper ui cleanup passed; quest item disposed true`
-   prints and the quests leave the log. Restore `ui = false`.
-9. Frames (v0.5.0): first run the gate map's `frame-init` probe (`../wrappers-gate`, `yue -e gate.lua frame-init`,
-   instructions in its `PROBE-FRAME.md`) and record its answers in the results below and in README. If a template the
-   gate uses did not create after loading the gate map's TOC, change the gate to one that did before continuing. Then
-   set `frames = true` and run again; only the frames gate runs. `Wrapper frames shown: <name> children <n>` prints
-   (record both). A panel appears in the centre with a yellow title `Wrapper frames`, a `Click me` button, an edit box,
-   a slider, a check box and a `Close` button; a footman icon appears top left; `ERROR visible for another player` never
-   appears. Hovering `Click me` shows `Wrapper tooltip`. Clicking it prints
-   `Wrapper frame clicked by <your name> count
-   1` (then 2, …); right after a click, pressing Enter opens the chat box
-   (focus was released). Typing in the edit box and pressing Enter prints
+8. Classic UI (v0.4.0): set `ui = true` and run again; only the classic UI gate runs. A dialog titled `Wrapper dialog`
+   appears with `Keyed (K)`, `Plain` and `Rebuild` (`Wrapper dialog shown: ...` prints). Press K: the dialog closes,
+   `Wrapper dialog keyed by <your name>` prints and the dialog comes back half a second later. Click `Plain`:
+   `Wrapper dialog plain by <your name>`. Click `Rebuild`: `Wrapper dialog rebuilt` prints and the dialog comes back
+   with only `After clear` and `Destroy dialog`. Click `After clear`: `Wrapper dialog after clear by <your name>`. Click
+   `Destroy dialog`: `Wrapper dialog destroyed from its own button` prints, the dialog never comes back, and no
+   `[wrappers] ... failed` line prints. Times below count from that click. At once a multiboard titled
+   `Wrapper multiboard` (yellow) appears top right with 3 × 3 cells: a yellow `Name` and `Kills` in row 1; `Footman`
+   with its icon in row 2; `Row 3` in row 3; footman icons down column 3; a wider first column.
+   `Wrapper multiboard Wrapper multiboard 3 3` prints. At 3 s it grows to 6 rows with `Row 6` in the last
+   (`Wrapper multiboard rows 6`); at 6 s it shrinks to 2 (`Wrapper multiboard rows 2`); at 9 s it minimizes to its
+   title; at 12 s it expands, then disappears (`Wrapper multiboard hidden for another player`). At 15 s a leaderboard
+   titled `Wrapper leaderboard` (yellow) appears with `Other 9` (blue value) above `You 5`;
+   `Wrapper leaderboard items 2` prints. At 18 s `You (12)` moves to the top and the icons disappear. At 21 s `Other` is
+   removed and the board shrinks to one row (`Wrapper leaderboard items 1 has other false`). At 24 s the leaderboard
+   disappears, the quest button flashes and `Wrapper quests created: open the quest log (F9)` prints: the log lists
+   `Wrapper quest` (required, footman icon, two items), `Wrapper optional quest` (optional) and the defeat condition
+   `Wrapper defeat condition`. At 27 s the first item shows as completed (`Wrapper quest item completed true`); at 30 s
+   the quest shows completed and the optional quest failed (`Wrapper quest completed true optional failed true`). At 33
+   s a timer dialog `Wrapper timer dialog` (yellow title, green time) counts down from about 1:00; at 36 s it counts
+   faster (`speed 4`; record what it shows); at 39 s it shows about 0:10; at 42 s it disappears. At 45 s
+   `Wrapper ui cleanup passed; quest item disposed true` prints and the quests leave the log. Restore `ui = false`.
+9. Frames (v0.5.0): set `frames = true` and run again; only the frames gate runs.
+   `Wrapper frames shown: <name> children <n>` prints (record both). A panel appears in the centre with a yellow title
+   `Wrapper frames`, a `Click me` button, an edit box, a slider, a check box and a `Close` button; a footman icon
+   appears top left; `ERROR visible for another player` never appears. Hovering `Click me` shows `Wrapper tooltip`.
+   Clicking it prints `Wrapper frame clicked by <your name> count 1` (then 2, …); right after a click, pressing Enter
+   opens the chat box (focus was released). Typing in the edit box and pressing Enter prints
    `Wrapper edit box enter by <your name> <text>`. Dragging the slider prints `Wrapper slider value <n>`. Ticking and
    unticking the check box print `Wrapper checkbox checked by <your name>` and `... unchecked ...`. At 5 s the footman
    icon jumps into the panel's top right (`Wrapper badge moved into the panel`); click `Close` only after that. Clicking
    `Close` removes the panel and the icon, prints `Wrapper frames closed; badge disposed true button disposed true`, and
-   no `[wrappers] ... failed` line prints. Restore `frames = false`.
+   no `[wrappers] ... failed` line prints. Restore `frames = false`. The probes that came before the first classic UI
+   and frames gates (ui-init and frame-init) went with the old gate map; their answers are in the v0.4.0 and v0.5.0
+   records below.
 10. Build with `--minify` and play the packed map; repeat steps 2–5 and 7–9 (without the probes). Open the packed map in
     World Editor.
 11. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
@@ -189,14 +197,14 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     frames created in the same order on both machines, `setVisibleFor` and `releaseFocusFor` acting only for that
     player, and frame events from the second player printing that player's name on both machines; no desync. It also
     covers v0.8.0: `wrappers.input` listeners running on both machines for the second player's keys and mouse, and
-    `weather:enableFor` drawing only for that player; no desync.
+    `weather:setEnabledFor` drawing only for that player; no desync.
 12. Record results here and in CHANGELOG, including Warcraft/editor versions. Automated native doubles cannot replace
     this gate. Do not declare the release ready while this is pending. The spec's fallback (strong widget caches plus
     `forget()`) applies only if a run with `collected=true` prints `stale=false` or `identity=false`, or if a desync
     occurs. Then stop and apply it.
-13. Port prerequisites (v0.7.0): in the gate map, `yue -e gate.lua port` (normal build only). Only the port gate runs; a
-    footman stands at the centre with another one to its left, and a line of trees runs north–south to their right.
-    Messages, one step per second:
+13. Port prerequisites (v0.7.0): set `port = true` (normal build only). Only the port gate runs; a footman stands at the
+    centre with another one to its left, and a line of trees runs north–south to their right. Messages, one step per
+    second:
     - at start: `Wrapper collision size <n>` (record it) and `Wrapper port gate started`;
     - step 1: `Wrapper damaged step 1 amount <X>` and `Wrapper life loss step 1 <X>`: the baseline, 100 reduced by
       armor;
@@ -219,9 +227,8 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       `Wrapper sync received from <your name> 255 true` and the prefix lines: record which of `prefix 16 arrived`,
       `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
     - step 15: `Wrapper port gate done`, and no `[wrappers] ... failed` line at any point.
-14. Additions (v0.8.0): in the gate map, `yue -e gate.lua additions` (normal build only). Only the additions gate runs.
-    Every line starts with `Wrapper additions` and is also written to
-    `Documents\Warcraft III\CustomMapData\moonwell-wrappers-additions.pld`.
+14. Additions (v0.8.0): set `additions = true` (normal build only). Only the additions gate runs. Every line starts with
+    `Wrapper additions` and is also written to `Documents\Warcraft III\CustomMapData\moonwell-wrappers-additions.pld`.
     - Printed at once, nothing to watch:
       - `art: Thunder Clap caster <a path ending in ThunderClapCaster.mdl>`, `art: Thunder Clap missile nil`,
         `art: Flame Strike special, third entry <a path ending in FlameStrike.mdl>`,
@@ -252,10 +259,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
       6. Q and a click after the listeners are removed: every count is 0 (`input 6: downs 0 … moves 0`), then
          `gate done`.
     - No `[wrappers] ... failed` line at any point.
-15. Automatic disposal (v0.9.0): in the gate map, `yue -e gate.lua dispose` (normal build only). Only the dispose gate
-    runs, for about four seconds, and nothing needs watching: five units stand in a row, of which some die. Every line
-    starts with `Wrapper dispose` and is also written to
-    `Documents\Warcraft III\CustomMapData\moonwell-wrappers-dispose.pld`.
+15. Automatic disposal (v0.9.0): set `dispose = true` (normal build only). Only the dispose gate runs, for about four
+    seconds, and nothing needs watching: five units stand in a row, of which some die. Every line starts with
+    `Wrapper dispose` and is also written to `Documents\Warcraft III\CustomMapData\moonwell-wrappers-dispose.pld`.
     - `1 same instant, after a sweep: removed disposed false exists true | exploded disposed <…> exists <…>`: a unit
       removed by raw code is not seen in the instant of its removal. Record what the exploded unit reads.
     - `2 the timer's sweep disposed the removed unit after <at most 0.30> s`.
@@ -268,6 +274,9 @@ Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual ve
     - `8 sweep cost: 200 more wrappers, <n> microseconds per sweep`: record the number.
     - `9 corpse and dead hero at the end: disposed false exists true | disposed false exists true`, then `gate done`.
     - No `[wrappers] ... failed` line at any point.
+
+The records up to v0.9.1 were made with a gate map kept beside this repository. It was deleted on 2026-10-03 with the
+probe notes it held; what the probes measured is written in the records and in the changelog.
 
 v0.1.0: Passed 2026-09-28, confirmed by the maintainer on Warcraft III Reforged 3.0.0.24268 and World Editor 3.00 (file
 version 3.0.0.24268). Normal gameplay/cleanup, callback-error recovery, minified packed-map gameplay and World Editor
@@ -309,23 +318,22 @@ matched, and `setSpeed 4` made the countdown run faster. Step 9: the minified `u
 packed map opened in World Editor. Steps 2–7 were not re-run (their code is unchanged since v0.3.1). Step 10 is
 deferred.
 
-v0.5.0: `frame-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `a565d2c`;
-`../wrappers-gate/PROBE-FRAME-RESULTS.md`): the origin frame existed in `on_main` and an icon made there showed;
-BlzGetFrameByName returned the created frame (identity); all nine templates tried (`ScriptDialogButton`,
-`EscMenuBackdrop`, `EscMenuTitleTextTemplate`, `EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`,
-`EscMenuSliderTemplate`, `QuestCheckBox`, `QuestButtonBaseTemplate`, `BattleNetTextAreaTemplate`) created without a TOC,
-and again after loading the gate map's TOC (which returned true); a missing TOC returned false; an unknown template
-returned nil; destroying a parent removed it, its child and a frame re-parented onto it, and the child was no longer
-found by name; after clicking a plain button Enter did not open the chat box, after a button that called
-`releaseFocusFor` it did; a button destroyed itself in its own click event without a crash. The frames gate (step 9) and
-its minified run (step 10) passed the same day, as the maintainer reported. Steps 2–8 were not re-run (their code is
-unchanged since v0.4.0). Step 11 is deferred.
+v0.5.0: `frame-init` probe run 2026-09-29 by the maintainer on Warcraft III Reforged 3.0.0.24268 (library `a565d2c`):
+the origin frame existed in `on_main` and an icon made there showed; BlzGetFrameByName returned the created frame
+(identity); all nine templates tried (`ScriptDialogButton`, `EscMenuBackdrop`, `EscMenuTitleTextTemplate`,
+`EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`, `EscMenuSliderTemplate`, `QuestCheckBox`,
+`QuestButtonBaseTemplate`, `BattleNetTextAreaTemplate`) created without a TOC, and again after loading the gate map's
+TOC (which returned true); a missing TOC returned false; an unknown template returned nil; destroying a parent removed
+it, its child and a frame re-parented onto it, and the child was no longer found by name; after clicking a plain button
+Enter did not open the chat box, after a button that called `releaseFocusFor` it did; a button destroyed itself in its
+own click event without a crash. The frames gate (step 9) and its minified run (step 10) passed the same day, as the
+maintainer reported. Steps 2–8 were not re-run (their code is unchanged since v0.4.0). Step 11 is deferred.
 
 v0.5.1: Not re-run (maintainer's decision, 2026-09-30). The release changes LuaLS annotations (`Effect.attach` and
 `Effect.flashOn` take a Unit), a comment, fixtures and documentation; runtime code is that of v0.5.0.
 
 v0.6.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, normal builds from the gate map
-(`yue -e gate.lua core`, `probes`, `presentation`, `ui`, `perf`). Steps 2–8 passed as described. The probes run was
+(the runs `core`, `probes`, `presentation`, `ui` and `perf`). Steps 2–8 passed as described. The probes run was
 repeated once after adding the delayed `exists()` check.
 
 - `Wrapper exists after raw removal true false false`: the unit still reads `true` in that instant.
@@ -336,41 +344,38 @@ repeated once after adding the delayed `exists()` check.
 
 Step 9 (frames) and step 10 (minified) were not re-run, by the maintainer's decision. Frames changed only by the
 parentheses on raising returns and the shared `require`, which the unit tests and the sweep cover, and minified builds
-run the same code. Performance against v0.5.1 is recorded in the CHANGELOG and in
-`../wrappers-gate/PROBE-PERF-RESULTS.md`.
+run the same code. Performance against v0.5.1 is recorded in the CHANGELOG.
 
-v0.7.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua port` (step 13), normal
+v0.7.0: run 2026-09-30 by the maintainer on Warcraft III Reforged 3.0.0.24268, the `port` run (step 13), normal
 build. Every step printed as described, with two corrections to the expectations, now written into step 13: `isAttack`
 reads false for `damageTarget` (the native's value), and the footman with pathing off walked around the tree line, not
 through it (`Wrapper pathing walker x 563.7461`). Collision size 31.0; step 3 gave 178.5714 (magic against heavy armor
 doubles); the nested hit's outer `setAmount 0` took effect; prefixes of 16, 17 and 32 characters arrived whole. Steps
 2–10 were not re-run: this release adds modules and two Unit methods and changes no existing code path.
 
-v0.8.0: run 2026-10-01 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua additions` (step 14),
+v0.8.0: run 2026-10-01 by the maintainer on Warcraft III Reforged 3.0.0.24268, the `additions` run (step 14),
 normal build, one machine. Every line printed as described, read from the gate's file, with two corrections now written
 into step 14: the Claws of Attack read `+12`, and the region line arrives a moment after the start, not with the first
 lines. All 21 weather ids were created. The maintainer saw the rain start, stop, start and stop at the four lines, and
 the Thunder Clap. The input steps read: one down and one up for a tap; one down against 60 with repeats (59 repeated)
 for a held key; `meta 1` with Shift; one click `left at -109 133` with one release; 1041 mouse moves in step 5; and
 nothing after the listeners were removed. Steps 2–10 and 13 were not re-run: the release adds modules and functions, and
-its one change to existing code is a type check in front of four natives. Two probes came before the design
-(`../wrappers-gate/PROBE-EXTRAS-RESULTS.md`).
+its one change to existing code is a type check in front of four natives. Two probes came before the design.
 
 v0.8.1: Not re-run (maintainer's decision, 2026-10-02). The release adds `moonwell-library.json` and changes tools and
 documentation; no file under `src/` changed since v0.8.0.
 
-v0.9.0: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, `yue -e gate.lua dispose` (step 15),
+v0.9.0: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, the `dispose` run (step 15),
 normal build, one machine. Every line printed as described, read from the gate's file. The exploded unit read
 `disposed false exists true` in the instant of its death, like the removed one; the timer's sweep disposed the removed
 unit after 0.25 s; the error named `war3map.lua:5417`, the gate's own line; the handle ids were 1048696 and 1048703;
 a sweep over 200 more wrappers took 90.0 microseconds. Steps 2–10, 13 and 14 were not re-run: the release adds two
 functions and changes `exists()` for a disposed wrapper only.
 
-v0.9.1: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, the probe
-`yue -e gate.lua probe-release` (six steps, `../wrappers-gate/PROBE-RELEASE.md`), before and after the fix. The
-results are in `../wrappers-gate/PROBE-RELEASE-RESULTS.md` and in the changelog: with the fix the press after
-Alt+Tab, after a click on another window and after the chat box reached `onKeyDown`, and the press one second of game
-time after the menu did not. The numbered steps above were not re-run: the change is inside `wrappers.input`.
+v0.9.1: run 2026-10-02 by the maintainer on Warcraft III Reforged 3.0.0.24268, the probe run `probe-release` (six
+steps), before and after the fix. The results are in the changelog: with the fix the press after Alt+Tab, after a click
+on another window and after the chat box reached `onKeyDown`, and the press one second of game time after the menu did
+not. The numbered steps above were not re-run: the change is inside `wrappers.input`.
 
 ## First publication and tag gate (maintainer)
 

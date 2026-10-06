@@ -1,5 +1,134 @@
 # Changelog
 
+## Unreleased
+
+A refactor for one set of conventions (spec `2026-10-06-moonwell-wrappers-refactor-0.10-design` in the workspace). It
+renames calls, changes three units and replaces every listener token by a cancel function. What the library can do
+is unchanged: no wrapper, method or covered native is new. A map on moonwell-systems needs its 0.6 with this version.
+
+- **Boolean state is `set<Adjective>(flag)`:** `setVisible`, `setEnabled`, `setPaused`, `setMinimized` and the three
+  ability setters replace `show(flag)`, `enable`, `disable`, `pause(flag)`, `minimize(flag)` and their kin. Verbs
+  without a flag stay actions (`timer:pause()`, `dialog:show(Player)`).
+- **One unit per quantity:** colour channels 0 to 255, angles in degrees, times in seconds. `lightning:setColor`,
+  `effect:setOrientation` and `sound:getDuration` change their unit.
+- **`setColor(r, g, b, a?)` is always a tint;** a unit's player colour is `setPlayerColor`.
+- **Factories are `create` or `create<Variant>`, and arguments come as what, where, callback, options.**
+- **Every registration returns a function that cancels it.** `removeAction`, `removeCondition`, `frame:off`,
+  `Damage.off`, `Sync.off` and `Input.off` are gone, and so are the classes `TriggerAction`, `TriggerCondition`,
+  `FrameHandler`, `DamageListener`, `SyncListener` and `InputListener`; the return type is `MoonwellWrappers.Cancel`.
+
+### Migrating from 0.9
+
+Every renamed method is gone under its old name, so a call that still uses it fails with Lua's
+`attempt to call a nil value` at the calling line, and the editor flags it. Four old calls keep their names, so they
+still run and nothing flags them. Check them first, in every file of the map:
+
+- **`lightning:setColor(1, 1, 1, 1)`, the commonest 0.9 call, still passes and now draws an almost transparent bolt.**
+  The channels are whole numbers from 0 to 255 now, and 1 is one of them: it sends 1/255 on every channel, alpha
+  included. Only a fraction such as 0.5 is refused (`Lightning.setColor: expected an integer red from 0 to 255`).
+  Multiply the arguments of every `lightning:setColor` call by 255.
+- **`effect:setOrientation(yaw, pitch, roll)` takes degrees.** Radians passed to it turn the effect by a tiny angle, and
+  no error is possible: any finite number is accepted.
+- **`sound:getDuration()` returns seconds.** A duration still read as milliseconds is a thousand times too small. It
+  always returns a float.
+- **`effect:setColor(r, g, b, a)` sets the alpha with its fourth argument.** 0.9 ignored that argument; a call that
+  passes one now changes the effect's alpha. Without it nothing changes, as before.
+
+One more old call keeps its name but is refused loudly: `unit:setColor(playercolor)`, because `setColor` is the tint
+now and checks its four channels (`Unit.setColor: expected an integer red from 0 to 255`). Call
+`unit:setPlayerColor(playercolor)` instead.
+
+| Before | After |
+|---|---|
+| `x:show(flag)` on Unit, Destructable, Frame, Image, Leaderboard, Multiboard, TextTag, TimerDialog, Ubersplat | `x:setVisible(flag)` |
+| `unit:isHidden()` | `not unit:isVisible()` |
+| `trigger:enable()` / `trigger:disable()` | `trigger:setEnabled(true)` / `trigger:setEnabled(false)` |
+| `weather:enable(flag)` / `weather:enableFor(player)` | `weather:setEnabled(flag)` / `weather:setEnabledFor(player)` |
+| `unit:pause(flag)` | `unit:setPaused(flag)` |
+| `multiboard:minimize(flag)` | `multiboard:setMinimized(flag)` |
+| `unit:hideAbility(id, flag)` / `disableAbility(id, flag, hideUI)` / `makeAbilityPermanent(id, flag)` | `setAbilityHidden` / `setAbilityDisabled` / `setAbilityPermanent`, same arguments |
+| `Frame.hideOrigin(flag)` / `Frame.enableAutoPosition(flag)` | `Frame.setOriginHidden(flag)` / `Frame.setAutoPosition(flag)` |
+| `Multiboard.suppressDisplay(flag)` | `Multiboard.setDisplaySuppressed(flag)` |
+| `unit:setColor(playercolor)` | `unit:setPlayerColor(playercolor)` |
+| `unit:setVertexColor(r, g, b, a)`, `frame:setVertexColor(r, g, b, a)` | `setColor(r, g, b, a)` |
+| `lightning:setColor(r, g, b, a)` with 0 to 1 | the same call with 0 to 255 |
+| `effect:setOrientation(yaw, pitch, roll)` in radians | the same call in degrees |
+| `sound:getDuration()` in milliseconds | the same call in seconds |
+| `FogModifier.radius(...)` / `FogModifier.rect(...)` | `FogModifier.createRadius(...)` / `FogModifier.createRect(...)` |
+| `WeatherEffect.create(rect, effectId)` | `WeatherEffect.create(effectId, rect)` |
+| `dialog:addButton(text, options, callback)` | `dialog:addButton(text, callback, options)` |
+| `token = trigger:addAction(f)` then `trigger:removeAction(token)` | `cancel = trigger:addAction(f)` then `cancel()` |
+| `token = trigger:addCondition(f)` then `trigger:removeCondition(token)` | `cancel = trigger:addCondition(f)` then `cancel()` |
+| `token = frame:on(type, f)` then `frame:off(token)` | `cancel = frame:on(type, f)` then `cancel()` |
+| `token = Damage.onDamaging(f)` (or `onDamaged`) then `Damage.off(token)` | `cancel = Damage.onDamaging(f)` then `cancel()` |
+| `token = Sync.on(prefix, f)` then `Sync.off(token)` | `cancel = Sync.on(prefix, f)` then `cancel()` |
+| `token = Input.onKeyDown(...)` (or any `Input.on*`) then `Input.off(token)` | `cancel = Input.onKeyDown(...)` then `cancel()` |
+
+
+### Behaviour that changed without a rename
+
+- **Cancelling after the owner is gone does nothing.** Removing an action or a condition after `trigger:destroy()`, or a
+  frame callback after the frame was destroyed, raised `... is disposed`; the cancel function is silent. Cancelling
+  twice does nothing either, and a callback that cancels itself or another during a firing takes effect at once, and a
+  callback added during a firing waits for the next one.
+- **Integers are bounded.** A whole number outside the game's 32-bit range (`2^31`, `1e300`) is refused wherever an
+  integer is expected, and an integral float inside it (`5.0`) is accepted: options of the `integer` kind and colour
+  channels in options, multiboard counts and cells, `Effect.abilityArt`'s index.
+- **Multiboard.** `Multiboard.create(rows, columns)`, `setRowCount` and `setColumnCount` take a whole number from 0 to
+  2147483647, and `setCell`, `setRow` and `setColumn` a row or column that is a whole number from 1 to the board's
+  count. `setRowCount(2^31)` raised nothing and never returned in 0.9, and a column count of that size went to the game
+  unchecked; both raise now (`Multiboard.setRowCount: expected an integer row count of at least 0`, or `column count`).
+  A count inside the range, however large, is still set one row at a time.
+- **`dialog:addButton`** takes `(text, callback?, options?)`. Two forms are refused now: `addButton(text, options)` and
+  `addButton(text, options, callback)` raise `Dialog.addButton: expected a callback function`. Two are accepted now:
+  `addButton(text, callback, options)` and `addButton(text, nil, options)`, a button with options and no callback.
+- **Options.** A wrapper passed where an options table is expected gets `expected an options table`, not
+  `unknown option 'handle'`. A wrong value reads `'<name>' expected <description>` (the word `option` is gone from
+  it), and a key that is not a string is shown by its type. The defaults of an option set are checked once, at its
+  first use.
+- **Messages name the argument:** `Timer.start: expected a finite non-negative timeout`,
+  `Group.enumInRange: expected a finite non-negative radius`,
+  `Trigger.registerUnitInRange: expected a finite non-negative range`,
+  `DamagingEvent.setAmount: expected a finite amount` (and `DamagedEvent.setAmount`),
+  `Sync.send: expected a data string`, `Player.fromIndex: expected an integer player slot from 0 to 27`,
+  `Effect.abilityArt: expected an integer index of at least 1`,
+  `Multiboard.setCell: expected an integer row from 1 to 4` (it was `row <value> outside 1..<n>`, with the value) and
+  `expected an integer row count of at least 0` (it was `expected a non-negative integer row count`). In
+  `Dialog.addButton`, `option 'hotkey' expected one letter or digit` became `'hotkey' expected one letter or digit` and
+  `option 'scoreScreen' needs 'quit'` became `'scoreScreen' needs 'quit'`. A nil frame name reads
+  `no frame named <nil>`. Each message names the new operation: `Unit.setVisible: Unit is disposed`.
+- **No message holds a table address:** a table or a function in a message is shown as `<table>` or `<function>`.
+- **Raw Lua errors are gone.** Five functions raised a Lua arithmetic error that named a line of the library when given
+  a missing or wrong number; they raise a `[wrappers]` error at the calling line now: `Image.create`
+  (`expected a finite width`, `height`, `x`, `y`), `image:setPosition` (`x`, `y`), `tag:setText` (`size`),
+  `player:addGold` and `player:addLumber` (`expected an integer amount`). A numeric string such as `'64'` (Lua's
+  arithmetic used to coerce it), infinity and NaN are refused as well; fractions, zero and negative numbers pass as
+  before, except for the two amounts, which must be whole.
+- **New refusals.** `Lightning.create` refuses a code that is not a string (`expected a lightning code`), as Effect's
+  constructors refuse a model. `lightning:setColor` refuses a channel that is not a whole number from 0 to 255 (a
+  fraction, a value above 255 or below 0, a missing alpha, a numeric string), `unit:setColor` anything but four whole
+  numbers from 0 to 255, and `effect:setOrientation` an angle that is not a finite number (`expected a finite yaw`, or
+  `pitch`, `roll`). `trigger:registerUnitStateEvent`, `registerPlayerStateEvent` and `registerGameStateEvent` refuse a
+  value that is not a finite number (`expected a finite value`). `Frame.origin`'s index, `Frame.byName`'s context and
+  `frame:getChild`'s index must be integers (`expected an integer index`, `expected an integer context`): `false`, which
+  used to fall through to 0, and a numeral string are refused, and so is `getChild(nil)`.
+  `WeatherEffect.create(rect, effectId)`, the old order, raises `expected Rect wrapper`.
+- **`FogModifier.createRadius` and `createRect`:** the last two arguments may be left out and default to false (0.9
+  passed nil).
+- **`unit:isVisible()`** is the opposite of the old `isHidden()`.
+- **Frames:** a template part first reached through `Frame.byName` or `Frame.fromHandle` becomes a part of its owner
+  when the owner's `getChild` or `findChild` returns it: the owner's `destroy()` disposes its wrapper, and it cannot be
+  re-parented. Before, it stayed borrowed and outlived its owner's wrapper. A frame found through `getParent` does not
+  become a part this way, one of the game's origin frames never does, and a frame created under such a part while it
+  was still borrowed is not moved under the owner. Every callback of one frame event now receives the same event table;
+  each used to get a table of its own.
+- **Less work on repeated paths:** a cached `fromHandle` does one lookup; `Item.enumInRect` and
+  `Destructable.enumInRect` build one table, two with a filter; a filtered group enumeration makes no closure; a Timer
+  keeps one callback closure for its whole life, across `start` calls; the four widget methods of Item and Destructable
+  build no string per call.
+- Not public, but visible in a stack trace: `internal/check.lua` and `internal/cells.lua` are new, and
+  `internal/widget.lua` holds annotations only.
+
 ## 0.9.1 (2026-10-02)
 
 - **Fixed:** `Input.onKeyDown` no longer skips the press that follows a lost key release. The game sends no release

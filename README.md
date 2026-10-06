@@ -96,9 +96,13 @@ Each class has:
 - `isDisposed()`: return whether wrapper cleanup has occurred.
 - `.handle`: native handle while live; nil after disposal. Treat this field as read-only.
 
-Factories return non-null wrappers or raise an error if the native returns nil. Wrapper errors point at the line that
-called the wrapper. Rewrapping the same live handle returns the same Lua table while any reference to that wrapper
-exists.
+Factories return non-null wrappers or raise an error if the native returns nil. Every wrapper error reads
+`[wrappers] <Class>.<method>: <problem>` and points at the line that called the wrapper. A test (`tests/blame.lua`)
+calls every public function of every class with many wrong argument lists, bare and on a live receiver, and fails on any
+failure that is not a `[wrappers]` error at the calling line. It does not reach a check behind a wrapper that is not a
+Player, a check on the value of an argument of the right kind, an error that depends on what a native answers, code
+inside a callback, or a receiver that is disposed: each module's own tests cover those. Rewrapping the same live handle
+returns the same Lua table while any reference to that wrapper exists.
 
 Unit, Item and Destructable use a weak cache: the game removes these on its own (decay, used powerups, dead trees), so a
 wrapper nothing references may be collected, and a later `fromHandle` returns a fresh wrapper. Keep a reference (a
@@ -110,8 +114,9 @@ session.
 
 Use `unit/item/destructable:remove()` and `timer/trigger/group/effect/rect/region/force:destroy()`, and `destroy()` on
 the presentation classes. Repeated cleanup is harmless; other methods reject disposed receivers and disposed wrapper
-arguments (`isDisposed()` and a widget's `exists()` answer instead). `unit:kill()` leaves its wrapper valid because death is not removal. Groups do not own their units, effects
-do not own their targets, and fog modifiers do not own their rects. Garbage collection never destroys game objects.
+arguments (`isDisposed()`, a widget's `exists()`, `button:getDialog()` and `questItem:getQuest()` answer instead).
+`unit:kill()` leaves its wrapper valid because death is not removal. Groups do not own their units, effects do not own
+their targets, and fog modifiers do not own their rects. Garbage collection never destroys game objects.
 
 Raw natives remain available through `getHandle()`, for example `SetUnitInvulnerable(unit:getHandle(), true)`. Destroy
 wrapped resources through their wrappers: direct native destruction bypasses tracking. Never wrap a destroyed raw
@@ -142,7 +147,8 @@ mw.on_main ->
   out) and returns a function that stops it. Nothing runs until a map calls it. Calling it again changes the interval
   of that one timer, and any of the returned functions stops it.
 - `Unit.sweep()` checks once: it disposes the wrapper of every unit whose type id reads 0, with one native call per
-  Unit wrapper still in use. Call it yourself to choose the moment, for example from your own scheduler.
+  Unit wrapper still in the cache (in use, or not yet freed by the collector). Call it yourself to choose the moment,
+  for example from your own scheduler.
 - A swept wrapper is like one you called `remove()` on: `isDisposed()` is `true`, `exists()` is `false`, every other
   method raises `Unit is disposed` at your line, and the wrapper lets go of the handle.
 - A corpse is still a unit: its wrapper stays valid until the corpse is gone. A hero waiting to be revived stays valid
@@ -185,10 +191,11 @@ stale:
 `Sound.create(path, options?)` takes `looping`, `is3D` and `stopWhenOutOfRange` (false), `fadeIn` and `fadeOut` (10) and
 `eax` (`"DefaultEAXON"`). `Ubersplat.create(name, x, y, options?)` takes a splat name from `Splats\UberSplatData.slk`
 and the options `color` (white), `forcePaused` and `noBirthTime` (false); the splat is always rendered. Options tables
-reject unknown keys and wrong types.
+reject unknown keys (`unknown option 'size'`) and wrong types (`'looping' expected a boolean`), and a wrapper passed in
+place of one raises `expected an options table`.
 
 `setVisibleFor(Player)` (TextTag, Image, Ubersplat) and `sound:playFor(Player)` compare with the local player, so only
-local visuals and audio differ; the objects exist on every machine. `show(flag)` afterwards applies to everyone.
+local visuals and audio differ; the objects exist on every machine. `setVisible(flag)` afterwards applies to everyone.
 Lightning has no local visibility. Do not wrap with `fromHandle` a text tag that has a lifespan or a sound released with
 `KillSoundWhenDone` (for example one made by GUI or BJ code): the game ends those on its own, and text tag ids are
 reused, so the wrapper would go stale. There is no `sound:isPlaying()`, and Effect has no position getters: those
@@ -198,25 +205,28 @@ Some lightning types fade by themselves right after creation, as their spells do
 (`CLPB`) vanished within a moment, while Drain Life (`DRAL`) stayed until destroyed; a later probe found the same fading
 for Healing Wave (`HWPB`) and Spirit Link (`SPLK`). Pick a lasting type for a `Lightning` you keep. `lightning:setColor`
 stores the colour (the game reads it back), but on 3.0.0.24268 the Drain Life bolt showed no visible change for green,
-red or an alpha of 0.2; do not rely on it for visuals. Lightning heights are absolute, not relative to the ground: on
-uneven terrain add the ground height (for example `GetLocationZ`), or the bolt can run under it.
+red or an alpha of 51 (0.2 for the native); do not rely on it for visuals. Lightning heights are absolute, not relative
+to the ground: on uneven terrain add the ground height (for example `GetLocationZ`), or the bolt can run under it.
 
 `sound:play()` on a sound that is still playing cuts it off, and nothing plays (probe on 3.0.0.24268): let it finish, or
 use another Sound or `Sound.playOnce`. `splat:finish()` fades the splat out while the wrapper stays valid (destroy it as
 usual); `splat:reset()` did not bring a finished splat back.
 
-Value ranges are the natives': colors are integers 0–255, except `lightning:setColor`, which takes numbers 0–1. Sound
-volume is 0–127 and `getDuration()` is in milliseconds; it can be 0 until the file is loaded, so do not drive
-synchronized game logic from it. Text tag `size` is World Editor's font size; `setVelocity` takes native units. Effect
-orientation is in radians. `Image.create(path, width, height, x, y, imageType)` centres the image on `x, y` and makes it
-visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game cannot load raises
-`[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not nil, and the
-wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with `fromHandle`, whose
-size is unknown. Fog modifiers start stopped.
+Colours are whole numbers 0–255 everywhere; `lightning:setColor` divides them by 255 for its native and refuses a
+channel that is not a whole number from 0 to 255. A fraction such as 0.5 raises `expected an integer red from 0 to 255`,
+but `setColor(1, 1, 1, 1)` passes and draws an almost transparent bolt. Sound volume is 0–127 and `getDuration()` is in
+seconds; it can be 0 until the file is loaded, so do not drive synchronized game logic from it. Text tag `size` is World
+Editor's font size; `setVelocity` takes native units. `effect:setOrientation(yaw, pitch, roll)` takes degrees and
+refuses an angle that is not a finite number. `Image.create(path, width, height, x, y, imageType)` centres the image on
+`x, y` and makes it visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game
+cannot load raises `[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not
+nil, and the wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with
+`fromHandle`, whose size is unknown. Fog modifiers start stopped.
 
 `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return a new dense array of what the
 native enumerates. The filter runs afterwards as ordinary Lua and keeps the objects for which it returns truthy; its
-errors propagate.
+errors propagate. Every object is wrapped before the filter runs, so an object that the filter itself removes with
+`remove()` is still in the result, as a disposed wrapper, when the filter returns truthy for it.
 
 ## Classic UI
 
@@ -226,35 +236,38 @@ timer: in a probe on 3.0.0.24268, a dialog and a multiboard shown directly in `o
 quest, leaderboard or multiboard in `on_main` worked, and each showed correctly later. (w3ts reports that creating them
 while the map script loads can crash the game; create game objects inside Moonwell's hooks, never at module top level.)
 
-**Dialogs.** `dialog:addButton(text, callback)` or `dialog:addButton(text, options?, callback?)` returns a DialogButton.
-The callback receives the Player who clicked, runs behind the same error boundary as trigger actions, and may hide,
-clear or destroy its own dialog. Options: `hotkey` (one letter or digit), `quit` (the button quits the game for the
-clicking player) and `scoreScreen` (with `quit`, show the score screen first). Warcraft hides a dialog when a button is
-clicked. Buttons belong to their dialog: `dialog:clear()` and `dialog:destroy()` dispose them, and a disposed button's
-callback never runs. Buttons have no `destroy()` and no `fromHandle`; `button:getDialog()` returns the dialog.
-`show(Player)` and `hide(Player)` act for one player with the same call on every machine.
+**Dialogs.** `dialog:addButton(text, callback?, options?)` returns a DialogButton; a button with options and no callback
+is `addButton(text, nil, options)`. An options table in the callback's place raises `expected a callback function`. The
+callback receives the Player who clicked, runs behind the same error boundary as trigger actions, and may hide, clear
+or destroy its own dialog. Options: `hotkey` (one letter or digit), `quit` (the button quits the game for the clicking
+player) and `scoreScreen` (with `quit`, show the score screen first). Warcraft hides a dialog when a button is clicked.
+Buttons belong to their dialog: `dialog:clear()` and `dialog:destroy()` dispose them, and a disposed button's callback
+never runs. Buttons have no `destroy()` and no `fromHandle`; `button:getDialog()` returns the dialog. `show(Player)` and
+`hide(Player)` act for one player with the same call on every machine.
 
 **Multiboards.** Rows and columns count from 1. `setCell(row, column, options)`, `setRow(row, options)`,
 `setColumn(column, options)` and `setAll(options)` take `value`, `color` (`{r, g, b, a?}`), `icon`, `width` (a fraction
 of the screen width) and `showValue` with `showIcon` (always together); at least one option is required. A cell outside
-the board raises an error. The wrapper obtains and releases the native cell handles itself, so none can leak. A new
-multiboard's cells show a default icon (an eye) and no text until they are styled, so start with, for example,
+the board raises an error (`expected an integer row from 1 to 4`), and so does a row or column count that is not a whole
+number from 0 to 2147483647 (`expected an integer row count of at least 0`): `setRowCount(2^31)` raises instead of
+looping. The wrapper obtains and releases the native cell handles itself, so none can leak. A new multiboard's cells
+show a default icon (an eye) and no text until they are styled, so start with, for example,
 `setAll({showValue = true, showIcon = false})`. `setRowCount` changes the count one row at a time, a safeguard: w3ts
 reports that bigger steps are unsafe, though a direct change from 0 to 5 rows worked in our probe.
-`Multiboard.suppressDisplay(flag)` hides or allows every multiboard. There is no `isMinimized()`: each player minimizes
-a multiboard on their own machine.
+`Multiboard.setDisplaySuppressed(flag)` hides or allows every multiboard. There is no `isMinimized()`: each player
+minimizes a multiboard on their own machine.
 
 **Leaderboards.** Items are keyed by player, one per player. `addItem(Player, label, value)` and `removeItem(Player)`
 resize the board to fit (a leaderboard starts with no rows); the item setters take the player. `assign(Player)` makes
-the leaderboard the one that player sees; then call `show(true)`.
+the leaderboard the one that player sees; then call `setVisible(true)`.
 
 **Quests.** `Quest.create(options?)` takes `title`, `description`, `icon`, `required` (true) and `discovered` (true).
 `quest:addItem(description)` returns a QuestItem, which belongs to its quest as a button belongs to its dialog:
 `quest:destroy()` disposes it. `Quest.flashButton()` flashes the quest button; `Quest.refresh()` updates an open quest
 log. `DefeatCondition.create(description?)` lists a defeat condition in the quest log.
 
-**Timer dialogs.** `TimerDialog.create(Timer, title?)` makes a hidden countdown of that timer; call `show(true)`. It
-does not own the timer: destroy the timer dialog first. Once the timer is destroyed, every method except `destroy()`
+**Timer dialogs.** `TimerDialog.create(Timer, title?)` makes a hidden countdown of that timer; call `setVisible(true)`.
+It does not own the timer: destroy the timer dialog first. Once the timer is destroyed, every method except `destroy()`
 raises `Timer is disposed`.
 
 `setVisibleFor(Player)` on Multiboard and TimerDialog compares with the local player, as for the presentation classes.
@@ -275,7 +288,10 @@ There are three kinds of frame:
   template parts are disposed at once and their callbacks never run again.
 - **Template parts** are the frames a template creates inside a frame: `frame:findChild(name)` finds one by name (the
   wrapper passes each owned frame its own create context, so names never clash), and `frame:getChild(index)` by
-  zero-based index. A part belongs to the owned frame it was found through and cannot be destroyed or re-parented.
+  zero-based index. A part belongs to the owned frame it was found through and cannot be destroyed or re-parented. A
+  part first reached through `Frame.byName` or `Frame.fromHandle` counts as borrowed only until it is found through its
+  owner with `findChild` or `getChild`; from then on it is that owner's part, and the owner's `destroy()` disposes its
+  wrapper. A borrowed frame found through `getParent` stays borrowed, and so does one of the game's origin frames.
 - **Borrowed** frames are the game's: `Frame.origin(ORIGIN_FRAME_GAME_UI)`, `Frame.byName(name, context?)`,
   `Frame.fromHandle(raw)`. They can be parents but never be destroyed through a wrapper, and can only be re-parented
   under another borrowed frame, so destroying one of your frames never silently destroys a game frame.
@@ -283,15 +299,16 @@ There are three kinds of frame:
 `frame:setParent(parent)` moves an owned frame, and it is then destroyed with its new parent. A frame cannot be moved
 into its own subtree.
 
-Events go to callbacks: `frame:on(FRAMEEVENT_CONTROL_CLICK, function(player, event) ... end)` returns a token for
-`frame:off(token)`. The callback receives the Player who caused the event and `event` with `type`, `frame`, `text` (edit
-boxes) and `value` (sliders, check boxes, popup menus, the mouse wheel): the event's synced data. Callbacks run behind
-the same error boundary as trigger actions and may destroy their own frame. After a click, a button keeps the keyboard
-focus and hotkeys stop working; call `frame:releaseFocusFor(player)` in the click callback.
+Events go to callbacks: `frame:on(FRAMEEVENT_CONTROL_CLICK, function(player, event) ... end)` returns a function that
+removes the callback. The callback receives the Player who caused the event and `event` with `type`, `frame`, `text`
+(edit boxes) and `value` (sliders, check boxes, popup menus, the mouse wheel): the event's synced data. Every callback
+of one firing receives the same `event` table. Callbacks run behind the same error boundary as trigger actions and may
+destroy their own frame. After a click, a button keeps the keyboard focus and hotkeys stop working; call
+`frame:releaseFocusFor(player)` in the click callback.
 
 There are no getters for text, values, visibility, enabled state, alpha or size: they answer differently on each machine
 (typed text, dragged sliders, local visibility). Read synced values in event callbacks. `setVisibleFor(Player)` compares
-with the local player, as for the presentation classes. Colors (`setTextColor`, `setVertexColor`) are integers 0–255.
+with the local player, as for the presentation classes. Colors (`setTextColor`, `setColor`) are integers 0–255.
 
 The game's own templates need no TOC file: in a probe on 3.0.0.24268, `ScriptDialogButton`, `EscMenuBackdrop`,
 `EscMenuTitleTextTemplate`, `EscMenuLabelTextTemplate`, `EscMenuEditBoxTemplate`, `EscMenuSliderTemplate`,
@@ -309,7 +326,7 @@ war3mapImported\MyFrames.fdf
 ```
 
 Then load it in a hook, before creating frames: `Frame.loadTOC("war3mapImported\\templates.toc")`. It raises when the
-game cannot load the file. `Frame.hideOrigin(flag)` hides the game's own UI and `Frame.enableAutoPosition(flag)` turns
+game cannot load the file. `Frame.setOriginHidden(flag)` hides the game's own UI and `Frame.setAutoPosition(flag)` turns
 its automatic layout off or on, for everyone.
 
 ## Editor types
@@ -338,20 +355,42 @@ if item then item:setCharges(1) end
 
 Callback parameters are typed; implicit YueScript return values are allowed and ignored.
 
-## Units and conventions
+## Conventions
 
-The wrappers keep each native's conventions, so they differ between classes:
+One set of rules holds for every class:
 
-| What       | Convention                         | Where                                                                    |
-| ---------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| Colours    | 0–255 per channel                  | units, effects, text tags, images, ubersplats, classic UI, frames        |
-| Colours    | 0–1 per channel                    | `lightning:setColor` (`SetLightningColor`)                               |
-| Angles     | degrees                            | unit facing, `Destructable.create`'s facing, `TextTag.float`'s `angle`   |
-| Angles     | radians                            | `effect:setOrientation` (`BlzSetSpecialEffectOrientation`)               |
-| Visibility | `show(flag)` / `isHidden()`        | units (`ShowUnit`, `IsUnitHidden`); destructables have `show(flag)` only |
-| Visibility | `setVisible(flag)` / `isVisible()` | items (`SetItemVisible`, `IsItemVisible`)                                |
-| Time       | seconds                            | timers, timed life, cooldowns, text tag lifespan and fade point          |
-| Time       | milliseconds                       | `sound:getDuration()` (`GetSoundDuration`)                               |
+- **Boolean state is `set<Adjective>(flag)`,** read with `is<Adjective>()` where a getter exists: `setVisible`,
+  `setEnabled`, `setPaused`, `setMinimized`, `setInvulnerable`, `setAbilityHidden`. A verb without a flag is an action:
+  `timer:pause()` and `resume()`, `fog:start()` and `stop()`, `sound:play()` and `stop(fadeOut?)`, `dialog:show(Player)`
+  and `hide(Player)`. `setVisibleFor(Player)` and `weather:setEnabledFor(Player)` make the same call on every machine,
+  with a flag that differs per machine.
+- **One unit per quantity.** Colour channels are whole numbers 0–255, angles are degrees and times are seconds. Player
+  indices are zero-based and distances are the game's units. Where a native differs, the wrapper converts:
+  `SetLightningColor` takes 0–1, `BlzSetSpecialEffectOrientation` radians and `GetSoundDuration` gives milliseconds.
+- **`setColor(r, g, b, a?)` is a tint,** on units, frames, effects, text tags, images and lightning. A player colour is
+  `unit:setPlayerColor(playercolor)` or `effect:setPlayerColor(Player)`, and the colour of a named part keeps its name
+  (`frame:setTextColor`, `multiboard:setTitleColor`).
+- **What the map must destroy is made by `create` or `create<Variant>`** (`FogModifier.createRadius`,
+  `Frame.createByType`); `Effect.attach` and `Rect.worldBounds` are the two other names. Helpers that return nothing
+  (`TextTag.float`, `Sound.playOnce`, `Effect.flash`) leave nothing to destroy.
+- **Arguments come in the order what, where, callback, options:** `WeatherEffect.create(effectId, Rect)`,
+  `dialog:addButton(text, callback?, options?)`, `Input.onKeyDown(Player, key, callback, options?)`.
+- **Every registration returns a function that cancels it:** `trigger:addAction`, `trigger:addCondition`, `frame:on`,
+  `Damage.onDamaging`, `Damage.onDamaged`, `Sync.on` and the five `Input.on…` functions. Calling it takes effect at
+  once, even during a firing; calling it again, or after its owner was destroyed, does nothing. `Unit.autoDispose`
+  returns its stop function in the same way.
+- **Factories and frame lookups raise, queries return nil.** A factory, `Frame.byName`, `Frame.origin`,
+  `frame:getChild` and `frame:findChild` raise when there is nothing to return; `getParent`, `getItemInSlot`,
+  `group:first`, `Effect.abilityArt`, `fromHandle` and `fromEvent` return nil.
+- **Widgets are removed, everything else is destroyed.** `unit/item/destructable:remove()` is a game action;
+  `group:remove(Unit)` and `force:remove(Player)` remove a member.
+- **An enumeration into a group fills the group; an enumeration of items or destructables returns an array.**
+  `group:enumInRect(Rect, filter?)` clears and fills the group and returns nothing; `Item.enumInRect(Rect, filter?)` and
+  `Destructable.enumInRect(Rect, filter?)` return a new array.
+- **Errors read `[wrappers] <Class>.<method>: <problem>`,** name the argument (`expected a finite non-negative timeout`,
+  `'hotkey' expected a string`) and point at the line that called the wrapper. An integer argument refuses a whole
+  number outside the game's 32-bit range. A check for a finite number refuses NaN in the test suites but not in the
+  game, where Warcraft's Lua treats NaN as equal to itself.
 
 ## API reference
 
@@ -359,8 +398,9 @@ All wrapper parameters below require wrappers, not raw handles. Warcraft enums a
 indices are zero-based; durations are seconds; facing uses native degrees. Native pathing and synchronization rules
 apply. Calls made only for a local player do not become synchronized by using wrappers.
 
-Each module lists its factories and methods beyond the common handle methods (`fromHandle`, `getHandle`, `isDisposed`,
-and `destroy` or `remove`).
+Each module lists every public function except the common handle methods (`fromHandle`, `getHandle` and
+`isDisposed`). A method that sets a state is named `set…`, and a verb without a flag is an action: see
+[Conventions](#conventions).
 
 ### `wrappers.player`
 
@@ -380,16 +420,18 @@ and `destroy` or `remove`).
 - `getX()`, `getY()`, `setPosition(x,y)`, `setX(x)`, `setY(y)`, `getFacing()`, `setFacing(degrees)`
 - `getLife()`, `setLife(v)`, `getMaxLife()`, `setMaxLife(n)`, `getMana()`, `setMana(v)`, `getMaxMana()`,
   `setMaxMana(n)`, `getMoveSpeed()`, `setMoveSpeed(v)`
-- `setColor(playercolor)`, `setScale(s)`, `setVertexColor(r,g,b,a)`, `setAnimation(name)`, `pause(flag)`, `isPaused()`,
-  `setInvulnerable(flag)`, `isInvulnerable()`, `show(flag)`, `isHidden()`, `getCollisionSize()`, `setPathing(flag)`
+- `setPlayerColor(playercolor)`, `setScale(s)`, `setColor(r, g, b, a)`, `setAnimation(name)`, `setPaused(flag)`,
+  `isPaused()`, `setInvulnerable(flag)`, `isInvulnerable()`, `setVisible(flag)`, `isVisible()`, `getCollisionSize()`,
+  `setPathing(flag)`
 - `isType(unittype)`, `isAlly(Player)`, `isEnemy(Player)`, `isAlive()`, `exists()`, `getCurrentOrder()`
 - `kill()`, `remove()`, `applyTimedLife(buffId, seconds)`,
   `damageTarget(Widget, amount, attack, ranged, attacktype, damagetype, weapontype)`
 - hero: `isHero()`, `getHeroName()`, `getLevel()`, `setLevel(level, showEffect)`, `getXP()`, `setXP(xp, showEffect)`,
-  `addXP(xp, showEffect)`, `getStr/getAgi/getInt(includeBonuses)`, `setStr/setAgi/setInt(value, permanent)`,
-  `getSkillPoints()`, `modifySkillPoints(delta)`, `selectSkill(abilityId)`, `revive(x, y, showEffect)`
+  `addXP(xp, showEffect)`, `getStr(includeBonuses)`, `getAgi(includeBonuses)`, `getInt(includeBonuses)`,
+  `setStr(value, permanent)`, `setAgi(value, permanent)`, `setInt(value, permanent)`, `getSkillPoints()`,
+  `modifySkillPoints(delta)`, `selectSkill(abilityId)`, `revive(x, y, showEffect)`
 - abilities: `addAbility(id)`, `removeAbility(id)`, `getAbilityLevel(id)`, `setAbilityLevel(id, level)`,
-  `makeAbilityPermanent(id, permanent)`, `hideAbility(id, hidden)`, `disableAbility(id, disabled, hideUI)`,
+  `setAbilityPermanent(id, permanent)`, `setAbilityHidden(id, hidden)`, `setAbilityDisabled(id, disabled, hideUI)`,
   `startCooldown(id, seconds)`, `endCooldown(id)`, `getCooldownRemaining(id)`
 - inventory: `getInventorySize()`, `getItemInSlot(slot)`, `addItem(Item)`, `addItemById(typeId)`, `removeItem(Item)`,
   `removeItemFromSlot(slot)`, `hasItem(Item)`, `dropItemAt(Item, x, y)`, `dropItemToSlot(Item, slot)`, `useItem(Item)`
@@ -401,13 +443,15 @@ and `destroy` or `remove`).
 - `create(typeId, x, y)`, `enumInRect(Rect, filter?)`, `fromEvent()`
 - `getTypeId()`, `getName()`, `getLevel()`, `setPosition(x, y)`, `getCharges()`, `setCharges(n)`, `getOwner()`,
   `setOwner(Player, changeColor)`, `isOwned()`, `isPowerup()`, `isVisible()`, `setVisible(flag)`, `isInvulnerable()`,
-  `setInvulnerable(flag)`, `setDroppable(flag)`, `setPawnable(flag)`, `exists()`, `remove()`
+  `setInvulnerable(flag)`, `setDroppable(flag)`, `setPawnable(flag)`, `getLife()`, `setLife(value)`, `getX()`, `getY()`,
+  `exists()`, `remove()`
 
 ### `wrappers.destructable`
 
 - `create(typeId, x, y, facing, scale, variation)`, `enumInRect(Rect, filter?)`, `fromEvent()`
 - `getTypeId()`, `getName()`, `getMaxLife()`, `setMaxLife(v)`, `kill()`, `restore(life, birth)`, `isInvulnerable()`,
-  `setInvulnerable(flag)`, `show(flag)`, `setAnimation(name)`, `queueAnimation(name)`, `exists()`, `remove()`
+  `setInvulnerable(flag)`, `setVisible(flag)`, `setAnimation(name)`, `queueAnimation(name)`, `getLife()`,
+  `setLife(value)`, `getX()`, `getY()`, `exists()`, `remove()`
 
 ### `wrappers.rect`
 
@@ -436,7 +480,7 @@ and `destroy` or `remove`).
 ### `wrappers.trigger`
 
 - `create()`
-- `enable()`, `disable()`, `isEnabled()`, `evaluate()` (returns boolean), `execute()`
+- `setEnabled(flag)`, `isEnabled()`, `evaluate()` (returns boolean), `execute()`
 - `registerUnitEvent(Unit, unitevent)`, `registerPlayerUnitEvent(Player, playerunitevent)`,
   `registerAnyUnitEvent(playerunitevent)`, `registerPlayerEvent(Player, playerevent)`,
   `registerChatEvent(Player, text, exactMatch)`, `registerEnterRegion(Region)`, `registerLeaveRegion(Region)`,
@@ -445,8 +489,7 @@ and `destroy` or `remove`).
   `registerGameEvent(gameevent)`, `registerPlayerStateEvent(Player, playerstate, limitop, value)`,
   `registerPlayerAllianceChange(Player, alliancetype)`, `registerGameStateEvent(gamestate, limitop, value)`,
   `registerTimerExpireEvent(Timer)`
-- `addAction(callback)` and `addCondition(predicate)` return tokens for `removeAction(token)` and
-  `removeCondition(token)`
+- `addAction(callback)` and `addCondition(predicate)` each return a function that removes what they added
 - `clearActions()`, `clearConditions()`, `destroy()`
 
 Measured on 3.0.0.24268 (the v0.8.0 probes):
@@ -473,7 +516,7 @@ Measured on 3.0.0.24268 (the v0.8.0 probes):
 
 - `create(model,x,y)`, `attach(model,Unit,attachmentPoint)`, `flash(model, x, y)`,
   `flashOn(model, Unit, attachmentPoint)`, `abilityArt(abilityId, effecttype, index?)`
-- `setPosition(x,y,z)`, `setScale(scale)`, `setColor(r, g, b)`, `setAlpha(a)`, `setPlayerColor(Player)`,
+- `setPosition(x,y,z)`, `setScale(scale)`, `setColor(r, g, b, a?)`, `setAlpha(a)`, `setPlayerColor(Player)`,
   `setTimeScale(scale)`, `setOrientation(yaw, pitch, roll)`, `setHeight(height)`, `setZ(z)`, `playAnimation(animtype)`,
   `destroy()`
 
@@ -482,7 +525,8 @@ constructors above or a missile's model, and for `EFFECT_TYPE_LIGHTNING` a light
 returns nil when the ability has none. `index` picks an entry of a list, from 1; past the last entry the game reads the
 last one, so the number of entries cannot be read. Abilities such as Blizzard keep their art on their buff and read nil.
 The four constructors raise `expected a model path` for a model that is not a string, so a missing art fails at the line
-that uses it; an empty string still gives an effect that draws nothing.
+that uses it; an empty string still gives an effect that draws nothing. Likewise `Lightning.create` raises
+`expected a lightning code` for a code that is not a string.
 
 ```yue
 clap = Effect.abilityArt FourCC("AHtc"), EFFECT_TYPE_CASTER
@@ -493,7 +537,7 @@ Effect.flash clap, x, y if clap
 
 - `create()`, `float(text, x, y, options?)`
 - `setText(text, size)`, `setColor(r, g, b, a)`, `setPosition(x, y, heightOffset)`,
-  `setPositionOnUnit(Unit, heightOffset)`, `setVelocity(xvel, yvel)`, `setSuspended(flag)`, `show(flag)`,
+  `setPositionOnUnit(Unit, heightOffset)`, `setVelocity(xvel, yvel)`, `setSuspended(flag)`, `setVisible(flag)`,
   `setVisibleFor(Player)`, `destroy()`
 
 ### `wrappers.sound`
@@ -511,30 +555,30 @@ Effect.flash clap, x, y if clap
 ### `wrappers.image`
 
 - `create(path, width, height, x, y, imageType)`
-- `setPosition(x, y, z?)`, `show(flag)`, `setVisibleFor(Player)`, `setColor(r, g, b, a)`,
+- `setPosition(x, y, z?)`, `setVisible(flag)`, `setVisibleFor(Player)`, `setColor(r, g, b, a)`,
   `setConstantHeight(flag, height)`, `setAboveWater(flag, useWaterAlpha)`, `setType(imageType)`, `destroy()`
 
 ### `wrappers.ubersplat`
 
 - `create(name, x, y, options?)`
-- `show(flag)`, `setVisibleFor(Player)`, `finish()`, `reset()`, `destroy()`
+- `setVisible(flag)`, `setVisibleFor(Player)`, `finish()`, `reset()`, `destroy()`
 
 ### `wrappers.fogmodifier`
 
-- `radius(Player, fogstate, x, y, radius, useSharedVision, afterUnits)`,
-  `rect(Player, fogstate, Rect, useSharedVision, afterUnits)`
+- `createRadius(Player, fogstate, x, y, radius, useSharedVision?, afterUnits?)`,
+  `createRect(Player, fogstate, Rect, useSharedVision?, afterUnits?)`; the last two arguments default to false
 - `start()`, `stop()`, `destroy()`
 
 ### `wrappers.weathereffect`
 
-- `create(Rect, effectId)`
-- `enable(flag)`, `enableFor(Player)`, `destroy()`
+- `create(effectId, Rect)`
+- `setEnabled(flag)`, `setEnabledFor(Player)`, `destroy()`
 
-A weather effect is not drawn until `enable(true)`. `enableFor(Player)` compares with the local player, as
-`setVisibleFor` does: the effect exists on every machine and is drawn on that player's only; `enable(flag)` afterwards
-applies to everyone. There is no getter for whether it is enabled. The effect reads its rect when it is created and does
-not own it, so the rect may be destroyed at once. `create` raises `unknown weather effect id` for an id the game does
-not know: Warcraft returns an invalid effect for one, not nil.
+A weather effect is not drawn until `setEnabled(true)`. `setEnabledFor(Player)` compares with the local player, as
+`setVisibleFor` does: the effect exists on every machine and is drawn on that player's only; `setEnabled(flag)`
+afterwards applies to everyone. There is no getter for whether it is enabled. The effect reads its rect when it is
+created and does not own it, so the rect may be destroyed at once. `create` raises `unknown weather effect id` for an id
+the game does not know: Warcraft returns an invalid effect for one, not nil.
 
 The game's weather ids, each created by the v0.8.0 gate on 3.0.0.24268:
 
@@ -554,23 +598,23 @@ import "wrappers.weathereffect" as WeatherEffect
 import "wrappers.rect" as Rect
 
 area = Rect.create -1024, -1024, 1024, 1024
-rain = WeatherEffect.create area, FourCC "RAhr"
+rain = WeatherEffect.create FourCC("RAhr"), area
 area\destroy!
-rain\enable true
+rain\setEnabled true
 ```
 
 ### `wrappers.dialog`
 
 - `create()`
-- `setMessage(text)`, `addButton(text, options?, callback?)` (returns a DialogButton), `show(Player)`, `hide(Player)`,
+- `setMessage(text)`, `addButton(text, callback?, options?)` (returns a DialogButton), `show(Player)`, `hide(Player)`,
   `clear()`, `destroy()`. DialogButton: `getDialog()`
 
 ### `wrappers.multiboard`
 
-- `create(rows, columns, title?)`, `suppressDisplay(flag)`
+- `create(rows, columns, title?)`, `setDisplaySuppressed(flag)`
 - `setRowCount(count)`, `setColumnCount(count)`, `getRowCount()`, `getColumnCount()`, `setTitle(text)`, `getTitle()`,
   `setTitleColor(r, g, b, a)`, `setCell(row, column, options)`, `setRow(row, options)`, `setColumn(column, options)`,
-  `setAll(options)`, `show(flag)`, `setVisibleFor(Player)`, `minimize(flag)`, `destroy()`
+  `setAll(options)`, `setVisible(flag)`, `setVisibleFor(Player)`, `setMinimized(flag)`, `destroy()`
 
 ### `wrappers.leaderboard`
 
@@ -579,7 +623,7 @@ rain\enable true
   `addItem(Player, label, value)`, `removeItem(Player)`, `setItemValue(Player, value)`, `setItemLabel(Player, label)`,
   `setItemLabelColor(Player, r, g, b, a)`, `setItemValueColor(Player, r, g, b, a)`, `setItemStyle(Player, options?)`,
   `hasItem(Player)`, `getItemCount()`, `sortByValue(ascending)`, `sortByLabel(ascending)`, `sortByPlayer(ascending)`,
-  `assign(Player)`, `show(flag)`, `destroy()`
+  `assign(Player)`, `setVisible(flag)`, `destroy()`
 
 ### `wrappers.quest`
 
@@ -598,25 +642,27 @@ rain\enable true
 
 - `create(Timer, title?)`
 - `setTitle(text)`, `setTitleColor(r, g, b, a)`, `setTimeColor(r, g, b, a)`, `setSpeed(factor)`,
-  `setRealTimeRemaining(seconds)`, `show(flag)`, `setVisibleFor(Player)`, `destroy()`
+  `setRealTimeRemaining(seconds)`, `setVisible(flag)`, `setVisibleFor(Player)`, `destroy()`
 
 ### `wrappers.frame`
 
 - `create(template, parent, options?)`, `createSimple(template, parent)`, `createByType(frameType, parent, options?)`,
-  `origin(originType, index?)`, `byName(name, context?)`, `loadTOC(path)`, `hideOrigin(flag)`,
-  `enableAutoPosition(flag)`
+  `origin(originType, index?)`, `byName(name, context?)`, `loadTOC(path)`, `setOriginHidden(flag)`,
+  `setAutoPosition(flag)`
 - `getName()`, `getParent()`, `getChildrenCount()`, `getChild(index)`, `findChild(name)`, `setParent(Frame)`,
   `setPoint(point, Frame, relativePoint, x, y)`, `setAbsPoint(point, x, y)`, `setAllPoints(Frame)`, `clearPoints()`,
   `setSize(width, height)`, `setScale(scale)`, `setLevel(level)`, `setText(text)`, `addText(text)`,
-  `setTextColor(r, g, b, a)`, `setVertexColor(r, g, b, a)`, `setFont(path, height, flags?)`,
+  `setTextColor(r, g, b, a)`, `setColor(r, g, b, a)`, `setFont(path, height, flags?)`,
   `setTextAlignment(vertical, horizontal)`, `setTextSizeLimit(size)`, `setTexture(path, flag?, blend?)`,
   `setModel(path, cameraIndex?)`, `setSpriteAnimate(primaryProp, flags)`, `setAutoScroll(flag)`, `setValue(value)`,
   `setMinMaxValue(min, max)`, `setStepSize(step)`, `setAlpha(alpha)`, `setEnabled(flag)`, `setTooltip(Frame)`,
-  `show(flag)`, `setVisibleFor(Player)`, `releaseFocusFor(Player)`, `on(eventType, callback)`, `off(token)`, `destroy()`
+  `setVisible(flag)`, `setVisibleFor(Player)`, `releaseFocusFor(Player)`, `on(eventType, callback)` (returns a function
+  that removes the callback), `destroy()`
 
 ### `wrappers.damage`
 
-- `onDamaging(callback)` (before armor) and `onDamaged(callback)` (after armor) return a token for `off(token)`
+- `onDamaging(callback)` (before armor) and `onDamaged(callback)` (after armor) return a function that removes the
+  listener
 - the event: `source` (a Unit, or nil when the game gives none), `target`, `amount`, `isAttack`, `attackType`,
   `damageType`, `weaponType`
 - DAMAGING events: `setAmount(n)`, `setAttackType(t)`, `setDamageType(t)`, `setWeaponType(t)`; DAMAGED events:
@@ -624,7 +670,7 @@ rain\enable true
 
 Every listener of one hit gets the same event, so a change is visible to the listeners after it. Setters work only while
 the hit's listeners run; afterwards (for example from a timer) they raise `the damage event is over`. Each phase has one
-shared trigger, created by the first listener and disabled while the phase has none.
+shared trigger, created by the first listener and disabled while the phase has none. It is never destroyed.
 
 Measured by the v0.7.0 gate on 3.0.0.24268:
 
@@ -646,12 +692,14 @@ Damage.onDamaging (event) ->
 ### `wrappers.sync`
 
 - `send(prefix, data)` returns what `BlzSendSyncData` returns; `data` is at most 255 bytes
-- `on(prefix, callback)` returns a token for `off(token)`; the callback gets `(Player, data)`
+- `on(prefix, callback)` returns a function that removes the listener; the callback gets `(Player, data)`
 
 Call `send` for the local player only, inside a local-player branch; the listeners run on every machine, in the same
 order, some frames later (about 0.09 s on one machine). The game cuts longer messages to 255 bytes and still reports
 success, so `send` raises instead. Split longer data yourself. Prefixes of 16, 17 and 32 characters arrived whole in the
-v0.7.0 gate, so the wrappers only require a non-empty prefix.
+v0.7.0 gate, so the wrappers only require a non-empty prefix. Each prefix has one shared trigger, created by its
+first listener and disabled while it has none. It is never destroyed, so a map that invents prefixes at run time keeps
+one trigger per prefix.
 
 ```yue
 import "wrappers.sync" as Sync
@@ -667,12 +715,12 @@ Sync.send "load", code if Player.fromIndex(0)\isLocal!
 - `onKeyUp(Player, key, callback)`: the callback gets `(Player, meta)`
 - `onMouseDown(Player, callback)` and `onMouseUp(Player, callback)`: the callback gets `(Player, x, y, button)`
 - `onMouseMove(Player, callback)`: the callback gets `(Player, x, y)`
-- each returns a token for `off(token)`
+- each returns a function that removes the listener
 
 Listeners are for one player's keyboard and mouse. The events are synced: a listener runs on every machine, in the same
 order, some frames after the input, so it may change game state. Each player and key, and each player and kind of mouse
-event, has one shared trigger, created by its first listener and disabled while it has none. The first key listener
-also starts one game timer, which the module reads game time from.
+event, has one shared trigger, created by its first listener and disabled while it has none; it is never destroyed.
+The first key listener also starts one game timer, which the module reads game time from.
 
 Keys are the `OSKEY_` constants. A key listener runs whatever modifier keys are held. `meta` is the sum of
 `METAKEY_SHIFT` (1), `METAKEY_CTRL` (2), `METAKEY_ALT` (4) and `METAKEY_WINKEYS` (8); compare it to ask for one
@@ -718,13 +766,13 @@ Measured on 3.0.0.24268 (the v0.8.0 probes):
 ```yue
 import "wrappers.input" as Input
 
-cast = Input.onKeyDown player, OSKEY_Q, (player, meta) ->
+stopCasting = Input.onKeyDown player, OSKEY_Q, (player, meta) ->
   castFor player if meta == METAKEY_NONE
 
 Input.onMouseDown player, (player, x, y, button) ->
   print player\getName!, "clicked at", x, y if button == MOUSE_BUTTON_TYPE_LEFT
 
-Input.off cast
+stopCasting!
 ```
 
 Player indices must be integers below `bj_MAX_PLAYER_SLOTS`, including neutral slots. Players have no destruction
@@ -739,13 +787,14 @@ the native's synchronization behavior. `Rect.worldBounds()` allocates a new rect
 deliberately outside the API.
 
 Some methods that act also pass the native's result through. `trigger:evaluate()` returns the conditions' boolean
-result. On Unit, `damageTarget`, `modifySkillPoints`, `revive`, `addAbility`, `removeAbility`, `makeAbilityPermanent`,
+result. On Unit, `damageTarget`, `modifySkillPoints`, `revive`, `addAbility`, `removeAbility`, `setAbilityPermanent`,
 `addItem`, `dropItemAt`, `dropItemToSlot` and `useItem` return a boolean, and `setAbilityLevel` returns an integer.
 
 Every group enumeration clears the group first and passes no native filter. The optional `filter` then runs over a
 snapshot and removes the units for which it returns falsy; "of type" is a filter such as `(u) -> u\getTypeId! == id`. If
-the filter raises, the group is cleared and the error propagates. Negative, infinite and NaN radii fail before clearing.
-`getUnits()` returns a dense one-based array, skips nil native entries and preserves native order without promising
+the filter raises, the group is cleared and the error propagates. Negative and infinite radii fail before clearing. So
+does NaN in the test suites, but not in the game: Warcraft's Lua treats NaN as equal to itself, so the check cannot see
+it. `getUnits()` returns a dense one-based array, skips nil native entries and preserves native order without promising
 sorting. Later group changes do not alter the array. `forEach` iterates the same kind of snapshot; its errors propagate.
 `Force.getPlayers()` is a snapshot in the same way. `unit:remove()` still disposes that wrapper in every snapshot.
 
@@ -761,15 +810,16 @@ its label and nothing else is affected. The labels are `Timer`, `Trigger`, `Dial
 Timer callbacks receive their Timer; trigger actions and conditions receive their Trigger. Read event context using
 ordinary natives, then convert handles with `fromHandle` as needed, or use `fromEvent()`. Registrations pass no native
 filter; filter inside a condition or an action. Warcraft cannot unregister an event, so destroying the trigger is the
-only way to remove one. `addAction` and `addCondition` return tokens; removing a token takes effect at once, even during
-a firing, and removing it twice does nothing. A condition may remove its own token; the evaluation in progress still
-counts its result. A token from another trigger raises an error. A condition's result counts as truthy or falsy; if it
-raises, the error is printed with `[wrappers] Trigger condition failed:` and the condition counts as false. The trigger
-owns each condition's boolexpr and destroys it on removal, on `clearConditions()` and on `destroy()`.
+only way to remove one. Each of `addAction` and `addCondition` returns a function that removes what it added: calling
+it takes effect at once, even during a firing, and calling it again, or after the trigger was destroyed, does nothing.
+A condition may cancel itself; the evaluation in progress still counts its result. A condition's result counts as
+truthy or falsy; if it raises, the error is printed with `[wrappers] Trigger condition failed:` and the condition counts
+as false. The trigger owns each condition's boolexpr and destroys it on removal, on `clearConditions()` and on
+`destroy()`.
 
-`start` replaces the timer's old schedule. Timeouts must be finite and nonnegative. One-shot timers remain allocated
-after firing: restart them or explicitly destroy them. A callback can restart or destroy its own timer. Stale callbacks
-from replaced schedules or destroyed wrappers do nothing.
+`start` replaces the timer's old schedule. Timeouts must be finite and not negative (in the game a NaN passes, as for
+radii). One-shot timers remain allocated after firing: restart them or explicitly destroy them. A callback can restart
+or destroy its own timer. Stale callbacks from replaced schedules or destroyed wrappers do nothing.
 
 Callbacks must be synchronous: do not yield or call TriggerSleepAction. Use timers for delayed work. A callback error is
 caught and printed with `[wrappers] Timer/Trigger callback failed:`; periodic ticks and future actions continue. Errors
