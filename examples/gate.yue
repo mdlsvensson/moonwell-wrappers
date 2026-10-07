@@ -212,6 +212,26 @@ broadGate = (owner) ->
     discarded\remove!
     _, located = pcall -> print "ERROR no error for a removed target", hero\issueTargetOrder "smart", discarded
     print "Wrapper error location", located
+    -- v0.10.0: whole numbers held as floats, where the natives take integers. The closure ends on nil: its last call
+    -- would be a tail call.
+    floatBoard = Multiboard.create 1, 1
+    floatsOk, floatsMessage = pcall ->
+      Player.fromIndex 0.0
+      floatBoard\setRowCount 2.0
+      hero\setColor 255.0, 255.0, 255.0, 255.0
+      nil
+    floatBoard\destroy!
+    print "Wrapper integral floats", floatsOk, floatsMessage
+    -- v0.10.0: a timer started again before it expired runs its latest callback only, and once.
+    restartFirst, restartSecond = 0, 0
+    restarted = Timer.create!
+    restarted\start 1, false, -> restartFirst += 1
+    restarted\start 1, false, -> restartSecond += 1
+    restartVerdict = Timer.create!
+    restartVerdict\start 3, false, (self) ->
+      print "Wrapper timer restart first", restartFirst, "second", restartSecond
+      restarted\destroy!
+      self\destroy!
   heroes = Group.create!
   heroes\enumInRange(-300, 0, 800, (unit) -> unit\isHero!)
   print "Wrapper filtered heroes", heroes\getSize!
@@ -565,7 +585,7 @@ portGate = (owner) ->
   step = 0
   nestedDone = false
   storedEvent = nil
-  damaging = Damage.onDamaging (event) ->
+  stopDamaging = Damage.onDamaging (event) ->
     if event.target == dummy
       if step == 2
         before = event.amount
@@ -580,7 +600,7 @@ portGate = (owner) ->
         storedEvent = event
         striker\damageTarget dummy, 10, false, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS
         event\setAmount 0
-  damaged = Damage.onDamaged (event) ->
+  stopDamaged = Damage.onDamaged (event) ->
     if event.target == dummy
       BlzSetEventAttackType ATTACK_TYPE_MAGIC if step == 4
       print "Wrapper damaged step", step, "amount", event.amount
@@ -606,8 +626,8 @@ portGate = (owner) ->
       if storedEvent
         staleOk, staleMessage = pcall storedEvent.setAmount, storedEvent, 1
         print "Wrapper stale damage event", staleOk, staleMessage
-      damaging!
-      damaged!
+      stopDamaging!
+      stopDamaged!
     elseif step == 7
       strike!
       print "Wrapper damage listeners removed"

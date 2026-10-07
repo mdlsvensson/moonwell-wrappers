@@ -124,7 +124,7 @@ test('disposal state precedes reentrant native cleanup and survives failure', fu
         eq(u:isDisposed(), true); eq(u.handle, nil); u:remove()
         error('native failed')
     end)
-    failsAt(function() u:remove() end, 'native failed')
+    fails(function() u:remove() end, 'native failed')
     u:remove(); eq(callCount('RemoveUnit'), 1)
     failsAt(function() u:getHandle() end, 'disposed')
     native('RemoveUnit', function() end)

@@ -5,6 +5,7 @@ local Unit = require('wrappers.unit')
 
 ---Damage events for every unit: listeners before armor (DAMAGING) and after armor (DAMAGED). Each phase has one shared
 ---trigger, created by its first listener. Nothing is created at import.
+---@class MoonwellWrappers.Damage
 local Damage = {}
 
 ---The hit's data, read once when the firing starts. Every listener of one firing gets the same table, so a setter's

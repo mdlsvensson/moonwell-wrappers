@@ -10,9 +10,10 @@ local Listeners = {}
 ---@class MoonwellWrappers.ListenerSet
 ---@field register fun(trigger: trigger, key: any) Registers a new key's trigger for its events.
 ---@field route fun(key: any, list: MoonwellWrappers.Cells) The trigger's action.
----@field emptied (fun(key: any))? Runs after the key's last listener is cancelled.
+---@field emptied (fun(key: any))? Runs after the key's last listener is cancelled. It must not raise, and it may run
+---during a firing.
 ---@field lists table<any, MoonwellWrappers.Cells> The listeners of each key; only indexed, never iterated.
----@field triggers table<any, trigger>
+---@field triggers table<any, trigger> The internal trigger of each key; only indexed, never iterated.
 
 ---@param register fun(trigger: trigger, key: any)
 ---@param route fun(key: any, list: MoonwellWrappers.Cells)

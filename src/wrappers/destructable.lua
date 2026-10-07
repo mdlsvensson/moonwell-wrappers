@@ -102,7 +102,7 @@ function Destructable.enumInRect(rect, filter)
         local destructable = registry.wrap(GetEnumDestructable())
         if destructable then destructables[#destructables + 1] = destructable end
     end)
-    return Handle.keep(destructables, filter)
+    return (Handle.keep(destructables, filter))
 end
 
 return Destructable

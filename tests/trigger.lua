@@ -119,7 +119,8 @@ test('new registrations validate before natives', function()
     failsAt(function() t:registerDeathEvent(p) end, 'Trigger.registerDeathEvent: expected Widget wrapper')
     failsAt(function() t:registerChatEvent(u, 'x', true) end, 'Trigger.registerChatEvent: expected Player wrapper')
     failsAt(function() t:registerPlayerEvent(u, {}) end, 'Trigger.registerPlayerEvent: expected Player wrapper')
-    failsAt(function() t:registerUnitStateEvent(p, {}, {}, 1) end, 'Trigger.registerUnitStateEvent: expected Unit wrapper')
+    failsAt(function() t:registerUnitStateEvent(p, {}, {}, 1) end,
+        'Trigger.registerUnitStateEvent: expected Unit wrapper')
     for _, bad in ipairs({-1, math.huge, 0/0, '1'}) do
         failsAt(function() t:registerUnitInRange(u, bad) end,
             'Trigger.registerUnitInRange: expected a finite non-negative range')
@@ -204,6 +205,19 @@ test('a cancel function removes its own action, even mid-firing', function()
     eq(#hits, 1); eq(hits[1], 'first')
     expectCall('TriggerRemoveAction', t.handle, secondNative)
     second(); eq(callCount('TriggerRemoveAction'), 1)
+    t:destroy()
+end)
+
+test('an action that cancels itself inside its own run ran once; the action after it runs every time', function()
+    local t, runs, hits, cancel = Trigger.create(), 0, 0, nil
+    cancel = t:addAction(function() runs = runs + 1; cancel() end)
+    local runFirst, firstNative = actions[#actions], lastAction
+    t:addAction(function() hits = hits + 1 end)
+    local runSecond = actions[#actions]
+    -- Two executions. The second still runs the removed action's native function, as the game may for a queued one.
+    runFirst(); runSecond(); runFirst(); runSecond()
+    eq(runs, 1); eq(hits, 2); eq(#PRINTED, 0)
+    expectCall('TriggerRemoveAction', t.handle, firstNative); eq(callCount('TriggerRemoveAction'), 1)
     t:destroy()
 end)
 

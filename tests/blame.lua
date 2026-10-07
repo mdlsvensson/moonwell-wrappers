@@ -18,8 +18,9 @@
 -- - a check on the value of an argument of the right kind, where it has an error of its own: an options table with a
 --   known key and a wrong value, an empty prefix, a string over a limit, an index outside a count (the fillers are 1,
 --   'text' and true, and the table's one key is no option);
--- - every error that depends on what a native answers ("native returned nil", "no frame named ..."): the stand-in
+-- - an error that depends on what a native answers ("native returned nil", "no frame named ..."): the stand-in
 --   always answers 0;
+-- - a check that an earlier check of the same function masks for every shape;
 -- - code inside a callback that a native would call (an enumeration, a filter, a timer or a trigger action);
 -- - a receiver in a state the suite does not build: a disposed wrapper, a frame the library created, an image
 --   wrapped with fromHandle, a multiboard with rows;
@@ -27,7 +28,7 @@
 --   argument).
 -- The sweep says nothing about any of these: each needs a test in its module's own suite.
 --
--- No function is excepted: one misplaced error, in any function of any class, fails the suite.
+-- No function is excepted: one misplaced error that the sweep provokes, in any function of any class, fails the suite.
 
 -- A constant, so the stand-in does not answer for it: Sync.on reads it once a shape gives it a prefix and a callback.
 bj_MAX_PLAYERS = 24

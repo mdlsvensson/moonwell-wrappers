@@ -102,7 +102,7 @@ function Item.enumInRect(rect, filter)
         local item = registry.wrap(GetEnumItem())
         if item then items[#items + 1] = item end
     end)
-    return Handle.keep(items, filter)
+    return (Handle.keep(items, filter))
 end
 
 return Item

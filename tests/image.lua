@@ -20,6 +20,17 @@ test('images are centered on creation, drawn and shown', function()
     image:destroy()
 end)
 
+test('create and setPosition accept a fraction, zero and a negative coordinate', function()
+    local image = Image.create('aoe.blp', 64, 32, 0.5, -100, 1)
+    expectCall('CreateImage', 'aoe.blp', 64, 32, 0, -31.5, -116, 0, 0, 0, 0, 1)
+    image:setPosition(-0.25, 0); expectCall('SetImagePosition', image.handle, -32.25, -16, 0)
+    image:setPosition(0, -7.5); expectCall('SetImagePosition', image.handle, -32, -23.5, 0)
+    image:destroy()
+    local atZero = Image.create('aoe.blp', 64, 32, 0, 0, 1)
+    expectCall('CreateImage', 'aoe.blp', 64, 32, 0, -32, -16, 0, 0, 0, 0, 1)
+    atZero:destroy()
+end)
+
 test('a wrapped image of unknown size cannot be centered', function()
     local foreign = Image.fromHandle({})
     failsAt(function() foreign:setPosition(0, 0) end,

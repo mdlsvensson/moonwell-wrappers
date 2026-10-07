@@ -6,6 +6,7 @@ local PlayerWrapper = require('wrappers.player')
 ---Synced messages between players. Send from the local player only (inside a local-player branch); listeners run on
 ---every machine, in the same order, some frames after the send. Each prefix has one shared trigger, created by its
 ---first listener and never destroyed. Nothing is created at import.
+---@class MoonwellWrappers.Sync
 local Sync = {}
 
 ---The game cuts longer messages to 255 bytes and still reports success (measured on 3.0.0.24268).

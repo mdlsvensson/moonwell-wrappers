@@ -13,14 +13,17 @@ function fails(fn, fragment)
     assert(tostring(err):find(fragment, 1, true), tostring(err))
 end
 
----Like fails, and the error must point at a line in a test file: wrapper errors blame their caller (spec 2026-09-30
----§2). `fn` must call the wrapper as a statement: `return wrapper(...)` is a tail call and hides the position.
+---Like fails, and the error must point at the line where `fn` is written: wrapper errors blame their caller. `fn`
+---runs in a coroutine of its own, so no frame above it can stand in for it. Write `fn` on one line, and call the
+---wrapper as a statement: `return wrapper(...)` is a tail call and hides the position.
 function failsAt(fn, fragment)
-    local ok, err = pcall(fn)
+    local ok, err = coroutine.resume(coroutine.create(fn))
     assert(not ok, 'expected failure')
     local message = tostring(err)
     assert(message:find(fragment, 1, true), message)
-    assert(message:find('^%./tests/[%w_]+%.lua:%d+: '), 'expected the calling test line in: ' .. message)
+    local info = debug.getinfo(fn, 'S')
+    local at = info.short_src .. ':' .. info.linedefined .. ': '
+    assert(message:sub(1, #at) == at, 'expected the error at ' .. at .. 'got: ' .. message)
 end
 
 function native(name, implementation)

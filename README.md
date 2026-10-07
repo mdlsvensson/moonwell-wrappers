@@ -106,8 +106,7 @@ check behind arguments of two kinds, a check on the value of an argument of the 
 value, an empty prefix, an index outside a count), an error that depends on what a native answers, code inside a
 callback, a receiver in a state the sweep does not build (a disposed wrapper, a multiboard with rows), or a function
 that fails for none of its argument lists. Such errors are not proven by the sweep: each needs a test in its module's
-own suite. Rewrapping the same live handle
-returns the same Lua table while any reference to that wrapper exists.
+own suite. Rewrapping the same live handle returns the same Lua table while any reference to that wrapper exists.
 
 Unit, Item and Destructable use a weak cache: the game removes these on its own (decay, used powerups, dead trees), so a
 wrapper nothing references may be collected, and a later `fromHandle` returns a fresh wrapper. Keep a reference (a
@@ -222,13 +221,13 @@ channel that is not a whole number from 0 to 255. A fraction such as 0.5 raises 
 but `setColor(1, 1, 1, 1)` still passes and sends 1/255 on every channel, alpha included: an almost transparent bolt
 wherever the game draws the colour (the v0.3.0 gate saw no visible change on a Drain Life bolt). Sound volume is 0–127
 and `getDuration()` is in seconds; it can be 0 until the file is loaded, so do not drive synchronized game logic from
-it. Text tag `size` is World Editor's font size; `setVelocity` takes native units.
-`effect:setOrientation(yaw, pitch, roll)` takes degrees and refuses an angle that is not a finite number.
-`Image.create(path, width, height, x, y, imageType)` centres the image on `x, y` and makes it visible; image types are 1
-selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the game cannot load raises
-`[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image (handle id -1), not nil, and the
-wrapper destroys it first. `image:setPosition` also centres, so it fails on an image wrapped with `fromHandle`, whose
-size is unknown. Fog modifiers start stopped.
+it. Text tag `size` is World Editor's font size, and `tag:setVelocity(speed, angle)` takes the speed and angle of
+`TextTag.float`: World Editor speed units and degrees. `effect:setOrientation(yaw, pitch, roll)` takes degrees and
+refuses an angle that is not a finite number. `Image.create(path, width, height, x, y, imageType)` centres the image on
+`x, y` and makes it visible; image types are 1 selection, 2 indicator, 3 occlusion mask and 4 ubersplat. A path the
+game cannot load raises `[wrappers] Image.create: invalid image path`: Warcraft returns an invalid image
+(handle id -1), not nil, and the wrapper destroys it first. `image:setPosition` also centres, so it fails on an image
+wrapped with `fromHandle`, whose size is unknown. Fog modifiers start stopped.
 
 `Item.enumInRect(Rect, filter?)` and `Destructable.enumInRect(Rect, filter?)` return a new dense array of what the
 native enumerates. The filter runs afterwards as ordinary Lua and keeps the objects for which it returns truthy; its
@@ -380,18 +379,18 @@ One set of rules holds for every class:
   `effect:setPlayerColor(Player)`, and the colour of a named part keeps its name (`frame:setTextColor`,
   `multiboard:setTitleColor`).
 - **What the map must destroy is made by `create` or `create<Variant>`** (`FogModifier.createRadius`,
-  `Frame.createByType`); `Effect.attach` and `Rect.worldBounds` are the two other names. Helpers that return nothing
+  `Frame.createByType`, `Rect.createWorldBounds`); `Effect.attach` is the one other name. Helpers that return nothing
   (`TextTag.float`, `Sound.playOnce`, `Effect.flash`) leave nothing to destroy.
-- **New functions take their arguments in the order what, where, callback, options:**
+- **Arguments come in the order what, where, callback, options, after the player or owner where there is one:**
   `WeatherEffect.create(effectId, Rect)`, `dialog:addButton(text, callback?, options?)`,
-  `Input.onKeyDown(Player, key, callback, options?)`. Three older signatures keep their order: the image type comes
-  after the position in `Image.create(path, width, height, x, y, imageType)`, and the owner comes first in
-  `Unit.create(Player, typeId, x, y, facing)` and `FogModifier.createRadius(Player, fogstate, x, y, radius, ...)`.
+  `Input.onKeyDown(Player, key, callback, options?)`. Some older signatures differ, for example
+  `Image.create(..., x, y, imageType)` and `Destructable.create(typeId, x, y, facing, scale, variation)`.
 - **Every function that registers a callback returns a function that cancels it:** `trigger:addAction`,
   `trigger:addCondition`, `frame:on`, `Damage.onDamaging`, `Damage.onDamaged`, `Sync.on` and the five `Input.on…`
   functions. Calling it takes effect at once, even during a firing; calling it again, or after its owner was destroyed,
   does nothing. `Unit.autoDispose` returns its stop function in the same way. The `trigger:register…` methods register
-  events, not callbacks, and return nothing.
+  events, not callbacks, and return nothing. `timer:start` and `dialog:addButton` take a callback that lives with its
+  owner.
 - **Factories and frame lookups raise, queries return nil.** A factory, `Frame.byName`, `Frame.origin`,
   `frame:getChild` and `frame:findChild` raise when there is nothing to return; `getParent`, `getItemInSlot`,
   `group:first`, `Effect.abilityArt`, `fromHandle` and `fromEvent` return nil.
@@ -403,11 +402,12 @@ One set of rules holds for every class:
 - **Errors read `[wrappers] <Class>.<method>: <problem>`,** name the argument (`expected a finite non-negative timeout`,
   `'hotkey' expected a string`) and point at the line that called the wrapper. Wherever the library checks an integer it
   refuses a whole number outside the game's 32-bit range (`2^31`) and accepts an integral float inside it (`5.0`):
-  `Player.fromIndex`, `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`,
-  `Effect.abilityArt`'s index, the index of `Frame.origin` and `frame:getChild` and the context of `Frame.byName`, the
-  counts and cell indices of Multiboard, and options of the `integer` kind and colour options. Other integer arguments
-  (`player:setGold`, `unit:setLevel`, `unit:setMaxLife`) pass to the native as they are. A check for a finite number
-  refuses NaN in the test suites but not in the game, where Warcraft's Lua treats NaN as equal to itself.
+  `Player.fromIndex`, `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`, the
+  inventory slots of Unit, `Effect.abilityArt`'s index, the index of `Frame.origin` and `frame:getChild` and the context
+  of `Frame.byName`, the counts and cell indices of Multiboard, and options of the `integer` kind and colour options.
+  Other integer arguments (`player:setGold`, `unit:setLevel`, `unit:setMaxLife`) pass to the native as they are. A check
+  for a finite number refuses NaN in the test suites but not in the game, where Warcraft's Lua treats NaN as equal to
+  itself.
 
 ## API reference
 
@@ -472,7 +472,7 @@ Each module lists every public function except the common handle methods (`fromH
 
 ### `wrappers.rect`
 
-- `create(minX, minY, maxX, maxY)`, `worldBounds()`
+- `create(minX, minY, maxX, maxY)`, `createWorldBounds()`
 - `getMinX()`, `getMinY()`, `getMaxX()`, `getMaxY()`, `getCenterX()`, `getCenterY()`, `set(minX, minY, maxX, maxY)`,
   `moveTo(x, y)`, `destroy()`
 
@@ -554,7 +554,7 @@ Effect.flash clap, x, y if clap
 
 - `create()`, `float(text, x, y, options?)`
 - `setText(text, size)`, `setColor(r, g, b, a)`, `setPosition(x, y, heightOffset)`,
-  `setPositionOnUnit(Unit, heightOffset)`, `setVelocity(xvel, yvel)`, `setSuspended(flag)`, `setVisible(flag)`,
+  `setPositionOnUnit(Unit, heightOffset)`, `setVelocity(speed, angle)`, `setSuspended(flag)`, `setVisible(flag)`,
   `setVisibleFor(Player)`, `destroy()`
 
 ### `wrappers.sound`
@@ -800,8 +800,8 @@ around it. Inventory slots are zero-based integers below `getInventorySize()`. `
 return nil while the group still holds removed units, so do not loop `while group:first()`; use `forEach` or
 `getUnits()`. Hero methods pass through to the natives, so Warcraft's behavior applies to non-heroes. `isLocal()` is
 true only on that player's machine: never change synchronized game state inside a branch on it. `enumSelected` inherits
-the native's synchronization behavior. `Rect.worldBounds()` allocates a new rect each call; destroy it. SetPlayerName is
-deliberately outside the API.
+the native's synchronization behavior. `Rect.createWorldBounds()` allocates a new rect each call; destroy it.
+SetPlayerName is deliberately outside the API.
 
 Some methods that act also pass the native's result through. `trigger:evaluate()` returns the conditions' boolean
 result. On Unit, `damageTarget`, `modifySkillPoints`, `revive`, `addAbility`, `removeAbility`, `setAbilityPermanent`,

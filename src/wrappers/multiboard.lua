@@ -39,11 +39,6 @@ local function cellOptions(options, operation)
     return o
 end
 
----A count a native returned, as an integer: an integral float (a count set as 3.0) would print as `3.0` in a message.
----@param count integer
----@return integer
-local function whole(count) return math.tointeger(count) or count end
-
 ---Gets one cell (one-based), applies the options in a fixed order and releases the cell handle.
 ---@param raw multiboard
 ---@param row integer
@@ -85,14 +80,19 @@ function Multiboard:getHandle() return (registry.require(self, 'Multiboard.getHa
 ---@return boolean
 function Multiboard:isDisposed() return (registry.isDisposed(self, 'Multiboard.isDisposed')) end
 ---Changes the row count one row at a time, a safeguard: w3ts reports that bigger steps are unsafe (a direct change from
----0 to 5 rows worked in our probe on 3.0.0.24268). The loop is counted, so it ends for any count the check lets by.
+---0 to 5 rows worked in our probe on 3.0.0.24268). The loop stops when the count is reached, which the check guarantees
+---an integer can.
 ---@param count integer
 function Multiboard:setRowCount(count)
     local raw = registry.require(self, 'Multiboard.setRowCount')
     Check.requireInteger(count, 'row count', 'Multiboard.setRowCount', 0, 0)
     local current = MultiboardGetRowCount(raw)
     local step = count >= current and 1 or -1
-    for rows = current + step, count, step do MultiboardSetRowCount(raw, rows) end
+    local rows = current
+    while rows ~= count do
+        rows = rows + step
+        MultiboardSetRowCount(raw, rows)
+    end
 end
 ---@param count integer
 function Multiboard:setColumnCount(count)
@@ -123,8 +123,8 @@ end
 function Multiboard:setCell(row, column, options)
     local raw = registry.require(self, 'Multiboard.setCell')
     local o = cellOptions(options, 'Multiboard.setCell')
-    Check.requireInteger(row, 'row', 'Multiboard.setCell', 0, 1, whole(MultiboardGetRowCount(raw)))
-    Check.requireInteger(column, 'column', 'Multiboard.setCell', 0, 1, whole(MultiboardGetColumnCount(raw)))
+    Check.requireInteger(row, 'row', 'Multiboard.setCell', 0, 1, MultiboardGetRowCount(raw))
+    Check.requireInteger(column, 'column', 'Multiboard.setCell', 0, 1, MultiboardGetColumnCount(raw))
     setCell(raw, row, column, o)
 end
 ---@param row integer From 1.
@@ -132,7 +132,7 @@ end
 function Multiboard:setRow(row, options)
     local raw = registry.require(self, 'Multiboard.setRow')
     local o = cellOptions(options, 'Multiboard.setRow')
-    Check.requireInteger(row, 'row', 'Multiboard.setRow', 0, 1, whole(MultiboardGetRowCount(raw)))
+    Check.requireInteger(row, 'row', 'Multiboard.setRow', 0, 1, MultiboardGetRowCount(raw))
     for column = 1, MultiboardGetColumnCount(raw) do setCell(raw, row, column, o) end
 end
 ---@param column integer From 1.
@@ -140,7 +140,7 @@ end
 function Multiboard:setColumn(column, options)
     local raw = registry.require(self, 'Multiboard.setColumn')
     local o = cellOptions(options, 'Multiboard.setColumn')
-    Check.requireInteger(column, 'column', 'Multiboard.setColumn', 0, 1, whole(MultiboardGetColumnCount(raw)))
+    Check.requireInteger(column, 'column', 'Multiboard.setColumn', 0, 1, MultiboardGetColumnCount(raw))
     for row = 1, MultiboardGetRowCount(raw) do setCell(raw, row, column, o) end
 end
 ---Applies the options to every cell with the whole-board natives.

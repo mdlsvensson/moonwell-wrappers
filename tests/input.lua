@@ -237,6 +237,24 @@ test('a listener added during a firing waits; a failing one is printed and the n
     first(); last(); late()
 end)
 
+test('the last listener of a key cancels itself inside its own firing', function()
+    local who, q, log, cancelSelf = newPlayer(), numbered(), {}, nil
+    cancelSelf = Input.onKeyDown(who, q, function() log[#log + 1] = 'self'; cancelSelf() end)
+    local trigger, action = triggerOf(who, q)
+    press(who, q)
+    eq(table.concat(log, ','), 'self'); eq(trigger.enabled, false)
+    -- The next firing calls nothing, even one the game still delivers to the disabled trigger.
+    release(who, q); press(who, q)
+    event = {player = who.handle, down = true, meta = 0}
+    action.callback()
+    eq(table.concat(log, ','), 'self'); eq(#PRINTED, 0)
+    local again = Input.onKeyDown(who, q, function() log[#log + 1] = 'again' end)
+    eq(trigger.enabled, true); eq(callCount('CreateTrigger'), 1)
+    release(who, q); press(who, q)
+    eq(table.concat(log, ','), 'self,again'); eq(#PRINTED, 0)
+    again()
+end)
+
 test('arguments are checked at the caller, before any native', function()
     local who, q = newPlayer(), numbered()
     resetCalls()

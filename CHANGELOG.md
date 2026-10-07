@@ -3,10 +3,10 @@
 ## Unreleased
 
 A refactor for one set of conventions (spec `2026-10-06-moonwell-wrappers-refactor-0.10-design` in the workspace). It
-renames calls, changes three units and replaces every listener token by a cancel function. What the library can do
+renames calls, changes four units and replaces every listener token by a cancel function. What the library can do
 is unchanged: no wrapper, method or covered native is new. A map on moonwell-systems needs its 0.6 with this version.
 
-Four 0.9 calls keep their names, so they still run, and nothing in the editor flags them. Check them first, in every
+Five 0.9 calls keep their names, so they still run, and nothing in the editor flags them. Check them first, in every
 file of the map:
 
 - **`lightning:setColor(1, 1, 1, 1)`, the commonest 0.9 call, still passes and now sends 1/255 on every channel, alpha
@@ -20,6 +20,10 @@ file of the map:
   always returns a float.
 - **`effect:setColor(r, g, b, a)` sets the alpha with its fourth argument.** 0.9 ignored that argument; a call that
   passes one now changes the effect's alpha. Without it nothing changes, as before.
+- **`tag:setVelocity(speed, angle)` takes the speed and angle of `TextTag.float`.** An old
+  `tag:setVelocity(xvel, yvel)` still runs and now reads its two numbers as a World Editor speed and an angle in
+  degrees, so the tag barely moves. Pass the World Editor speed and the angle: `tag:setVelocity(64, 90)` rises as a
+  default `TextTag.float` does.
 
 The full table of renamed calls and the list of newly refused arguments are in the repository's CHANGELOG, under
 "Migrating from 0.9" and "Behaviour that changed without a rename".
@@ -30,10 +34,11 @@ What changed, in short:
   ability setters replace `show(flag)`, `enable`, `disable`, `pause(flag)`, `minimize(flag)` and their kin. Verbs
   without a flag stay actions (`timer:pause()`, `dialog:show(Player)`).
 - **One unit per quantity:** colour channels 0 to 255, angles in degrees, times in seconds. `lightning:setColor`,
-  `effect:setOrientation` and `sound:getDuration` change their unit.
+  `effect:setOrientation`, `sound:getDuration` and `tag:setVelocity` change their unit.
 - **`setColor(r, g, b, a)` is always a tint** (on Effect the alpha may be left out); a unit's player colour is
   `setPlayerColor`.
-- **Factories are `create` or `create<Variant>`, and arguments come as what, where, callback, options.**
+- **Factories are `create` or `create<Variant>`** (`Effect.attach` is the one other name), **and arguments come as
+  what, where, callback, options,** after the player or owner where there is one; some older signatures differ.
 - **Every function that registers a callback returns a function that cancels it.** `removeAction`, `removeCondition`,
   `frame:off`, `Damage.off`, `Sync.off` and `Input.off` are gone, and so are the classes `TriggerAction`,
   `TriggerCondition`, `FrameHandler`, `DamageListener`, `SyncListener` and `InputListener`; the return type is
@@ -42,7 +47,7 @@ What changed, in short:
 ### Migrating from 0.9
 
 Every renamed method is gone under its old name, so a call that still uses it fails with Lua's
-`attempt to call a nil value` at the calling line, and the editor flags it. The four calls that keep their names and
+`attempt to call a nil value` at the calling line, and the editor flags it. The five calls that keep their names and
 change meaning are listed at the top of this section. Three more old calls keep their names or shapes and are refused
 loudly:
 
@@ -70,7 +75,9 @@ loudly:
 | `lightning:setColor(r, g, b, a)` with 0 to 1 | the same call with 0 to 255 |
 | `effect:setOrientation(yaw, pitch, roll)` in radians | the same call in degrees |
 | `sound:getDuration()` in milliseconds | the same call in seconds |
+| `tag:setVelocity(xvel, yvel)` in native units | `tag:setVelocity(speed, angle)`: World Editor speed, degrees |
 | `FogModifier.radius(...)` / `FogModifier.rect(...)` | `FogModifier.createRadius(...)` / `FogModifier.createRect(...)` |
+| `Rect.worldBounds()` | `Rect.createWorldBounds()` |
 | `WeatherEffect.create(rect, effectId)` | `WeatherEffect.create(effectId, rect)` |
 | `dialog:addButton(text, options, callback)` | `dialog:addButton(text, callback, options)` |
 | `token = trigger:addAction(f)` then `trigger:removeAction(token)` | `cancel = trigger:addAction(f)` then `cancel()` |
@@ -88,10 +95,10 @@ loudly:
   after the frame was destroyed, raised `... is disposed`. Calling it twice does nothing either.
 - **Integers are bounded.** Wherever the library checks an integer, a whole number outside the game's 32-bit range
   (`2^31`, `1e300`) is refused, and an integral float inside it (`5.0`) is accepted. The checks are: `Player.fromIndex`,
-  `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`, `Effect.abilityArt`'s index, the
-  index of `Frame.origin` and `frame:getChild` and the context of `Frame.byName`, the counts and cell indices of
-  Multiboard, and options of the `integer` kind and colour options. Other integer arguments, such as `player:setGold`,
-  `unit:setLevel` and `unit:setMaxLife`, are passed to the native as they were.
+  `addGold` and `addLumber`, the channels of `unit:setColor` and `lightning:setColor`, the inventory slots of Unit,
+  `Effect.abilityArt`'s index, the index of `Frame.origin` and `frame:getChild` and the context of `Frame.byName`, the
+  counts and cell indices of Multiboard, and options of the `integer` kind and colour options. Other integer arguments,
+  such as `player:setGold`, `unit:setLevel` and `unit:setMaxLife`, are passed to the native as they were.
 - **Multiboard.** `Multiboard.create(rows, columns)`, `setRowCount` and `setColumnCount` take a whole number from 0 to
   2147483647, and `setCell`, `setRow` and `setColumn` a row or column that is a whole number from 1 to the board's
   count. `setRowCount(2^31)` raised nothing and never returned in 0.9, and a column count of that size went to the game
@@ -122,8 +129,8 @@ loudly:
   (`expected a finite width`, `height`, `x`, `y`), `image:setPosition` (`x`, `y`), `tag:setText` (`size`),
   `player:addGold` and `player:addLumber` (`expected an integer amount`). A numeric string such as `'64'` (Lua's
   arithmetic used to coerce it) and infinity are refused as well, and NaN outside the game (in Warcraft's Lua NaN equals
-  itself, so the check cannot see it); fractions, zero and negative numbers pass as
-  before, except for the two amounts, which must be whole.
+  itself, so the check cannot see it); fractions, zero and negative numbers pass as before, except for the two amounts,
+  which must be whole.
 - **New refusals.** `Lightning.create` refuses a code that is not a string (`expected a lightning code`), as Effect's
   constructors refuse a model. `lightning:setColor` refuses a channel that is not a whole number from 0 to 255 (a
   fraction, a value above 255 or below 0, a missing alpha, a numeric string), `unit:setColor` anything but four whole

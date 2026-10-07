@@ -47,6 +47,9 @@ Damage.onDamaged(function(event) event:setDamageType(DAMAGE_TYPE_UNIVERSAL) end)
 Sync.on('load', function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch
 Group.create():add(Sync.on('load', function() end)) -- EXPECT param-type-mismatch
 local Input = require('wrappers.input')
+Damage.off(1) -- EXPECT undefined-field
+Sync.off(1) -- EXPECT undefined-field
+Input.off(1) -- EXPECT undefined-field
 local WeatherEffect = require('wrappers.weathereffect')
 local owner = PlayerWrapper.fromIndex(0)
 Input.onKeyDown(owner, OSKEY_Q, function(player) Group.create():add(player) end) -- EXPECT param-type-mismatch

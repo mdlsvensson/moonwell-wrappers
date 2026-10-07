@@ -1,5 +1,4 @@
 ---@class MoonwellWrappers.Registry<T, H>
----@field name string
 ---@field wrap fun(raw: H?): T?
 ---@field require fun(value: unknown, operation: string, depth: integer?): H
 ---@field dispose fun(value: unknown, operation: string): H?
@@ -33,7 +32,7 @@ function Handle.new(class, name, options)
     options = options or {}
     local byHandle = options.weak and setmetatable({}, {__mode = 'v'}) or {}
     local members = setmetatable({}, {__mode = 'k'})
-    local registry = {name = name}
+    local registry = {}
     class.__index = class
     local function expected(operation) return '[wrappers] ' .. operation .. ': expected ' .. name .. ' wrapper' end
     local function disposed(operation) return '[wrappers] ' .. operation .. ': ' .. name .. ' is disposed' end
@@ -99,13 +98,13 @@ end
 
 ---Converts a wrapper argument without importing its module: a caller holding one has loaded it. Errors point at the
 ---caller of the public function (level 3), plus `depth` for helper frames in between. Each overload gives the handle
----type of one class name, so a native call is checked against what was unwrapped; a name without one gives `any`.
+---type of one class name, so a native call is checked against what was unwrapped; a name without an overload is a
+---type error.
 ---@param value unknown
----@param name string
+---@param name 'Player'
 ---@param operation string
 ---@param depth integer?
----@return any
----@overload fun(value: unknown, name: 'Player', operation: string, depth: integer?): player
+---@return player
 ---@overload fun(value: unknown, name: 'Unit', operation: string, depth: integer?): unit
 ---@overload fun(value: unknown, name: 'Item', operation: string, depth: integer?): item
 ---@overload fun(value: unknown, name: 'Rect', operation: string, depth: integer?): rect
@@ -165,7 +164,7 @@ end
 
 ---True for the invalid handle Warcraft returns in place of nil when CreateImage is given a path it cannot load or
 ---AddWeatherEffect an id it does not know: its handle id is -1. The id is only compared with -1, which every machine
----gets for the same bad argument; no other handle id is read.
+---gets for the same bad argument; this function reads no other handle id.
 ---@param raw handle?
 ---@return boolean
 function Handle.invalid(raw) return raw ~= nil and GetHandleId(raw) == -1 end

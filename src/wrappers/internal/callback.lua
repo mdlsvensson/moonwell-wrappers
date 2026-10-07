@@ -23,6 +23,7 @@ end
 ---@param label string
 ---@param message unknown
 local function report(label, message)
+    -- The error object is the map's own, so tostring and its __tostring are meant here.
     local printable, text = pcall(tostring, message)
     print('[wrappers] ' .. label .. ' failed: ' .. (printable and text or '<unprintable error>'))
 end

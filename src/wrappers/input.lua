@@ -7,6 +7,7 @@ local PlayerWrapper = require('wrappers.player')
 ---Keyboard and mouse input of one player. The events are synced: listeners run on every machine, in the same order,
 ---some frames after the input, so they may change game state. Each player and key, and each player and kind of mouse
 ---event, has one shared trigger, created by its first listener. Nothing is created at import.
+---@class MoonwellWrappers.Input
 local Input = {}
 
 ---@class MoonwellWrappers.InputSource

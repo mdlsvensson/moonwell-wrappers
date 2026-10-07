@@ -20,14 +20,14 @@ end
 ---@param value unknown
 ---@return boolean
 function Check.positive(value)
-    return type(value) == 'number' and value == value and value > 0 and value ~= math.huge
+    return type(value) == 'number' and value > 0 and value ~= math.huge
 end
 
 ---A finite number of at least 0.
 ---@param value unknown
 ---@return boolean
 function Check.nonNegative(value)
-    return type(value) == 'number' and value == value and value >= 0 and value ~= math.huge
+    return type(value) == 'number' and value >= 0 and value ~= math.huge
 end
 
 ---A number without a fraction that a game integer can hold. A float that holds a whole number (5.0) counts; a whole
@@ -101,6 +101,9 @@ end
 function Check.requireInteger(value, name, operation, depth, min, max)
     if not Check.integer(value) or (min ~= nil and value < min) or (max ~= nil and value > max) then
         local description = 'an integer ' .. name
+        -- A bound held as a float (3.0) reads as the integer it is.
+        if min ~= nil then min = math.tointeger(min) or min end
+        if max ~= nil then max = math.tointeger(max) or max end
         if min ~= nil and max ~= nil then
             description = description .. ' from ' .. min .. ' to ' .. max
         elseif min ~= nil then

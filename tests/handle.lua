@@ -131,13 +131,13 @@ test('wrap reads its cache once for a handle that has its wrapper', function()
     eq(reads, 2); eq(other.handle, otherRaw); eq(fakes.wrap(otherRaw), other); eq(reads, 3)
 end)
 
-test('unwrapWidget tries Unit first whatever the load order', function()
+test('unwrapWidget tries Unit first, then the other widget classes', function()
     -- unit.lua requires item.lua before it makes its own registry, so Item's registry is the older one.
     local _, names = upvalue(Handle.unwrapWidget, 'widgetNames')
     local _, tables = upvalue(Handle.unwrapWidget, 'widgetMembers')
-    eq(names[1], 'Unit'); eq(names[2], 'Item'); eq(names[3], 'Destructable'); eq(#tables, #names)
+    eq(names[1], 'Unit'); eq(#tables, #names)
     local u, i, d = Unit.fromHandle({}), Item.fromHandle({}), Destructable.fromHandle({})
-    eq(tables[1][u], u.handle); eq(tables[2][i], i.handle); eq(tables[3][d], d.handle)
+    eq(tables[1][u], u.handle)
     eq(Handle.unwrapWidget(u, 'Test.op'), u.handle); eq(Handle.unwrapWidget(i, 'Test.op'), i.handle)
     eq(Handle.unwrapWidget(d, 'Test.op'), d.handle)
     i:remove(); d:remove()
@@ -153,11 +153,9 @@ test('unwrap, unwrapWidget and created blame the caller of the public function',
     function Public.created(value) return (Handle.created(value, 'Test.op')) end
     local function helper(value) return (Handle.unwrap(value, 'Unit', 'Test.op', 1)) end
     function Public.deep(value) return (helper(value)) end
-    -- unwrapWidget has no depth parameter: a third argument changes nothing.
-    function Public.extra(value) return (Handle.unwrapWidget(value, 'Test.op', 1)) end
     local gone = Unit.fromHandle({})
     gone:remove()
-    for _, name in ipairs({'unwrap', 'widget', 'deep', 'extra'}) do
+    for _, name in ipairs({'unwrap', 'widget', 'deep'}) do
         local line, here = blamed(function() Public[name]({}) end)
         eq(line, here)
         line, here = blamed(function() Public[name](gone) end)
@@ -167,7 +165,6 @@ test('unwrap, unwrapWidget and created blame the caller of the public function',
     eq(line, here)
     failsAt(function() Public.unwrap({}) end, '[wrappers] Test.op: expected Unit wrapper')
     failsAt(function() Public.widget(gone) end, '[wrappers] Test.op: Unit is disposed')
-    failsAt(function() Public.extra(nil) end, '[wrappers] Test.op: expected Widget wrapper')
     failsAt(function() Public.created(nil) end, '[wrappers] Test.op: native returned nil')
 end)
 

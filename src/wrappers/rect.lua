@@ -20,8 +20,8 @@ function RectWrapper.create(minX, minY, maxX, maxY)
 end
 ---GetWorldBounds allocates a new rect on every call: the result is owned; destroy it.
 ---@return MoonwellWrappers.Rect
-function RectWrapper.worldBounds()
-    return (Handle.created(RectWrapper.fromHandle(GetWorldBounds()), 'Rect.worldBounds'))
+function RectWrapper.createWorldBounds()
+    return (Handle.created(RectWrapper.fromHandle(GetWorldBounds()), 'Rect.createWorldBounds'))
 end
 ---@return rect
 function RectWrapper:getHandle() return (registry.require(self, 'Rect.getHandle')) end

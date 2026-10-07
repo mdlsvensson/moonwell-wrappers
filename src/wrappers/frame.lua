@@ -70,13 +70,15 @@ local function newState(kind, owner, context)
     return {kind = kind, owner = owner, context = context, children = {}, parts = {}, lists = {}, byType = {}}
 end
 
----Wraps a raw handle the game gave us. A new frame becomes a part of `owner`, or borrowed when `owner` is nil. A known
----frame keeps its wrapper and its kind, with one exception that only getChild and findChild ask for (`convert`): a
----borrowed frame they find through an owned frame is a template part that Frame.byName or Frame.fromHandle reached
----first, so it becomes a part of `owner`. That is sound for those two: a direct child is in the owner's subtree, and
----so is a name found in the owner's create context. getParent never converts, because a parent is not in the subtree
----(a part may have been moved under a frame of the game's), and a frame from Frame.origin is the game's, so no path
----converts it.
+---Wraps a raw handle the game gave us. A new frame becomes a part of `owner`, or borrowed when `owner` is nil; a new
+---frame that getParent reaches from a part becomes a part too, of that part's owner. A known frame keeps its wrapper
+---and its kind, with one exception that only getChild and findChild ask for (`convert`): a borrowed frame they find
+---through an owned frame is a template part that Frame.byName or Frame.fromHandle reached first, so it becomes a part
+---of `owner`. That is sound for those two: a direct child is in the owner's subtree, and so is a name found in the
+---owner's create context, unless raw code created or moved a frame with that context. getParent never converts,
+---because a parent need not be in the subtree (a part may have been moved under a frame of the game's), and a frame
+---from Frame.origin is the game's, so no path converts it. An owned frame created under a part while that part was
+---still borrowed stays a root: converting the part does not move it under the owner.
 ---@param raw framehandle
 ---@param owner MoonwellWrappers.Frame?
 ---@param convert boolean? True when a known borrowed frame may become a part of `owner`.
@@ -130,7 +132,6 @@ end
 local function releaseEvents(state)
     local lists = state.lists
     for index = 1, #lists do Cells.clear(lists[index]) end
-    state.lists, state.byType = {}, {}
     if state.trigger then DestroyTrigger(state.trigger) end
 end
 

@@ -30,6 +30,16 @@ local floatFields = {
 ---@return number
 local function height(size) return size * 0.023 / 10 end
 
+---The speed and angle of World Editor, as the two components the native takes.
+---@param speed number
+---@param angle number
+---@return number xvel
+---@return number yvel
+local function velocity(speed, angle)
+    local native, radians = speed * 0.071 / 128, math.rad(angle)
+    return native * math.cos(radians), native * math.sin(radians)
+end
+
 ---@param raw texttag?
 ---@return MoonwellWrappers.TextTag?
 ---@overload fun(raw: nil): nil
@@ -59,8 +69,7 @@ function TextTag.float(text, x, y, options)
     SetTextTagText(raw, text, height(o.size))
     SetTextTagPos(raw, x, y, o.heightOffset)
     SetTextTagColor(raw, o.color[1], o.color[2], o.color[3], o.color[4])
-    local velocity, radians = o.speed * 0.071 / 128, math.rad(o.angle)
-    SetTextTagVelocity(raw, velocity * math.cos(radians), velocity * math.sin(radians))
+    SetTextTagVelocity(raw, velocity(o.speed, o.angle))
     SetTextTagVisibility(raw, o.player == nil or o.player == GetLocalPlayer())
 end
 ---@return texttag
@@ -92,9 +101,14 @@ function TextTag:setPositionOnUnit(unit, heightOffset)
     local raw = registry.require(self, 'TextTag.setPositionOnUnit')
     SetTextTagPosUnit(raw, Handle.unwrap(unit, 'Unit', 'TextTag.setPositionOnUnit'), heightOffset)
 end
----@param xvel number Native units.
----@param yvel number Native units.
-function TextTag:setVelocity(xvel, yvel) SetTextTagVelocity(registry.require(self, 'TextTag.setVelocity'), xvel, yvel) end
+---@param speed number World Editor speed units, as in TextTag.float.
+---@param angle number Direction of travel in degrees.
+function TextTag:setVelocity(speed, angle)
+    local raw = registry.require(self, 'TextTag.setVelocity')
+    Check.requireFinite(speed, 'speed', 'TextTag.setVelocity')
+    Check.requireFinite(angle, 'angle', 'TextTag.setVelocity')
+    SetTextTagVelocity(raw, velocity(speed, angle))
+end
 ---@param flag boolean
 function TextTag:setSuspended(flag) SetTextTagSuspended(registry.require(self, 'TextTag.setSuspended'), flag) end
 ---@param flag boolean

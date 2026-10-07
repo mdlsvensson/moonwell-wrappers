@@ -11,4 +11,5 @@ SetUnitPosition(CreateUnit(Player(0), 1751543663, 0, 0, 0), position())
 local Handle = require('wrappers.internal.handle')
 SetUnitX(Handle.unwrap(nil, 'Unit', 'Test.op'), 0)
 SetUnitX(Handle.unwrap(nil, 'Item', 'Test.op'), 0) -- EXPECT param-type-mismatch
+Handle.unwrap(nil, 'Unti', 'Test.op') -- EXPECT param-type-mismatch
 return true
