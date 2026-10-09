@@ -372,10 +372,10 @@ presentationGate = (owner) ->
       TextTag.float "Wrapper float for another player", 0, 150, player: other
 
   -- Chain Lightning (CLPB) faded right after creation in an earlier gate run; Drain Life is expected to stay.
-  step "Look: a lightning bolt below the footman, and it stays", ->
+  step "Look: a beam of light (Drain Life) below the footman, and it stays", ->
     bolt = Lightning.create "DRAL", -300, -250, 60, 300, -250, 60
     nil
-  step "Look: the bolt is now above the footman", ->
+  step "Look: the beam is now above the footman", ->
     bolt\move -300, 250, 60, 300, 250, 60
     bolt\setColor 255, 0, 0, 255
     -> bolt\destroy!
@@ -397,7 +397,7 @@ presentationGate = (owner) ->
     splat\finish!
     -> splat\destroy!
 
-  step "Look: left of the footman, a red see-through footman, sideways, in the air, attacking slowly", ->
+  step "Look: left of the footman, a red see-through footman with its back to you, in the air, attacking slowly", ->
     tinted = Effect.create "units\\human\\Footman\\Footman.mdl", -400, 0
     tinted\setColor 255, 0, 0, 160
     tinted\setTimeScale 0.5
@@ -414,17 +414,23 @@ presentationGate = (owner) ->
   step "Look: a thunder clap flashes on the footman itself, again and again", ->
     again 2, -> Effect.flashOn clap, marker, "origin"
 
-  step "Look at the minimap: a lit circle towards the top right", ->
-    near = FogModifier.createRadius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
+  step "Look at the minimap: a lit circle far out towards the top right", ->
+    near = FogModifier.createRadius owner, FOG_OF_WAR_VISIBLE, 2400, 2400, 400, true, false
     near\start!
     -> near\destroy!
-  step "Look at the minimap: a lit square towards the bottom left", ->
-    area = Rect.create -1200, -1200, -900, -900
+  step "Look at the minimap: a lit square far out towards the bottom left", ->
+    area = Rect.create -2800, -2800, -2000, -2000
     far = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, area, true, false
     far\start!
-  step "Look at the minimap: the square is no longer lit", ->
+  -- A stopped modifier leaves its area explored, so the eye may see no change: the file says whether the square's
+  -- middle is still in sight. Each line is printed a step after the change, when the game has redrawn its fog.
+  inSight = -> IsVisibleToPlayer -2400, -2400, owner\getHandle!
+  step "Look at the minimap: the square is darker than before, or looks the same", ->
+    print "Wrapper fog square in sight before the stop", inSight!
     far\stop!
     ->
+      fogged = IsFoggedToPlayer -2400, -2400, owner\getHandle!
+      print "Wrapper fog square in sight after the stop", inSight!, "fogged", fogged
       far\destroy!
       area\destroy!
 

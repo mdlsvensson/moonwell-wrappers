@@ -157,7 +157,7 @@ says.
    - 1 to 3, text tags: a yellow `Wrapper text tag` up and left of the footman; it jumps onto the footman and reads
      `Wrapper tag moved`; `Wrapper float` rises and fades, shown again every three seconds, and
      `Wrapper float for another player` never appears.
-   - 4 and 5, lightning: a drain-life bolt below the footman that stays (chain lightning faded right after creation
+   - 4 and 5, lightning: a Drain Life beam below the footman that stays (chain lightning faded right after creation
      in an earlier run); it moves above the footman (its `setColor` red showed no visible change on 3.0.0.24268; see
      README).
    - 6 to 8, image: the area-of-effect circle under the footman; it turns green and moves up; it disappears
@@ -167,7 +167,9 @@ says.
      90), raised and attacking; a Footman model in blue (player 2's colour) in its place; a thunder clap that flashes
      below the footman, then one on the footman, each shown again every two seconds.
    - 15 to 17, fog modifiers on the minimap: a revealed circle towards the top right; a revealed square towards the
-     bottom left; the square's reveal ends.
+     bottom left; the square's modifier is stopped. A stopped modifier leaves its area explored, and on 3.0.0.24268
+     the square looked as lit as before (v0.10.0 gate), so the file says it: `Wrapper fog square in sight before the
+     stop <bool>` and, a step later, `Wrapper fog square in sight after the stop <bool> fogged <bool>` (record them).
    - 18 to 23, sounds, each played once as its step begins: the warning sound (`Wrapper sound play`); a knight's
      voice (`Wrapper sound duration after play <n>`, record whether it differs from the start value, then
      `Wrapper playOnce first call`); the knight's voice again (`Wrapper playOnce second call`); the footman voice
