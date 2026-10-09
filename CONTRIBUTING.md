@@ -95,15 +95,18 @@ The map is built with `moonwell build --entry src/main.yue` (`--minify` for a mi
 "Building a throwaway gate map") writes these files and builds the map; this section stands without it. One map is built
 per run. The runs are the seven switches near the top of the example (`probes = false` and the six lines after it):
 `core` leaves them all false (steps 2 to 5), and `probes` (step 6), `presentation` (step 7), `ui` (step 8), `frames`
-(step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to `true`. A printed line
-shows on screen for a few seconds: take a screenshot, or read the file that the additions and dispose runs also write.
+(step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to `true`.
 
-1. The gate starts just after the map loads (times below count from there). Play each run until
-   `Wrapper weak cache probe` prints (about 50 seconds); the presentation run (step 7) never prints it and ends at about
-   20 seconds with `Wrapper presentation cleanup passed`; the classic UI run (step 8) never prints it either and ends
-   about 45 seconds after its dialog is destroyed, with `Wrapper ui cleanup passed`; the frames run (step 9) never
-   prints it either and ends when you click its `Close` button. Then read the whole message log (F12); opening it pauses
-   a single-player game.
+Every run writes each line it prints to `Documents\Warcraft III\CustomMapData\moonwell-wrappers-gate.pld`, written
+anew at every line, so a run is read from that file afterwards and needs no screenshot. A run with something to watch
+(presentation, classic UI, frames, and the rain of the additions run) shows one thing at a time: one line on screen
+says what to look for or to do, `Step 4 of 23. Look: … Then press Esc.`, and Esc goes on to the next. The file has a
+line for each step that was reached; what the maintainer reports is the number of a step that did not look as its line
+says.
+
+1. The gate starts just after the map loads (times below count from there). Play the `core` and `probes` runs until
+   `Wrapper weak cache probe` prints (about 50 seconds). The presentation, classic UI and frames runs end when their
+   last step is left with Esc, and say so on screen. Then read the run's file.
 2. Foundation (as in v0.1.0): the footman appears, moves, changes life and color (disable ally color mode with Alt+A if
    needed), and the attached effect appears. `Wrapper group size` prints at start. Timer and trigger ticks print every
    second; `Wrapper unit death event` prints at tick 3; `Wrapper gate cleanup passed` prints at tick 5 and no later
@@ -146,66 +149,79 @@ shows on screen for a few seconds: take a screenshot, or read the file that the 
      runs and the second runs once.
 
    Restore `probes = false`.
-7. Presentation (v0.3.0): set `presentation = true` and run again; only the presentation gate runs, around the map
-   centre, and a fog modifier reveals that area. At start `Wrapper presentation started; sound duration <n>` prints
-   (record `n`; 0 can mean the file was not loaded yet; it is in seconds since v0.10.0), then
-   `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2`. Visible at once: a yellow `Wrapper text tag` upper
-   left; a drain-life lightning bolt below the footman that stays (chain lightning faded right after creation in an
-   earlier run); the area-of-effect circle centred under the footman; a building-base splat upper right; a red,
-   half-transparent, slowed Footman model turned 90 degrees (yaw 90) from the blue one, raised and attacking, and a blue
-   (player 2 colour) Footman model beside it; the potions and two trees further up and left. The minimap shows a
-   revealed circle towards the top right and a revealed square towards the bottom left.
-   `Wrapper float for another player` never appears. At 2 s `Wrapper float` rises and fades, and the warning sound plays
-   (`Wrapper sound play`). At 4 s `Wrapper sound duration after play <n>` prints (record whether it differs from the
-   start value), the sound stops, `Wrapper playOnce first call` prints and a knight's voice plays. If it is silent then
-   but audible at 6 s (`Wrapper playOnce second call`), record first-play silence (spec §5.2) and stop: the fix is
-   decided with the maintainer before release. At 8 s the footman voice plays from the centre (`Wrapper 3D sound`). At
-   10 s `Wrapper playFor and playOnce for another player` prints and nothing plays (playOnce for another player plays at
-   volume 0 locally). At 12 s (`Wrapper presentation changed`): the tag jumps to the footman and reads
-   `Wrapper tag moved`, the bolt moves above the footman (its `setColor` red showed no visible change on 3.0.0.24268;
-   see README), the circle turns green and moves up, the splat fades out, the bottom-left reveal ends and a thunder clap
-   flashes below the footman. At 14 s the circle disappears and a thunder clap flashes on the footman
-   (`Wrapper image hidden`). At 16 s `Wrapper playOnce 3D` prints and a footman voice plays from the centre; if it is
-   silent while the 8 s voice was audible, record it: `playOnce` may need default sound distances (spec §5.2), decided
-   with the maintainer before release. At 20 s everything disappears and `Wrapper presentation cleanup passed` prints.
-   If a sound, model or splat never appears or plays in any run, its path or name may not exist in this game version:
-   substitute one from World Editor and record it. Record whether the bolt stays visible and moves at 12 s. Restore
-   `presentation = false`.
-8. Classic UI (v0.4.0): set `ui = true` and run again; only the classic UI gate runs. A dialog titled `Wrapper dialog`
-   appears with `Keyed (K)`, `Plain` and `Rebuild` (`Wrapper dialog shown: ...` prints). Press K: the dialog closes,
-   `Wrapper dialog keyed by <your name>` prints and the dialog comes back half a second later. Click `Plain`:
-   `Wrapper dialog plain by <your name>`. Click `Rebuild`: `Wrapper dialog rebuilt` prints and the dialog comes back
-   with only `After clear` and `Destroy dialog`. Click `After clear`: `Wrapper dialog after clear by <your name>`. Click
-   `Destroy dialog`: `Wrapper dialog destroyed from its own button` prints, the dialog never comes back, and no
-   `[wrappers] ... failed` line prints. Times below count from that click. At once a multiboard titled
-   `Wrapper multiboard` (yellow) appears top right with 3 × 3 cells: a yellow `Name` and `Kills` in row 1; `Footman`
-   with its icon in row 2; `Row 3` in row 3; footman icons down column 3; a wider first column.
-   `Wrapper multiboard Wrapper multiboard 3 3` prints. At 3 s it grows to 6 rows with `Row 6` in the last
-   (`Wrapper multiboard rows 6`); at 6 s it shrinks to 2 (`Wrapper multiboard rows 2`); at 9 s it minimizes to its
-   title; at 12 s it expands, then disappears (`Wrapper multiboard hidden for another player`). At 15 s a leaderboard
-   titled `Wrapper leaderboard` (yellow) appears with `Other 9` (blue value) above `You 5`;
-   `Wrapper leaderboard items 2` prints. At 18 s `You (12)` moves to the top and the icons disappear. At 21 s `Other` is
-   removed and the board shrinks to one row (`Wrapper leaderboard items 1 has other false`). At 24 s the leaderboard
-   disappears, the quest button flashes and `Wrapper quests created: open the quest log (F9)` prints: the log lists
-   `Wrapper quest` (required, footman icon, two items), `Wrapper optional quest` (optional) and the defeat condition
-   `Wrapper defeat condition`. At 27 s the first item shows as completed (`Wrapper quest item completed true`); at 30 s
-   the quest shows completed and the optional quest failed (`Wrapper quest completed true optional failed true`). At 33
-   s a timer dialog `Wrapper timer dialog` (yellow title, green time) counts down from about 1:00; at 36 s it counts
-   faster (`speed 4`; record what it shows); at 39 s it shows about 0:10; at 42 s it disappears. At 45 s
-   `Wrapper ui cleanup passed; quest item disposed true` prints and the quests leave the log. Restore `ui = false`.
-9. Frames (v0.5.0): set `frames = true` and run again; only the frames gate runs.
-   `Wrapper frames shown: <name> children <n>` prints (record both). A panel appears in the centre with a yellow title
-   `Wrapper frames`, a `Click me` button, an edit box, a slider, a check box and a `Close` button; a footman icon
-   appears top left; `ERROR visible for another player` never appears. Hovering `Click me` shows `Wrapper tooltip`.
-   Clicking it prints `Wrapper frame clicked by <your name> count 1` (then 2, …); right after a click, pressing Enter
-   opens the chat box (focus was released). Typing in the edit box and pressing Enter prints
-   `Wrapper edit box enter by <your name> <text>`. Dragging the slider prints `Wrapper slider value <n>`. Ticking and
-   unticking the check box print `Wrapper checkbox checked by <your name>` and `... unchecked ...`. At 5 s the footman
-   icon jumps into the panel's top right (`Wrapper badge moved into the panel`); click `Close` only after that. Clicking
-   `Close` removes the panel and the icon, prints `Wrapper frames closed; badge disposed true button disposed true`, and
-   no `[wrappers] ... failed` line prints. Restore `frames = false`. The probes that came before the first classic UI
-   and frames gates (ui-init and frame-init) went with the old gate map; their answers are in the v0.4.0 and v0.5.0
-   records below.
+7. Presentation (v0.3.0): set `presentation = true`; only the presentation gate runs, at the map centre, where a
+   footman stands and a fog modifier reveals the area. The file starts with
+   `Wrapper presentation started; sound duration <n>` (record `n`, in seconds since v0.10.0; 0 can mean the file was
+   not loaded yet), `Wrapper enumerated potions 2` and `Wrapper enumerated trees 2` (three items and two trees are
+   created, counted and removed at once). Then 23 steps, one thing each, Esc for the next:
+   - 1 to 3, text tags: a yellow `Wrapper text tag` up and left of the footman; it jumps onto the footman and reads
+     `Wrapper tag moved`; `Wrapper float` rises and fades, shown again every three seconds, and
+     `Wrapper float for another player` never appears.
+   - 4 and 5, lightning: a drain-life bolt below the footman that stays (chain lightning faded right after creation
+     in an earlier run); it moves above the footman (its `setColor` red showed no visible change on 3.0.0.24268; see
+     README).
+   - 6 to 8, image: the area-of-effect circle under the footman; it turns green and moves up; it disappears
+     (`setVisibleFor` another player).
+   - 9 and 10, ubersplat: a building-base splat up and right of the footman; it fades out.
+   - 11 to 14, effects: a red, half-transparent, slowed Footman model left of the footman, turned 90 degrees (yaw
+     90), raised and attacking; a Footman model in blue (player 2's colour) in its place; a thunder clap that flashes
+     below the footman, then one on the footman, each shown again every two seconds.
+   - 15 to 17, fog modifiers on the minimap: a revealed circle towards the top right; a revealed square towards the
+     bottom left; the square's reveal ends.
+   - 18 to 23, sounds, each played once as its step begins: the warning sound (`Wrapper sound play`); a knight's
+     voice (`Wrapper sound duration after play <n>`, record whether it differs from the start value, then
+     `Wrapper playOnce first call`); the knight's voice again (`Wrapper playOnce second call`); the footman voice
+     from the centre (`Wrapper 3D sound`); nothing (`Wrapper playFor and playOnce for another player`: playOnce for
+     another player plays at volume 0 locally); the footman voice again (`Wrapper playOnce 3D`). If step 19 is silent
+     and step 20 audible, record first-play silence (spec §5.2) and stop: the fix is decided with the maintainer
+     before release. If step 23 is silent while step 21 was audible, record it: `playOnce` may need default sound
+     distances (spec §5.2), decided with the maintainer before release.
+
+   Leaving the last step prints `Wrapper presentation cleanup passed`. If a sound, model or splat never appears or
+   plays in any run, its path or name may not exist in this game version: substitute one from World Editor and record
+   it.
+8. Classic UI (v0.4.0): set `ui = true`; only the classic UI gate runs. A dialog appears whose title says what to
+   press next: `Wrapper dialog: press K`, then `click Plain`, `click Rebuild`, `click After clear` and
+   `click Destroy dialog`. It closes at each press and comes back half a second later, after `Rebuild` with only
+   `After clear` and `Destroy dialog`. The file has `Wrapper dialog keyed by <your name>`,
+   `Wrapper dialog plain by <your name>`, `Wrapper dialog rebuilt`, `Wrapper dialog after clear by <your name>` and
+   `Wrapper dialog destroyed from its own button`; the dialog never comes back, and no `[wrappers] ... failed` line
+   prints. Then 16 steps, one thing each, Esc for the next:
+   - 1 to 6, multiboard, top right: titled `Wrapper multiboard` (yellow) with 3 × 3 cells, a yellow `Name` and
+     `Kills` in row 1, `Footman` with its icon in row 2, `Row 3` in row 3, footman icons down column 3 and a wider
+     first column (`Wrapper multiboard Wrapper multiboard 3 3`); 6 rows with `Row 6` in the last
+     (`Wrapper multiboard rows 6`); 2 rows (`Wrapper multiboard rows 2`); minimized to its title; expanded again;
+     gone (`Wrapper multiboard hidden for another player`).
+   - 7 to 9, leaderboard: titled `Wrapper leaderboard` (yellow) with `Other 9` (blue value) above `You 5`
+     (`Wrapper leaderboard items 2`); `You (12)` on top and no icons; `Other` removed, one row
+     (`Wrapper leaderboard items 1 has other false`).
+   - 10 to 12, quests, each read in the quest log (F9), which is closed with its own button before Esc: the quest
+     button flashes and the log lists `Wrapper quest` (required, footman icon, two items), `Wrapper optional quest`
+     (optional) and the defeat condition `Wrapper defeat condition`; the first item shows as completed
+     (`Wrapper quest item completed true`); the quest shows completed and the optional quest failed
+     (`Wrapper quest completed true optional failed true`).
+   - 13 to 16, timer dialog: `Wrapper timer dialog` (yellow title, green time) counts down from about 10:00; it
+     counts faster (`speed 4`; record what it shows); it shows about 0:10; it disappears.
+
+   Leaving the last step prints `Wrapper ui cleanup passed; quest item disposed true`, and the quests leave the log.
+9. Frames (v0.5.0): set `frames = true`; only the frames gate runs. The file starts with
+   `Wrapper frames shown: <name> children <n>` (record both). Nine steps, Esc for the next:
+   1. a panel in the centre with a yellow title `Wrapper frames`, a `Click me` button, an edit box, a slider, a check
+      box and a `Close` button; `ERROR visible for another player` never appears;
+   2. a footman icon top left;
+   3. hovering `Click me` shows `Wrapper tooltip`;
+   4. clicking `Click me` prints `Wrapper frame clicked by <your name> count 1` (then 2, …), and Enter right after a
+      click opens the chat box (focus was released);
+   5. typing in the edit box and pressing Enter prints `Wrapper edit box enter by <your name> <text>`;
+   6. dragging the slider prints `Wrapper slider value <n>`;
+   7. ticking and unticking the check box print `Wrapper checkbox checked by <your name>` and `... unchecked ...`;
+   8. the footman icon jumps into the panel's top right (`Wrapper badge moved into the panel`);
+   9. clicking `Close` removes the panel and the icon and prints
+      `Wrapper frames closed; badge disposed true button disposed true`.
+
+   Leaving the last step prints `Wrapper frames gate done; panel disposed true`, and no `[wrappers] ... failed` line
+   prints. The probes that came before the first classic UI and frames gates (ui-init and frame-init) went with the
+   old gate map; their answers are in the v0.4.0 and v0.5.0 records below.
 10. Build with `--minify` and play the packed map; repeat steps 2–5 and 7–9 (without the probes). Open the packed map in
     World Editor.
 11. Two-player run: deferred. Reforged's latest patch removed LAN, and online multiplayer and desync checks are the last
@@ -251,7 +267,7 @@ shows on screen for a few seconds: take a screenshot, or read the file that the 
       `prefix 17 arrived whole/cut to 16` and `prefix 32 arrived whole/cut to 16` print;
     - step 15: `Wrapper port gate done`, and no `[wrappers] ... failed` line at any point.
 14. Additions (v0.8.0): set `additions = true` (normal build only). Only the additions gate runs. Every line starts with
-    `Wrapper additions` and is also written to `Documents\Warcraft III\CustomMapData\moonwell-wrappers-additions.pld`.
+    `Wrapper additions`.
     - Printed at once, nothing to watch:
       - `art: Thunder Clap caster <a path ending in ThunderClapCaster.mdl>`, `art: Thunder Clap missile nil`,
         `art: Flame Strike special, third entry <a path ending in FlameStrike.mdl>`,
@@ -267,13 +283,15 @@ shows on screen for a few seconds: take a screenshot, or read the file that the 
       - `rain: created and its rect destroyed. Not enabled: no rain yet` and `gate started`;
       - within a second: `event: the entered region is the zone: true by the hero: true`,
         `game state: the time of day reached 12.00` and `timer expiry: trigger for this timer true, then callback`.
-    - Rain, in the middle of the screen. It takes a second or two to start and to stop:
-      - no rain until `rain 1: enabled for everyone NOW` (4 s), then rain;
-      - after `rain 2: enabled for another player only NOW` (10 s) the rain stops;
-      - after `rain 3: enabled for you only NOW` (16 s) it falls again;
-      - after `rain 4: destroyed NOW` (22 s) it stops.
-    - At 27 s, `art: a Thunder Clap appears NOW in the middle`: the effect plays at the centre.
-    - From 30 s the game shows six input steps, one at a time; do each, then press Esc. After each Esc one line prints:
+    - Two seconds in, six steps, one thing each, Esc for the next. The rain is in the middle of the screen and takes
+      a second or two to start and to stop:
+      1. no rain;
+      2. `rain 1: enabled for everyone NOW`: rain;
+      3. `rain 2: enabled for another player only NOW`: the rain stops;
+      4. `rain 3: enabled for you only NOW`: it falls again;
+      5. `rain 4: destroyed NOW`: it stops;
+      6. `art: a Thunder Clap appears NOW in the middle`: the effect plays at the centre.
+    - Then the game shows six input steps, one at a time; do each, then press Esc. After each Esc one line prints:
       1. tap Q once: `input 1: downs 1 with repeats 1 of which repeated 0 ups 1 meta 0`;
       2. hold Q for about two seconds: `input 2: downs 1 with repeats <many> of which repeated <one fewer> ups 1`;
       3. Shift with Q: `input 3: downs 1 … ups 1 meta 1`;
@@ -284,7 +302,7 @@ shows on screen for a few seconds: take a screenshot, or read the file that the 
     - No `[wrappers] ... failed` line at any point.
 15. Automatic disposal (v0.9.0): set `dispose = true` (normal build only). Only the dispose gate runs, for about four
     seconds, and nothing needs watching: five units stand in a row, of which some die. Every line starts with
-    `Wrapper dispose` and is also written to `Documents\Warcraft III\CustomMapData\moonwell-wrappers-dispose.pld`.
+    `Wrapper dispose`.
     - `1 same instant, after a sweep: removed disposed false exists true | exploded disposed <…> exists <…>`: a unit
       removed by raw code is not seen in the instant of its removal. Record what the exploded unit reads.
     - `2 the timer's sweep disposed the removed unit after <at most 0.30> s`.

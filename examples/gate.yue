@@ -7,6 +7,8 @@
 -- Set port = true for a separate run of the v0.7.0 port prerequisites gate only (damage, pathing, sync).
 -- Set additions = true for a separate run of the v0.8.0 additions gate only (art, events, weather, input).
 -- Set dispose = true for a separate run of the v0.9.0 automatic disposal gate only.
+-- A run with something to watch shows one thing at a time: the screen says what to look for or to do, and Esc goes on
+-- to the next. Every printed line is also written to CustomMapData\moonwell-wrappers-gate.pld.
 import "moonwell" as mw
 import "moonwell.macros" as {:$FourCC}
 import "wrappers.player" as Player
@@ -45,6 +47,58 @@ frames = false
 port = false
 additions = false
 dispose = false
+
+-- Every printed line also goes to Documents\Warcraft III\CustomMapData\moonwell-wrappers-gate.pld, written anew at
+-- each line, so a run is read afterwards from the file. The library's own lines go there too: it prints through print.
+printedLines = {}
+screenPrint = print
+_G.print = (...) ->
+  screenPrint ...
+  parts = [tostring(select(index, ...)) for index = 1, select("#", ...)]
+  printedLines[#printedLines + 1] = table.concat parts, " "
+  PreloadGenClear!
+  PreloadGenStart!
+  for line in *printedLines
+    -- A Preload line keeps 259 characters: longer lines continue on the next.
+    for at = 1, #line, 200
+      Preload (line\sub(at, at + 199)\gsub "\"", "'")
+  PreloadGenEnd "moonwell-wrappers-gate.pld"
+  PreloadGenClear!
+
+-- The one line that stays on screen: what to look for or to do now.
+showPrompt = (text) ->
+  ClearTextMessages!
+  DisplayTimedTextToPlayer GetLocalPlayer!, 0, 0, 600, text
+
+-- One thing at a time. `step` adds a step: what to look for or to do, and a function that shows it; that function may
+-- return another one, which takes the thing away again. `start` shows the first step. Esc goes on to the next, and
+-- after the last one `finish` runs.
+stepByStep = (owner, name) ->
+  steps = {}
+  step = (text, show) -> steps[#steps + 1] = {:text, :show}
+  start = (finish) ->
+    index = 0
+    leave = nil
+    escape = Trigger.create!
+    escape\registerPlayerEvent owner, EVENT_PLAYER_END_CINEMATIC
+    advance = ->
+      leaving = leave
+      leave = nil
+      leaving! if leaving
+      index += 1
+      current = steps[index]
+      if current
+        entered = current.show!
+        leave = entered if type(entered) == "function"
+        print "#{name} step #{index} of #{#steps}: #{current.text}"
+        showPrompt "Step #{index} of #{#steps}. #{current.text}. Then press Esc."
+      else
+        escape\destroy!
+        ClearTextMessages!
+        finish!
+    escape\addAction advance
+    advance!
+  step, start
 
 -- v0.1.0 foundation: same observations as the first release.
 foundationGate = (owner) ->
@@ -261,7 +315,7 @@ broadGate = (owner) ->
       print "Wrapper broad cleanup passed"
       churnProbe owner
 
--- v0.3.0 presentation, around the map centre. Run with presentation = true.
+-- v0.3.0 presentation, at the map centre. Run with presentation = true: one thing at a time, Esc for the next.
 presentationGate = (owner) ->
   other = Player.fromIndex 1
   marker = Unit.create owner, $FourCC("hfoo"), 0, 0, 270
@@ -269,34 +323,13 @@ presentationGate = (owner) ->
   sight = Rect.create -1100, -500, 700, 900
   view = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, sight, true, false
   view\start!
-  tag = TextTag.create!
-  tag\setText "Wrapper text tag", 12
-  tag\setColor 255, 220, 0, 255
-  tag\setPosition -250, 250, 0
-  TextTag.float "Wrapper float for another player", 0, 150, player: other
-  -- Chain Lightning (CLPB) faded right after creation in an earlier gate run; Drain Life is expected to stay.
-  bolt = Lightning.create "DRAL", -300, -250, 60, 300, -250, 60
-  aoe = Image.create "ReplaceableTextures\\Selection\\SpellAreaOfEffect.blp", 256, 256, 0, 0, 1
-  splat = Ubersplat.create "HMED", 350, 250
-  near = FogModifier.createRadius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
-  area = Rect.create -1200, -1200, -900, -900
-  far = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, area, true, false
-  near\start!
-  far\start!
-  tinted = Effect.create "units\\human\\Footman\\Footman.mdl", -400, 0
-  tinted\setColor 255, 0, 0, 160
-  tinted\setTimeScale 0.5
-  tinted\setOrientation 90, 0, 0
-  tinted\setHeight 100
-  tinted\playAnimation ANIM_TYPE_ATTACK
-  blue = Effect.create "units\\human\\Footman\\Footman.mdl", -550, 0
-  blue\setPlayerColor other
   bell = Sound.create "Sound\\Interface\\Warning.flac"
   voice = Sound.create "Units\\Human\\Footman\\FootmanYes1.flac", is3D: true
   voice\setDistances 600, 10000
   voice\setDistanceCutoff 3000
   print "Wrapper presentation started; sound duration", bell\getDuration!
-  -- Trees snap to a 64-unit grid (sometimes further), so these are grid points well inside the box.
+  -- Counted and removed at once. Trees snap to a 64-unit grid (sometimes further), so these are grid points well
+  -- inside the box.
   box = Rect.create -1024, 448, -576, 832
   potions = {
     Item.create($FourCC("ratc"), -800, 600)
@@ -310,72 +343,126 @@ presentationGate = (owner) ->
   potionId = $FourCC("phea")
   print "Wrapper enumerated potions", #Item.enumInRect(box, (item) -> item\getTypeId! == potionId)
   print "Wrapper enumerated trees", #Destructable.enumInRect(box)
+  item\remove! for item in *potions
+  tree\remove! for tree in *trees
+  box\destroy!
   clap = "Abilities\\Spells\\Human\\ThunderClap\\ThunderClapCaster.mdl"
-  steps = Timer.create!
-  step = 0
-  steps\start 2, true, (self) ->
-    step += 1
-    if step == 1
+  -- Something that is over in a moment is shown again every few seconds while its step lasts.
+  again = (seconds, show) ->
+    show!
+    repeater = Timer.create!
+    repeater\start seconds, true, -> show!
+    -> repeater\destroy!
+  step, start = stepByStep owner, "Wrapper presentation"
+  local tag, bolt, aoe, splat, far, area
+
+  step "Look: a yellow text 'Wrapper text tag', up and left of the footman", ->
+    tag = TextTag.create!
+    tag\setText "Wrapper text tag", 12
+    tag\setColor 255, 220, 0, 255
+    tag\setPosition -250, 250, 0
+    nil
+  step "Look: the text has jumped onto the footman and reads 'Wrapper tag moved'", ->
+    tag\setPositionOnUnit marker, 0
+    tag\setText "Wrapper tag moved", 10
+    -> tag\destroy!
+  step "Look: 'Wrapper float' rises above the footman and fades, over and over. Never 'for another player'", ->
+    again 3, ->
       TextTag.float "Wrapper float", 0, 100
-      bell\play!
-      print "Wrapper sound play"
-    elseif step == 2
-      print "Wrapper sound duration after play", bell\getDuration!
-      bell\stop!
-      Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
-      print "Wrapper playOnce first call"
-    elseif step == 3
-      Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
-      print "Wrapper playOnce second call"
-    elseif step == 4
-      voice\setPosition 0, 0, 0
-      voice\play!
-      print "Wrapper 3D sound"
-    elseif step == 5
-      bell\playFor other
-      Sound.playOnce "Sound\\Interface\\QuestNew.flac", player: other
-      print "Wrapper playFor and playOnce for another player"
-    elseif step == 6
-      tag\setPositionOnUnit marker, 0
-      tag\setText "Wrapper tag moved", 10
-      bolt\move -300, 250, 60, 300, 250, 60
-      bolt\setColor 255, 0, 0, 255
-      aoe\setColor 0, 255, 0, 255
-      aoe\setPosition 0, 300
-      splat\finish!
-      far\stop!
-      Effect.flash clap, 0, -200
-      print "Wrapper presentation changed"
-    elseif step == 7
-      aoe\setVisibleFor other
-      Effect.flashOn clap, marker, "origin"
-      print "Wrapper image hidden"
-    elseif step == 8
-      Sound.playOnce "Units\\Human\\Footman\\FootmanYes1.flac", x: 0, y: 0
-      print "Wrapper playOnce 3D"
-    elseif step == 10
-      tag\destroy!
-      bolt\destroy!
-      aoe\destroy!
-      splat\destroy!
-      near\destroy!
+      TextTag.float "Wrapper float for another player", 0, 150, player: other
+
+  -- Chain Lightning (CLPB) faded right after creation in an earlier gate run; Drain Life is expected to stay.
+  step "Look: a lightning bolt below the footman, and it stays", ->
+    bolt = Lightning.create "DRAL", -300, -250, 60, 300, -250, 60
+    nil
+  step "Look: the bolt is now above the footman", ->
+    bolt\move -300, 250, 60, 300, 250, 60
+    bolt\setColor 255, 0, 0, 255
+    -> bolt\destroy!
+
+  step "Look: a circle on the ground under the footman", ->
+    aoe = Image.create "ReplaceableTextures\\Selection\\SpellAreaOfEffect.blp", 256, 256, 0, 0, 1
+    nil
+  step "Look: the circle is green now and has moved up", ->
+    aoe\setColor 0, 255, 0, 255
+    aoe\setPosition 0, 300
+  step "Look: the circle is gone", ->
+    aoe\setVisibleFor other
+    -> aoe\destroy!
+
+  step "Look: the ground mark of a building, up and right of the footman", ->
+    splat = Ubersplat.create "HMED", 350, 250
+    nil
+  step "Look: the ground mark fades away", ->
+    splat\finish!
+    -> splat\destroy!
+
+  step "Look: left of the footman, a red see-through footman, sideways, in the air, attacking slowly", ->
+    tinted = Effect.create "units\\human\\Footman\\Footman.mdl", -400, 0
+    tinted\setColor 255, 0, 0, 160
+    tinted\setTimeScale 0.5
+    tinted\setOrientation 90, 0, 0
+    tinted\setHeight 100
+    tinted\playAnimation ANIM_TYPE_ATTACK
+    -> tinted\destroy!
+  step "Look: left of the footman, a second footman in blue, the colour of player 2", ->
+    blue = Effect.create "units\\human\\Footman\\Footman.mdl", -400, 0
+    blue\setPlayerColor other
+    -> blue\destroy!
+  step "Look: a thunder clap flashes on the ground below the footman, again and again", ->
+    again 2, -> Effect.flash clap, 0, -200
+  step "Look: a thunder clap flashes on the footman itself, again and again", ->
+    again 2, -> Effect.flashOn clap, marker, "origin"
+
+  step "Look at the minimap: a lit circle towards the top right", ->
+    near = FogModifier.createRadius owner, FOG_OF_WAR_VISIBLE, 1000, 1000, 300, true, false
+    near\start!
+    -> near\destroy!
+  step "Look at the minimap: a lit square towards the bottom left", ->
+    area = Rect.create -1200, -1200, -900, -900
+    far = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, area, true, false
+    far\start!
+  step "Look at the minimap: the square is no longer lit", ->
+    far\stop!
+    ->
       far\destroy!
       area\destroy!
-      view\destroy!
-      sight\destroy!
-      box\destroy!
-      tinted\destroy!
-      blue\destroy!
-      bell\destroy!
-      voice\destroy!
-      item\remove! for item in *potions
-      tree\remove! for tree in *trees
-      marker\remove!
-      self\destroy!
-      print "Wrapper presentation cleanup passed"
 
--- v0.5.0 frames. Run with frames = true; the templates come from the gate map's TOC file.
-framesGate = ->
+  step "Listen: a warning sound played just now", ->
+    bell\play!
+    print "Wrapper sound play"
+  step "Listen: a knight's voice spoke just now", ->
+    print "Wrapper sound duration after play", bell\getDuration!
+    bell\stop!
+    Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
+    print "Wrapper playOnce first call"
+  step "Listen: the knight's voice spoke again", ->
+    Sound.playOnce "Units\\Human\\Knight\\KnightYes1.flac"
+    print "Wrapper playOnce second call"
+  step "Listen: a footman's voice spoke just now", ->
+    voice\setPosition 0, 0, 0
+    voice\play!
+    print "Wrapper 3D sound"
+  step "Listen: silence. Nothing played just now", ->
+    bell\playFor other
+    Sound.playOnce "Sound\\Interface\\QuestNew.flac", player: other
+    print "Wrapper playFor and playOnce for another player"
+  step "Listen: the footman's voice spoke again", ->
+    Sound.playOnce "Units\\Human\\Footman\\FootmanYes1.flac", x: 0, y: 0
+    print "Wrapper playOnce 3D"
+
+  start ->
+    view\destroy!
+    sight\destroy!
+    bell\destroy!
+    voice\destroy!
+    marker\remove!
+    print "Wrapper presentation cleanup passed"
+    showPrompt "The presentation gate is done. Close the game."
+
+-- v0.5.0 frames. Run with frames = true; the templates come from the gate map's TOC file. One thing at a time, Esc
+-- for the next.
+framesGate = (owner) ->
   other = Player.fromIndex 1
   Frame.loadTOC "war3mapImported\\wrappers-gate.toc"
   gameUi = Frame.origin ORIGIN_FRAME_GAME_UI
@@ -432,143 +519,163 @@ framesGate = ->
     panel\destroy!
     print "Wrapper frames closed; badge disposed", badge\isDisposed!, "button disposed", button\isDisposed!
   print "Wrapper frames shown:", panel\getName!, "children", panel\getChildrenCount!
-  mover = Timer.create!
-  mover\start 5, false, (self) ->
-    self\destroy!
+  step, start = stepByStep owner, "Wrapper frames"
+  step "Look: a panel 'Wrapper frames': a button, an edit box, a slider, a check box, 'Close'. No ERROR text", -> nil
+  step "Look: a footman icon in the top left corner of the screen", -> nil
+  step "Do: hold the mouse over 'Click me'. The text 'Wrapper tooltip' shows above it", -> nil
+  step "Do: click 'Click me' once, then press Enter. The chat box opens. Press Enter again to close it", -> nil
+  step "Do: click in the edit box, type a word and press Enter", -> nil
+  step "Do: drag the slider to another place", -> nil
+  step "Do: tick the check box, then untick it", -> nil
+  step "Look: the footman icon has jumped into the panel's top right corner", ->
     unless panel\isDisposed!
       badge\setParent panel
       badge\clearPoints!
       badge\setPoint FRAMEPOINT_TOPRIGHT, panel, FRAMEPOINT_TOPRIGHT, -0.03, -0.03
       print "Wrapper badge moved into the panel"
+    nil
+  step "Do: click 'Close'. The panel and the icon disappear", -> nil
+  start ->
+    print "Wrapper frames gate done; panel disposed", panel\isDisposed!
+    showPrompt "The frames gate is done. Close the game."
 
--- v0.4.0 classic UI, after the dialog: a board, a leaderboard, quests and a timer dialog, one step every 3 seconds.
+-- v0.4.0 classic UI, after the dialog: a board, a leaderboard, quests and a timer dialog. One thing at a time, Esc for
+-- the next.
 uiBoards = (owner) ->
   other = Player.fromIndex 1
   footman = "ReplaceableTextures\\CommandButtons\\BTNFootman.blp"
-  board = Multiboard.create 3, 3, "Wrapper multiboard"
-  board\setTitleColor 255, 220, 0, 255
-  board\setAll {showValue: true, showIcon: false, width: 0.05}
-  board\setColumn 1, {width: 0.08}
-  board\setCell 1, 1, {value: "Name", color: {255, 204, 0}}
-  board\setCell 1, 2, {value: "Kills"}
-  board\setCell 2, 1, {value: "Footman", icon: footman, showValue: true, showIcon: true}
-  board\setRow 3, {value: "Row 3"}
-  board\setColumn 3, {icon: footman, showValue: false, showIcon: true}
-  board\setVisible true
-  print "Wrapper multiboard", board\getTitle!, board\getRowCount!, board\getColumnCount!
-  local leaders, quest, optional, first, defeat, countdown, clock
-  steps = Timer.create!
-  step = 0
-  steps\start 3, true, (self) ->
-    step += 1
-    if step == 1
-      board\setRowCount 6
-      board\setRow 6, {value: "Row 6"}
-      print "Wrapper multiboard rows", board\getRowCount!
-    elseif step == 2
-      board\setRowCount 2
-      print "Wrapper multiboard rows", board\getRowCount!
-    elseif step == 3
-      board\setMinimized true
-      print "Wrapper multiboard minimized"
-    elseif step == 4
-      board\setMinimized false
-      board\setVisibleFor other
-      print "Wrapper multiboard hidden for another player"
-    elseif step == 5
-      board\destroy!
-      leaders = Leaderboard.create "Wrapper leaderboard"
-      leaders\setLabelColor 255, 220, 0, 255
-      leaders\addItem owner, "You", 5
-      leaders\addItem other, "Other", 9
-      leaders\setItemValueColor other, 0, 128, 255, 255
-      leaders\sortByValue false
-      leaders\assign owner
-      leaders\setVisible true
-      print "Wrapper leaderboard items", leaders\getItemCount!
-    elseif step == 6
-      leaders\setItemValue owner, 12
-      leaders\setItemLabel owner, "You (12)"
-      leaders\sortByValue false
-      leaders\setStyle {icons: false}
-      print "Wrapper leaderboard re-sorted"
-    elseif step == 7
-      leaders\removeItem other
-      print "Wrapper leaderboard items", leaders\getItemCount!, "has other", leaders\hasItem(other)
-    elseif step == 8
-      leaders\destroy!
-      quest = Quest.create {title: "Wrapper quest", description: "The first item completes 3 s later.", icon: footman}
-      first = quest\addItem "Wrapper first item"
-      quest\addItem "Wrapper second item"
-      optional = Quest.create {title: "Wrapper optional quest", description: "Fails 6 s later.", required: false}
-      defeat = DefeatCondition.create "Wrapper defeat condition"
-      Quest.flashButton!
-      print "Wrapper quests created: open the quest log (F9)"
-    elseif step == 9
-      first\setCompleted true
-      Quest.refresh!
-      print "Wrapper quest item completed", first\isCompleted!
-    elseif step == 10
-      quest\setCompleted true
-      optional\setFailed true
-      Quest.refresh!
-      print "Wrapper quest completed", quest\isCompleted!, "optional failed", optional\isFailed!
-    elseif step == 11
-      clock = Timer.create!
-      clock\start 60, false, -> nil
-      countdown = TimerDialog.create clock, "Wrapper timer dialog"
-      countdown\setTitleColor 255, 220, 0, 255
-      countdown\setTimeColor 0, 255, 0, 255
-      countdown\setVisible true
-      print "Wrapper timer dialog shown"
-    elseif step == 12
-      countdown\setSpeed 4
-      print "Wrapper timer dialog speed 4"
-    elseif step == 13
-      countdown\setRealTimeRemaining 10
-      print "Wrapper timer dialog remaining 10"
-    elseif step == 14
-      countdown\setVisibleFor other
-      print "Wrapper timer dialog hidden for another player"
-    elseif step == 15
-      countdown\destroy!
-      clock\destroy!
-      quest\destroy!
-      optional\destroy!
-      defeat\destroy!
-      self\destroy!
-      print "Wrapper ui cleanup passed; quest item disposed", first\isDisposed!
+  local board, leaders, quest, optional, first, defeat, countdown, clock
+  step, start = stepByStep owner, "Wrapper ui"
 
--- v0.4.0 classic UI. Run with ui = true: the dialog first; its last button starts uiBoards.
+  step "Look: top right, 'Wrapper multiboard' in yellow. Rows: Name, Kills / Footman + icon / Row 3. Icons at right", ->
+    board = Multiboard.create 3, 3, "Wrapper multiboard"
+    board\setTitleColor 255, 220, 0, 255
+    board\setAll {showValue: true, showIcon: false, width: 0.05}
+    board\setColumn 1, {width: 0.08}
+    board\setCell 1, 1, {value: "Name", color: {255, 204, 0}}
+    board\setCell 1, 2, {value: "Kills"}
+    board\setCell 2, 1, {value: "Footman", icon: footman, showValue: true, showIcon: true}
+    board\setRow 3, {value: "Row 3"}
+    board\setColumn 3, {icon: footman, showValue: false, showIcon: true}
+    board\setVisible true
+    print "Wrapper multiboard", board\getTitle!, board\getRowCount!, board\getColumnCount!
+  step "Look: the board has 6 rows now, and the last one reads 'Row 6'", ->
+    board\setRowCount 6
+    board\setRow 6, {value: "Row 6"}
+    print "Wrapper multiboard rows", board\getRowCount!
+  step "Look: the board has 2 rows now", ->
+    board\setRowCount 2
+    print "Wrapper multiboard rows", board\getRowCount!
+  step "Look: the board is folded up: only its title shows", ->
+    board\setMinimized true
+    print "Wrapper multiboard minimized"
+  step "Look: the board is unfolded again", ->
+    board\setMinimized false
+    print "Wrapper multiboard expanded"
+  step "Look: the board is gone", ->
+    board\setVisibleFor other
+    print "Wrapper multiboard hidden for another player"
+    -> board\destroy!
+
+  step "Look: top right, 'Wrapper leaderboard' in yellow. 'Other' with a blue 9 stands above 'You' with 5", ->
+    leaders = Leaderboard.create "Wrapper leaderboard"
+    leaders\setLabelColor 255, 220, 0, 255
+    leaders\addItem owner, "You", 5
+    leaders\addItem other, "Other", 9
+    leaders\setItemValueColor other, 0, 128, 255, 255
+    leaders\sortByValue false
+    leaders\assign owner
+    leaders\setVisible true
+    print "Wrapper leaderboard items", leaders\getItemCount!
+  step "Look: 'You (12)' is on top now, and the icons are gone", ->
+    leaders\setItemValue owner, 12
+    leaders\setItemLabel owner, "You (12)"
+    leaders\sortByValue false
+    leaders\setStyle {icons: false}
+    print "Wrapper leaderboard re-sorted"
+  step "Look: 'Other' is gone. The board has one row", ->
+    leaders\removeItem other
+    print "Wrapper leaderboard items", leaders\getItemCount!, "has other", leaders\hasItem(other)
+    -> leaders\destroy!
+
+  step "Do: press F9. Listed: 'Wrapper quest', 'Wrapper optional quest', 'Wrapper defeat condition'. Close it", ->
+    quest = Quest.create {title: "Wrapper quest", description: "Its first item completes next", icon: footman}
+    first = quest\addItem "Wrapper first item"
+    quest\addItem "Wrapper second item"
+    optional = Quest.create {title: "Wrapper optional quest", description: "It fails two steps on.", required: false}
+    defeat = DefeatCondition.create "Wrapper defeat condition"
+    Quest.flashButton!
+    print "Wrapper quests created: open the quest log (F9)"
+  step "Do: press F9. The first item of 'Wrapper quest' is completed. Close it", ->
+    first\setCompleted true
+    Quest.refresh!
+    print "Wrapper quest item completed", first\isCompleted!
+  step "Do: press F9. 'Wrapper quest' is completed, 'Wrapper optional quest' failed. Close it", ->
+    quest\setCompleted true
+    optional\setFailed true
+    Quest.refresh!
+    print "Wrapper quest completed", quest\isCompleted!, "optional failed", optional\isFailed!
+
+  step "Look: top right, 'Wrapper timer dialog' in yellow with a green time counting down from about 10:00", ->
+    clock = Timer.create!
+    clock\start 600, false, -> nil
+    countdown = TimerDialog.create clock, "Wrapper timer dialog"
+    countdown\setTitleColor 255, 220, 0, 255
+    countdown\setTimeColor 0, 255, 0, 255
+    countdown\setVisible true
+    print "Wrapper timer dialog shown"
+  step "Look: the time counts down faster now, about four seconds for each second", ->
+    countdown\setSpeed 4
+    print "Wrapper timer dialog speed 4"
+  step "Look: the time has jumped to about 0:10", ->
+    countdown\setRealTimeRemaining 10
+    print "Wrapper timer dialog remaining 10"
+  step "Look: the timer window is gone", ->
+    countdown\setVisibleFor other
+    print "Wrapper timer dialog hidden for another player"
+
+  start ->
+    countdown\destroy!
+    clock\destroy!
+    quest\destroy!
+    optional\destroy!
+    defeat\destroy!
+    print "Wrapper ui cleanup passed; quest item disposed", first\isDisposed!
+    showPrompt "The classic UI gate is done. Close the game."
+
+-- v0.4.0 classic UI. Run with ui = true: the dialog first, whose title says what to press next; its last button
+-- starts uiBoards.
 uiGate = (owner) ->
   dialog = Dialog.create!
-  dialog\setMessage "Wrapper dialog"
+  dialog\setMessage "Wrapper dialog: press K"
   -- Warcraft hides a dialog when a button is clicked; show it again a moment later.
-  reshow = (player) ->
+  reshow = (player, message) ->
     later = Timer.create!
     later\start 0.5, false, (self) ->
       self\destroy!
-      dialog\show player unless dialog\isDisposed!
+      unless dialog\isDisposed!
+        dialog\setMessage message
+        dialog\show player
   keyed = (player) ->
     print "Wrapper dialog keyed by", player\getName!
-    reshow player
+    reshow player, "Wrapper dialog: click Plain"
   dialog\addButton "Keyed (K)", keyed, hotkey: "K"
   dialog\addButton "Plain", (player) ->
     print "Wrapper dialog plain by", player\getName!
-    reshow player
+    reshow player, "Wrapper dialog: click Rebuild"
   dialog\addButton "Rebuild", (player) ->
     dialog\clear!
     dialog\addButton "After clear", (clicker) ->
       print "Wrapper dialog after clear by", clicker\getName!
-      reshow clicker
+      reshow clicker, "Wrapper dialog: click Destroy dialog"
     dialog\addButton "Destroy dialog", ->
       dialog\destroy!
       print "Wrapper dialog destroyed from its own button"
       uiBoards owner
     print "Wrapper dialog rebuilt"
-    reshow player
+    reshow player, "Wrapper dialog: click After clear"
   dialog\show owner
-  print "Wrapper dialog shown: press K, click Plain, Rebuild, After clear, then Destroy dialog"
+  print "Wrapper dialog shown: its title says what to press"
 
 -- v0.7.0 port prerequisites. Run with port = true: one step per second. CONTRIBUTING step 13 lists every message.
 portGate = (owner) ->
@@ -651,9 +758,8 @@ portGate = (owner) ->
       print "Wrapper port gate done"
   print "Wrapper port gate started: watch steps 1 to 15, one per second"
 
--- v0.8.0 additions. Run with additions = true. CONTRIBUTING step 14 lists every message; they are also written to
--- CustomMapData\moonwell-wrappers-additions.pld. First lines to read, then rain, one effect, and six input steps that
--- the game shows one at a time.
+-- v0.8.0 additions. Run with additions = true. CONTRIBUTING step 14 lists every message. First lines to read, then
+-- rain and one effect, one at a time, and six input steps; Esc goes on to the next.
 ADDITIONS_WEATHER = {
   "RAhr", "RAlr", "RLhr", "RLlr", "SNbs", "SNhs", "SNls", "WOcw", "WOlw", "WNcw", "LRaa", "LRma", "MEds", "FDbh"
   "FDbl", "FDgh", "FDgl", "FDrh", "FDrl", "FDwh", "FDwl"
@@ -667,24 +773,11 @@ ADDITIONS_INPUT = {
   "tap Q once and left-click the ground once (the listeners are removed now)"
 }
 additionsGate = (owner) ->
-  lines = {}
   say = (...) ->
     parts = {"Wrapper additions"}
     for index = 1, select "#", ...
       parts[#parts + 1] = tostring (select index, ...)
-    line = table.concat parts, " "
-    print line
-    lines[#lines + 1] = line
-    line
-  save = ->
-    PreloadGenClear!
-    PreloadGenStart!
-    for line in *lines
-      -- A Preload line keeps 259 characters: longer lines continue on the next.
-      for at = 1, #line, 200
-        Preload (line\sub(at, at + 199)\gsub "\"", "'")
-    PreloadGenEnd "moonwell-wrappers-additions.pld"
-    PreloadGenClear!
+    print table.concat parts, " "
 
   -- Art from ability data.
   clapId = $FourCC "AHtc"
@@ -779,7 +872,6 @@ additionsGate = (owner) ->
   rain = WeatherEffect.create $FourCC("RAhr"), field
   field\destroy!
   say "rain: created and its rect destroyed. Not enabled: no rain yet"
-  save!
 
   -- The six input steps; Esc ends each one.
   inputGate = ->
@@ -806,17 +898,15 @@ additionsGate = (owner) ->
     listen Input.onMouseUp owner, -> counts.releases += 1
     listen Input.onMouseMove owner, -> counts.moves += 1
     step = 1
-    prompt = (result) ->
-      ClearTextMessages!
-      DisplayTimedTextToPlayer GetLocalPlayer!, 0, 0, 600, result if result
-      text = "Wrapper additions gate done. Say so."
+    prompt = ->
+      text = "The additions gate is done. Close the game."
       if ADDITIONS_INPUT[step]
-        text = "Step " .. step .. " of " .. #ADDITIONS_INPUT .. ": " .. ADDITIONS_INPUT[step] .. ". Then press Esc."
-      DisplayTimedTextToPlayer GetLocalPlayer!, 0, 0, 600, text
+        text = "Input step #{step} of #{#ADDITIONS_INPUT}. Do: #{ADDITIONS_INPUT[step]}. Then press Esc."
+      showPrompt text
     escape = Trigger.create!
     escape\registerPlayerEvent owner, EVENT_PLAYER_END_CINEMATIC
     escape\addAction (self) ->
-      result = say "input " .. step .. ": downs", counts.downs, "with repeats", counts.every, "of which repeated",
+      say "input " .. step .. ": downs", counts.downs, "with repeats", counts.every, "of which repeated",
         counts.repeated, "ups", counts.ups, "meta", counts.meta, "clicks", counts.clicks, "(" .. counts.click .. ")",
         "releases", counts.releases, "moves", counts.moves
       reset!
@@ -828,57 +918,42 @@ additionsGate = (owner) ->
       if step > #ADDITIONS_INPUT
         self\destroy!
         say "gate done"
-      save!
-      prompt result
+      prompt!
     prompt!
 
-  local thunder
-  tick = 0
-  steps = Timer.create!
-  steps\start 1, true, (self) ->
-    tick += 1
-    if tick == 4
-      rain\setEnabled true
-      say "rain 1: enabled for everyone NOW"
-    elseif tick == 10
-      rain\setEnabledFor other
-      say "rain 2: enabled for another player only NOW"
-    elseif tick == 16
-      rain\setEnabledFor owner
-      say "rain 3: enabled for you only NOW"
-    elseif tick == 22
-      rain\destroy!
-      say "rain 4: destroyed NOW"
-    elseif tick == 27
-      thunder = Effect.create clap, 0, 0
-      say "art: a Thunder Clap appears NOW in the middle"
-    elseif tick == 30
-      thunder\destroy!
-      self\destroy!
-      save!
-      inputGate!
-  say "gate started: lines to read first, then watch the middle of the screen"
+  -- Rain and one effect, one at a time, after the lines that arrive within the first second.
+  rainStep, startRain = stepByStep owner, "Wrapper additions"
+  rainStep "Look: no rain falls", -> nil
+  rainStep "Look: rain falls in the middle of the screen (it takes a second or two to start)", ->
+    rain\setEnabled true
+    say "rain 1: enabled for everyone NOW"
+  rainStep "Look: the rain has stopped (it takes a second or two)", ->
+    rain\setEnabledFor other
+    say "rain 2: enabled for another player only NOW"
+  rainStep "Look: the rain falls again", ->
+    rain\setEnabledFor owner
+    say "rain 3: enabled for you only NOW"
+  rainStep "Look: the rain has stopped", ->
+    rain\destroy!
+    say "rain 4: destroyed NOW"
+  rainStep "Look: a Thunder Clap effect in the middle of the screen", ->
+    thunder = Effect.create clap, 0, 0
+    say "art: a Thunder Clap appears NOW in the middle"
+    -> thunder\destroy!
+  opening = Timer.create!
+  opening\start 2, false, (self) ->
+    self\destroy!
+    startRain inputGate
+  say "gate started: lines to read first, then one thing at a time"
 
--- v0.9.0 automatic disposal. Run with dispose = true. CONTRIBUTING step 15 lists every message; they are also written
--- to CustomMapData\moonwell-wrappers-dispose.pld. Nothing needs watching; the run takes about four seconds.
+-- v0.9.0 automatic disposal. Run with dispose = true. CONTRIBUTING step 15 lists every message. Nothing needs
+-- watching; the run takes about four seconds.
 disposeGate = (owner) ->
-  lines = {}
   say = (...) ->
     parts = {"Wrapper dispose"}
     for index = 1, select "#", ...
       parts[#parts + 1] = tostring (select index, ...)
-    line = table.concat parts, " "
-    print line
-    lines[#lines + 1] = line
-  save = ->
-    PreloadGenClear!
-    PreloadGenStart!
-    for line in *lines
-      -- A Preload line keeps 259 characters: longer lines continue on the next.
-      for at = 1, #line, 200
-        Preload (line\sub(at, at + 199)\gsub "\"", "'")
-    PreloadGenEnd "moonwell-wrappers-dispose.pld"
-    PreloadGenClear!
+    print table.concat parts, " "
   state = (unit) -> "disposed " .. tostring(unit\isDisposed!) .. " exists " .. tostring unit\exists!
 
   footman = $FourCC "hfoo"
@@ -940,7 +1015,6 @@ disposeGate = (owner) ->
       watch\destroy!
       say "9 corpse and dead hero at the end:", state(corpse), "|", state hero
       say "gate done"
-      save!
   say "gate started: nothing to watch, about four seconds"
 
 -- Start just after the map loads: text printed while it loads never reaches the screen or the message log.
@@ -956,7 +1030,7 @@ mw.on_main ->
     elseif port
       portGate owner
     elseif frames
-      framesGate!
+      framesGate owner
     elseif ui
       uiGate owner
     elseif presentation
