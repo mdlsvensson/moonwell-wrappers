@@ -9,9 +9,9 @@ completion, stable handle identity and explicit cleanup.
 `Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has removed, and `exists()` answers `false`
 for a disposed wrapper. It builds on v0.8's input listeners, weather effects, `Effect.abilityArt`, Trigger
 registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer writes `dir = "src"`), v0.7's
-damage events and sync, v0.6's refactor (errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames,
-v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks
-are deferred until before Moonwell 1.0.
+damage events and sync, v0.6's refactor (errors point at the calling line), v0.5's frames, v0.4's classic UI and
+v0.3's presentation wrappers. It needs Moonwell 0.12 or later. Its in-game gate passed on 3.0.0.24268. Multiplayer
+desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 

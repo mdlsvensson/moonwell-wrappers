@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The README's instructions and `tools/integration.lua` follow Moonwell 0.12, which they now need: a map lists the
+  library in its `moonwell.toml`, and a local checkout is named in `config.toml` of your Moonwell folder.
+
+No library code changed: `src/` is that of 0.9.1.
+
 ## 0.9.1 (2026-10-02)
 
 - **Fixed:** `Input.onKeyDown` no longer skips the press that follows a lost key release. The game sends no release
