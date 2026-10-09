@@ -98,8 +98,8 @@ end
 
 ---Converts a wrapper argument without importing its module: a caller holding one has loaded it. Errors point at the
 ---caller of the public function (level 3), plus `depth` for helper frames in between. Each overload gives the handle
----type of one class name, so a native call is checked against what was unwrapped; a name without an overload is a
----type error.
+---type of one class name, so a native call is checked against what was unwrapped; any other name than those and
+---'Player' is a type error.
 ---@param value unknown
 ---@param name 'Player'
 ---@param operation string

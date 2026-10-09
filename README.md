@@ -100,9 +100,10 @@ stand-in natives, and fails on any failure that is not a `[wrappers]` error at t
 one to four values of one kind (a number, a string, a boolean, a function or a Player) followed by at most one of
 another kind, so it does not reach a check behind a wrapper that is not a Player (a Unit, a Rect, a Timer, a Frame), a
 check behind arguments of two kinds, a check on the value of an argument of the right kind (an option with a wrong
-value, an empty prefix, an index outside a count), an error that depends on what a native answers, code inside a
-callback, a receiver in a state the sweep does not build (a disposed wrapper, a multiboard with rows), or a function
-that fails for none of its argument lists. Such errors are not proven by the sweep: each needs a test in its module's
+value, an empty prefix, an index outside a count), an error that depends on what a native answers, a check that an
+earlier check of the same function masks for every argument list, code inside a callback, a receiver in a state the
+sweep does not build (a disposed wrapper, a multiboard with rows), or a function that fails for none of its argument
+lists. Such errors are not proven by the sweep: each needs a test in its module's
 own suite. Rewrapping the same live handle returns the same Lua table while any reference to that wrapper exists.
 
 Unit, Item and Destructable use a weak cache: the game removes these on its own (decay, used powerups, dead trees), so a

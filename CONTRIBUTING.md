@@ -6,7 +6,7 @@ raises contextual Lua errors. Review each task and the final change. Work on mai
 
 A new function checks an argument in two cases: before the library computes with it (arithmetic, concatenation, a
 comparison, a loop bound), and where a call of an older release would still resolve and mean something else. Every
-other argument goes to the native as it is.
+other plain value goes to the native as it is.
 
 ## Tools
 
@@ -139,7 +139,8 @@ shows on screen for a few seconds: take a screenshot, or read the file that the 
      not a line of the wrappers.
    - Since v0.10.0, at start: `Wrapper integral floats true nil`. The gate calls `Player.fromIndex 0.0`, a multiboard's
      `setRowCount 2.0` and a unit's `setColor 255.0, 255.0, 255.0, 255.0` under one `pcall`; `false` and a message mean
-     that a whole number held as a float was refused.
+     that a whole number held as a float was refused. `setRowCount` gives the native its own loop's integer, so its
+     call shows only that the loop ends; the other two give their natives the floats.
    - Since v0.10.0, three seconds after the start: `Wrapper timer restart first 0 second 1`. A one-shot timer of 1
      second was started with a first callback and started again at once with a second one: the first callback never
      runs and the second runs once.

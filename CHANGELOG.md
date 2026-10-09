@@ -135,10 +135,12 @@ loudly:
   constructors refuse a model. `lightning:setColor` refuses a channel that is not a whole number from 0 to 255 (a
   fraction, a value above 255 or below 0, a missing alpha, a numeric string), `unit:setColor` anything but four whole
   numbers from 0 to 255, and `effect:setOrientation` an angle that is not a finite number (`expected a finite yaw`, or
-  `pitch`, `roll`). `trigger:registerUnitStateEvent`, `registerPlayerStateEvent` and `registerGameStateEvent` refuse a
-  value that is not a finite number (`expected a finite value`). `Frame.origin`'s index, `Frame.byName`'s context and
-  `frame:getChild`'s index must be integers (`expected an integer index`, `expected an integer context`): `false`, which
-  used to fall through to 0, and a numeral string are refused, and so is `getChild(nil)`.
+  `pitch`, `roll`). `tag:setVelocity` refuses a speed or an angle that is not a finite number
+  (`expected a finite speed`, or `angle`). `trigger:registerUnitStateEvent`, `registerPlayerStateEvent` and
+  `registerGameStateEvent` refuse a value that is not a finite number (`expected a finite value`).
+  `Frame.origin`'s index, `Frame.byName`'s context and `frame:getChild`'s index must be integers
+  (`expected an integer index`, `expected an integer context`): `false`, which used to fall through to 0, and a
+  numeral string are refused, and so is `getChild(nil)`.
   `WeatherEffect.create(rect, effectId)`, the old order, raises `expected Rect wrapper`.
 - **`FogModifier.createRadius` and `createRect`:** the last two arguments may be left out and default to false (0.9
   passed nil).
