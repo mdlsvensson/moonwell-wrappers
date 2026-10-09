@@ -448,3 +448,8 @@ v0.9.1: Passed 2026-10-02 for `v0.9.1` with Moonwell 0.9.0, in a map made fresh 
 `dir`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock` recorded commit
 `667cdc50a7625e6a61e12f2e52778a2bf40300ad`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
+
+v0.9.2: Passed 2026-10-09 for `v0.9.2` with Moonwell 0.12.0, in a map made fresh with `init --link` whose entry is the
+README's, in `moonwell.toml`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock`
+recorded commit `3721f8d221f21389a5aa59532605bdce549a0704`, the 33 fetched files matched the tag's `src/` byte for
+byte, and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.
