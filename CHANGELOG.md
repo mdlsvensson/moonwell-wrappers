@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 (2026-10-09)
 
 A refactor for one set of conventions (spec `2026-10-06-moonwell-wrappers-refactor-0.10-design` in the workspace). It
 renames calls, changes four units and replaces every listener token by a cancel function. What the library can do
@@ -158,6 +158,41 @@ loudly:
   methods of Item and Destructable build no string per call.
 - Not public, but visible in a stack trace: `internal/check.lua` and `internal/cells.lua` are new, and
   `internal/widget.lua` holds annotations only.
+
+### Release gate
+
+Automated checks passed 2026-10-09 on Windows, with Moonwell 0.12.0 and YueScript 0.34.3:
+
+- 36 suites (285 tests), among them a sweep that calls every public function with wrong argument lists and requires
+  a `[wrappers]` error at the calling line;
+- Lua 5.3.6 syntax checks (79 files);
+- Moonwell normal and minified builds, the one-module bundles and bundled execution;
+- LuaLS 3.19.1 fixtures (33 expected negative diagnostics);
+- the native-call check of `src/wrappers` against Moonwell's declarations (6 planted mistakes found);
+- the gate example builds with clean editor diagnostics;
+- moonwell-systems' 24 suites and its integration, on its 0.6 code, against this code.
+
+In-game gate, 2026-10-09, Warcraft III 3.0.0.24268, one machine: every run of `examples/gate.yue` as a normal build,
+and the `core` and `presentation` runs minified. The example was rewritten for it: a run with something to watch
+shows one thing at a time and Esc goes on to the next, and every printed line goes to one file.
+
+- Foundation, broad coverage, the chat trigger and the weak cache probe passed (`collected=true stale=true
+  identity=true`), and so did the callback-error probes.
+- A whole number held as a float is accepted where a native takes an integer: `Player.fromIndex 0.0` and
+  `setColor 255.0, 255.0, 255.0, 255.0` ran.
+- A one-shot timer started again before it expired ran its second callback once and its first never.
+- Presentation: every text tag, lightning, image, ubersplat, effect and sound step was seen or heard. The sound
+  duration read 1.903, in seconds. An effect with yaw 90 stood with its back to the camera.
+- A stopped fog modifier leaves its area explored and out of sight: `IsVisibleToPlayer` read true before `stop()`
+  and false after, with `IsFoggedToPlayer` true.
+- Classic UI, frames, the port run, the additions run and the dispose run printed what earlier gates recorded; the
+  sweep took 70 microseconds over 200 more wrappers.
+- Not observed: the check box's `unchecked` event (the box may not have been unticked). Not played, by the
+  maintainer's decision: the minified `ui` and `frames` runs, and the packed map in World Editor.
+- Still unmeasured: whether the game ever delivers a timer schedule that `start` replaced, and whether
+  `BlzGetFrameByName` returns a frame after it was re-parented.
+
+Two machines are not part of this gate: the online and desync checks are deferred until before Moonwell 1.0.
 
 ## 0.9.2 (2026-10-09)
 

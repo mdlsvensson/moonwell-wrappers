@@ -5,14 +5,15 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.9.2` (2026-10-09): the instructions here follow Moonwell 0.12; the library's code is that of v0.9.1,
-in which `Input.onKeyDown` no longer skips the press after a lost key release. v0.9.0:
-`Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has removed, and `exists()` answers `false`
-for a disposed wrapper. It builds on v0.8's input listeners, weather effects, `Effect.abilityArt`, Trigger
-registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer writes `dir = "src"`), v0.7's
-damage events and sync, v0.6's refactor (errors point at the calling line), v0.5's frames, v0.4's classic UI and
-v0.3's presentation wrappers. It needs Moonwell 0.12 or later. Its in-game gate passed on 3.0.0.24268. Multiplayer
-desync checks are deferred until before Moonwell 1.0.
+**Status:** `v0.10.0` (2026-10-09): a refactor to one set of conventions. It renames calls, changes four units and
+replaces every listener token by a cancel function, so a map written for v0.9 needs the changelog's migration table;
+no wrapper, method or covered native is new. v0.9.1: `Input.onKeyDown` no longer skips the press after a lost key
+release. v0.9.0: `Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has removed, and
+`exists()` answers `false` for a disposed wrapper. It builds on v0.8's input listeners, weather effects,
+`Effect.abilityArt`, Trigger registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer
+writes `dir = "src"`), v0.7's damage events and sync, v0.6's refactor (errors point at the calling line), v0.5's
+frames, v0.4's classic UI and v0.3's presentation wrappers. It needs Moonwell 0.12 or later. Its in-game gate passed
+on 3.0.0.24268. Multiplayer desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
@@ -29,13 +30,13 @@ Every map on your machine that lists the repository then builds with the checkou
 line. Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding
 the entry. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.9.2` tag from GitHub, put this in the map's committed `moonwell.toml`:
+To use the published `v0.10.0` tag from GitHub, put this in the map's committed `moonwell.toml`:
 
 ```toml
 [[libraries]]
 name = "wrappers"
 github = "mdlsvensson/moonwell-wrappers"
-tag = "v0.9.2"
+tag = "v0.10.0"
 ```
 
 Commit the resulting `moonwell.lock`. An entry in your `config.toml` preserves that entry. The `name` is a cache

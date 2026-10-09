@@ -166,10 +166,11 @@ says.
    - 11 to 14, effects: a red, half-transparent, slowed Footman model left of the footman, turned 90 degrees (yaw
      90), raised and attacking; a Footman model in blue (player 2's colour) in its place; a thunder clap that flashes
      below the footman, then one on the footman, each shown again every two seconds.
-   - 15 to 17, fog modifiers on the minimap: a revealed circle towards the top right; a revealed square towards the
-     bottom left; the square's modifier is stopped. A stopped modifier leaves its area explored, and on 3.0.0.24268
-     the square looked as lit as before (v0.10.0 gate), so the file says it: `Wrapper fog square in sight before the
-     stop <bool>` and, a step later, `Wrapper fog square in sight after the stop <bool> fogged <bool>` (record them).
+   - 15 to 17, fog modifiers on the minimap, far out from the gate's area: a revealed circle towards the top right; a
+     revealed square towards the bottom left; the square's modifier is stopped. A stopped modifier leaves its area
+     explored and out of sight, which is easy to take for still lit, so the file says it:
+     `Wrapper fog square in sight before the stop true`, and as the step is left
+     `Wrapper fog square in sight after the stop false fogged true`.
    - 18 to 23, sounds, each played once as its step begins: the warning sound (`Wrapper sound play`); a knight's
      voice (`Wrapper sound duration after play <n>`, record whether it differs from the start value, then
      `Wrapper playOnce first call`); the knight's voice again (`Wrapper playOnce second call`); the footman voice
@@ -422,6 +423,49 @@ not. The numbered steps above were not re-run: the change is inside `wrappers.in
 
 v0.9.2: Not re-run (2026-10-09). The release changes tools and documentation for Moonwell 0.12; no file under `src/`
 changed since v0.9.1.
+
+v0.10.0: run 2026-10-09 by the maintainer on Warcraft III Reforged 3.0.0.24268 (the version of the game's executable),
+in throwaway maps built with Moonwell 0.12.0: every run as a normal build, and `core` and `presentation` minified.
+The gate example was rewritten during the gate, to one thing at a time with Esc and every printed line in one file:
+`core` and `probes` ran before that and were read from the maintainer's screenshots of the message log, every other
+run after it and from the file. No file under `src/` changed in between, and no `[wrappers] ... failed` line printed
+in any run but the three intended ones.
+
+- Steps 2, 3 and 5 passed, normal and minified, with `collected=true stale=true identity=true`. Step 4 passed in the
+  minified run: `Wrapper chat once` after the first `-gate` only, `Wrapper chat accepted` both times; `-gate` was not
+  typed in the normal run.
+- Step 6: the three intended errors printed and the ticks went on; `Wrapper exists after raw removal true false false`,
+  then `false` after 0 s and after 1 s; `Wrapper killed unit alive, exists false true`; the error location was
+  `war3map.lua:5032`, the gate's own `pcall` line. The two new lines read `Wrapper integral floats true nil` and
+  `Wrapper timer restart first 0 second 1`.
+- Step 7, normal and minified: every step was seen and heard. Sound duration 1.903 before and after play (seconds
+  now); potions 2 and trees 2; the knight's voice was audible at its first call and the 3D `playOnce` too; the Drain
+  Life beam stayed and moved; the red model stood with its back to the camera, which is yaw 90. In the normal run the
+  square on the minimap looked still lit after its modifier was stopped; the example then got the two fog lines and
+  both reveals were moved far out, and the minified run read `in sight before the stop true` and
+  `in sight after the stop false fogged true`, with the square seen out of sight and still explored.
+- Step 8, normal: the five presses of the dialog and all 16 steps, ending with
+  `Wrapper ui cleanup passed; quest item disposed true`.
+- Step 9, normal: `Wrapper frames shown: EscMenuBackdrop children 8`; the click (`count 1`), the edit box's text, the
+  slider's values from 5 to 7, `Wrapper checkbox checked by`, the badge moved, and
+  `Wrapper frames closed; badge disposed true button disposed true`. The `unchecked` line did not print, and the
+  maintainer is not sure that the box was unticked: not observed in this gate.
+- Step 10: the minified `ui` and `frames` runs were not played and the packed map was not opened in World Editor, by
+  the maintainer's decision. Step 11 is deferred.
+- Step 13: as in v0.7.0, value for value (collision size 31.0, 89.28571 doubled to 178.5714, magic 178.5714, the
+  nested hit's outer `setAmount 0`, the walker at x 563.7461, prefixes of 16, 17 and 32 characters whole).
+- Step 14: every line as described, and the maintainer saw the rain start, stop, start and stop and the Thunder Clap.
+  All 21 weather ids were created. A tap gave one down and one up; a held key one down against 109 with repeats (108
+  repeated); `meta 1` with Shift; one click `left at -17 -132` with one release; 1299 mouse moves; nothing after the
+  listeners were removed.
+- Step 15: every line as described. The sweep disposed the removed unit after 0.25 s; the error named
+  `war3map.lua:5810`, the gate's own line; the handle ids were 1048696 and 1048703; a sweep over 200 more wrappers
+  took 70.0 microseconds.
+
+Of the three behaviours no probe had measured: a whole number held as a float is accepted where a native takes an
+integer (`Player.fromIndex 0.0` and `setColor 255.0, …` reached their natives). The timer line pins what a map sees
+and cannot tell whether the game delivers a replaced schedule, and `BlzGetFrameByName` after a re-parent was not
+probed: both stay unmeasured.
 
 ## First publication and tag gate (maintainer)
 

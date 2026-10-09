@@ -422,10 +422,10 @@ presentationGate = (owner) ->
     area = Rect.create -2800, -2800, -2000, -2000
     far = FogModifier.createRect owner, FOG_OF_WAR_VISIBLE, area, true, false
     far\start!
-  -- A stopped modifier leaves its area explored, so the eye may see no change: the file says whether the square's
-  -- middle is still in sight. Each line is printed a step after the change, when the game has redrawn its fog.
+  -- A stopped modifier leaves its area explored, which is easy to take for still lit: the file says whether the
+  -- square's middle is in sight. The second line is printed as the step is left, when the game has redrawn its fog.
   inSight = -> IsVisibleToPlayer -2400, -2400, owner\getHandle!
-  step "Look at the minimap: the square is darker than before, or looks the same", ->
+  step "Look at the minimap: the square is out of sight now (darker), but still explored", ->
     print "Wrapper fog square in sight before the stop", inSight!
     far\stop!
     ->
