@@ -1,11 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.9.2 (2026-10-09)
 
 - The README's instructions and `tools/integration.lua` follow Moonwell 0.12, which they now need: a map lists the
   library in its `moonwell.toml`, and a local checkout is named in `config.toml` of your Moonwell folder.
 
 No library code changed: `src/` is that of 0.9.1.
+
+### Release gate
+
+Automated checks passed 2026-10-09 on Windows, with Moonwell 0.12.0 and YueScript 0.34.3: 34 suites; Lua 5.3.6
+syntax checks (75 files); integration (normal and minified builds, the one-module bundles, the LuaLS fixtures, the
+native-call check and the gate example).
+
+No run in game: no file under `src/` changed since 0.9.1.
 
 ## 0.9.1 (2026-10-02)
 

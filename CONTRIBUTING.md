@@ -372,6 +372,9 @@ results are in `../wrappers-gate/PROBE-RELEASE-RESULTS.md` and in the changelog:
 Alt+Tab, after a click on another window and after the chat box reached `onKeyDown`, and the press one second of game
 time after the menu did not. The numbered steps above were not re-run: the change is inside `wrappers.input`.
 
+v0.9.2: Not re-run (2026-10-09). The release changes tools and documentation for Moonwell 0.12; no file under `src/`
+changed since v0.9.1.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to

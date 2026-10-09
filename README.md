@@ -5,7 +5,8 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.9.1` (2026-10-02): `Input.onKeyDown` no longer skips the press after a lost key release. v0.9.0:
+**Status:** `v0.9.2` (2026-10-09): the instructions here follow Moonwell 0.12; the library's code is that of v0.9.1,
+in which `Input.onKeyDown` no longer skips the press after a lost key release. v0.9.0:
 `Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has removed, and `exists()` answers `false`
 for a disposed wrapper. It builds on v0.8's input listeners, weather effects, `Effect.abilityArt`, Trigger
 registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer writes `dir = "src"`), v0.7's
@@ -28,13 +29,13 @@ Every map on your machine that lists the repository then builds with the checkou
 line. Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding
 the entry. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.9.1` tag from GitHub, put this in the map's committed `moonwell.toml`:
+To use the published `v0.9.2` tag from GitHub, put this in the map's committed `moonwell.toml`:
 
 ```toml
 [[libraries]]
 name = "wrappers"
 github = "mdlsvensson/moonwell-wrappers"
-tag = "v0.9.1"
+tag = "v0.9.2"
 ```
 
 Commit the resulting `moonwell.lock`. An entry in your `config.toml` preserves that entry. The `name` is a cache
