@@ -15,33 +15,29 @@ are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
-Keep `moonwell-wrappers` next to your map project. In the map's `moonwell.local.pkl`:
+Say where your checkout is in `config.toml` of your Moonwell folder (`.moonwell` in your user folder), with its
+absolute path:
 
-```pkl
-amends "moonwell.pkl"
-
-libraries {
-  ["wrappers"] {
-    path = "../moonwell-wrappers"
-  }
-}
+```toml
+[[libraries]]
+github = "mdlsvensson/moonwell-wrappers"
+path = 'C:\Users\me\Repo\moonwell-wrappers'
 ```
 
-Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
-library. There are no additional runtime dependencies or install scripts.
+Every map on your machine that lists the repository then builds with the checkout, and each command says so in a
+line. Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding
+the entry. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.9.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.9.1` tag from GitHub, put this in the map's committed `moonwell.toml`:
 
-```pkl
-libraries {
-  ["wrappers"] {
-    github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.9.1"
-  }
-}
+```toml
+[[libraries]]
+name = "wrappers"
+github = "mdlsvensson/moonwell-wrappers"
+tag = "v0.9.1"
 ```
 
-Commit the resulting `moonwell.lock`. A local `path` override preserves that entry. The configuration key is a cache
+Commit the resulting `moonwell.lock`. An entry in your `config.toml` preserves that entry. The `name` is a cache
 label; imports follow paths inside `src/`. For example, `src/wrappers/unit.lua` is `wrappers.unit`.
 
 The library's `moonwell-library.json` tells Moonwell 0.6.0 or later that module names start at `src/`. With Moonwell

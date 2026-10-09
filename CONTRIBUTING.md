@@ -6,7 +6,7 @@ raises contextual Lua errors. Review each task and the final change. Work on mai
 
 ## Tools
 
-- The `moonwell` program, 0.8.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
+- The `moonwell` program, 0.12.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
   line). The tools themselves are Lua, run with `yue -e`: there is no Deno.
 - YueScript 0.34.3, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
 - Pkl 0.32.1, on PATH (or set `MOONWELL_PKL` to its executable).
