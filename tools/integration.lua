@@ -21,6 +21,7 @@ Lib.mkdir('.test-work')
 local work = root .. '/.test-work/integration-' .. os.time()
 local consumer = work .. '/consumer'
 Lib.mkdir(work)
+Lib.moonwellHome = work .. '/home'
 Lib.write('.test-work/latest-integration.json', '{"work":"' .. work .. '","consumer":"' .. consumer .. '"}')
 print('Consumer: ' .. consumer)
 
@@ -47,13 +48,11 @@ local function bundle() return Lib.read(consumer .. '/dist/stage/map.w3x/war3map
 
 -- `init --link` finds the checkout by walking up from its working directory, so it runs there.
 moonwell('init --link ' .. Lib.quote(Lib.native(consumer)), repo)
-Lib.write(consumer .. '/moonwell.local.pkl', table.concat({
-    'amends "moonwell.pkl"',
-    -- No `dir`: the library's moonwell-library.json names it.
-    'libraries { ["wrappers"] { path = "' .. root .. '" } }',
-    yueOverride and ('yue { path = "' .. absolute(yueOverride) .. '" }') or '',
-    '',
-}, '\n'))
+Lib.write(consumer .. '/moonwell.toml', Lib.read(consumer .. '/moonwell.toml')
+    .. "\n[[libraries]]\nname = \"wrappers\"\npath = '" .. root .. "'\n")
+if yueOverride then
+    Lib.write(Lib.moonwellHome .. '/config.toml', "[yue]\npath = '" .. absolute(yueOverride) .. "'\n")
+end
 
 -- Positive fixtures: a clean check, normal and minified builds, and no editor diagnostics.
 Lib.copy('tests/editor-positive.yue', consumer .. '/src/main.yue')

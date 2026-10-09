@@ -32,6 +32,13 @@ function Lib.run(command, cwd)
             line = 'PATH=' .. Lib.quote(Lib.pklDir) .. ':"$PATH" && export PATH && ' .. line
         end
     end
+    if Lib.moonwellHome then
+        if Lib.windows then
+            line = 'set "MOONWELL_HOME=' .. Lib.native(Lib.moonwellHome) .. '" && ' .. line
+        else
+            line = 'MOONWELL_HOME=' .. Lib.quote(Lib.moonwellHome) .. ' && export MOONWELL_HOME && ' .. line
+        end
+    end
     -- cmd.exe strips the outer quotes of a line that starts with a quote; wrap it once more.
     if Lib.windows then line = '"' .. line .. '"' end
     local pipe = assert(io.popen(line, 'r'))

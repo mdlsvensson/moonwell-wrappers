@@ -10,7 +10,7 @@ other argument goes to the native as it is.
 
 ## Tools
 
-- The `moonwell` program, 0.8.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
+- The `moonwell` program, 0.12.0 or later, on the PATH (or set `MOONWELL` to the executable: a path, not a command
   line). The tools themselves are Lua, run with `yue -e`: there is no Deno.
 - YueScript 0.34.3, installed by Moonwell setup (or set `MOONWELL_YUE` to its executable).
 - Pkl 0.32.1, on PATH (or set `MOONWELL_PKL` to its executable).
@@ -74,7 +74,7 @@ conservatively nullable in LuaLS 3.19.1; narrow it or assert it. Factories valid
 Use Warcraft III Reforged 3.0.0.24268 and World Editor 3.00, recording actual versions if different.
 
 The maintainer runs each gate run in a throwaway map and reads the printed lines against the steps below. The map is
-a Moonwell project linked to the Moonwell checkout, whose `moonwell.local.pkl` names this library by a local path, and
+a Moonwell project linked to the Moonwell checkout, whose `moonwell.toml` names this library by a local path, and
 whose `src/main.yue` is a copy of `examples/gate.yue` with the run's switch set and one camera line added
 (`SetCameraPosition 0, 0`, after `owner = Player.fromIndex 0`). The example needs no object data of its own: it uses
 the game's stock rawcodes. The frames run needs one file, the TOC that the example loads
@@ -399,6 +399,9 @@ steps), before and after the fix. The results are in the changelog: with the fix
 on another window and after the chat box reached `onKeyDown`, and the press one second of game time after the menu did
 not. The numbered steps above were not re-run: the change is inside `wrappers.input`.
 
+v0.9.2: Not re-run (2026-10-09). The release changes tools and documentation for Moonwell 0.12; no file under `src/`
+changed since v0.9.1.
+
 ## First publication and tag gate (maintainer)
 
 After all automated checks and the in-game gate pass, tag the verified commit `vX.Y.Z` and push the tag to
@@ -472,3 +475,8 @@ v0.9.1: Passed 2026-10-02 for `v0.9.1` with Moonwell 0.9.0, in a map made fresh 
 `dir`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock` recorded commit
 `667cdc50a7625e6a61e12f2e52778a2bf40300ad`, the 33 fetched files matched the tag's `src/` byte for byte, and the lock
 stayed unchanged after removing the map's `.moonwell/` and checking again.
+
+v0.9.2: Passed 2026-10-09 for `v0.9.2` with Moonwell 0.12.0, in a map made fresh with `init --link` whose entry is the
+README's, in `moonwell.toml`: check, normal and minified builds of the gate example (34 modules); `moonwell.lock`
+recorded commit `3721f8d221f21389a5aa59532605bdce549a0704`, the 33 fetched files matched the tag's `src/` byte for
+byte, and the lock stayed unchanged after removing the map's `.moonwell/` and checking again.

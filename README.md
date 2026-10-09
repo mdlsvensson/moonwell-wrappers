@@ -5,43 +5,40 @@ Trigger, Group, Effect, TextTag, Sound, Lightning, Image, Ubersplat, FogModifier
 Quest, DefeatCondition, TimerDialog, Frame and WeatherEffect wrappers, Damage, Sync and Input modules, editor
 completion, stable handle identity and explicit cleanup.
 
-**Status:** `v0.9.1` (2026-10-02): `Input.onKeyDown` no longer skips the press after a lost key release. v0.9.0:
+**Status:** `v0.9.2` (2026-10-09): the instructions here follow Moonwell 0.12; the library's code is that of v0.9.1,
+in which `Input.onKeyDown` no longer skips the press after a lost key release. v0.9.0:
 `Unit.autoDispose` and `Unit.sweep` dispose the wrappers of units the game has removed, and `exists()` answers `false`
 for a disposed wrapper. It builds on v0.8's input listeners, weather effects, `Effect.abilityArt`, Trigger
 registrations and `fromEvent()` (and v0.8.1's `moonwell-library.json`, so a map no longer writes `dir = "src"`), v0.7's
-damage events and sync, v0.6's refactor (errors point at the calling line; Moonwell 0.5.1 or later), v0.5's frames,
-v0.4's classic UI and v0.3's presentation wrappers. Its in-game gate passed on 3.0.0.24268. Multiplayer desync checks
-are deferred until before Moonwell 1.0.
+damage events and sync, v0.6's refactor (errors point at the calling line), v0.5's frames, v0.4's classic UI and
+v0.3's presentation wrappers. It needs Moonwell 0.12 or later. Its in-game gate passed on 3.0.0.24268. Multiplayer
+desync checks are deferred until before Moonwell 1.0.
 
 ## Use a local checkout
 
-Keep `moonwell-wrappers` next to your map project. In the map's `moonwell.local.pkl`:
+Say where your checkout is in `config.toml` of your Moonwell folder (`.moonwell` in your user folder), with its
+absolute path:
 
-```pkl
-amends "moonwell.pkl"
-
-libraries {
-  ["wrappers"] {
-    path = "../moonwell-wrappers"
-  }
-}
+```toml
+[[libraries]]
+github = "mdlsvensson/moonwell-wrappers"
+path = 'C:\Users\me\Repo\moonwell-wrappers'
 ```
 
-Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding a local
-library. There are no additional runtime dependencies or install scripts.
+Every map on your machine that lists the repository then builds with the checkout, and each command says so in a
+line. Run `moonwell check` in the map to sync the library and refresh the editor view. Restart `dev` after adding
+the entry. There are no additional runtime dependencies or install scripts.
 
-To use the published `v0.9.1` tag from GitHub, put this in the map's committed `moonwell.pkl`:
+To use the published `v0.9.2` tag from GitHub, put this in the map's committed `moonwell.toml`:
 
-```pkl
-libraries {
-  ["wrappers"] {
-    github = "mdlsvensson/moonwell-wrappers"
-    tag = "v0.9.1"
-  }
-}
+```toml
+[[libraries]]
+name = "wrappers"
+github = "mdlsvensson/moonwell-wrappers"
+tag = "v0.9.2"
 ```
 
-Commit the resulting `moonwell.lock`. A local `path` override preserves that entry. The configuration key is a cache
+Commit the resulting `moonwell.lock`. An entry in your `config.toml` preserves that entry. The `name` is a cache
 label; imports follow paths inside `src/`. For example, `src/wrappers/unit.lua` is `wrappers.unit`.
 
 The library's `moonwell-library.json` tells Moonwell 0.6.0 or later that module names start at `src/`. With Moonwell
