@@ -91,9 +91,8 @@ UI\FrameDef\UI\QuestDialog.fdf
 ```
 
 The map is built with `moonwell build --entry src/main.yue` (`--minify` for a minified run), and the game is started on
-`dist/bin/map.w3x`. The release skill of the maintainer's private workspace (`.claude/skills/release/SKILL.md`,
-"Building a throwaway gate map") writes these files and builds the map; this section stands without it. One map is built
-per run. The runs are the seven switches near the top of the example (`probes = false` and the six lines after it):
+`dist/bin/map.w3x`. One map is built per run. The runs are the seven switches near the top of the example
+(`probes = false` and the six lines after it):
 `core` leaves them all false (steps 2 to 5), and `probes` (step 6), `presentation` (step 7), `ui` (step 8), `frames`
 (step 9), `port` (step 13), `additions` (step 14) and `dispose` (step 15) each set their own to `true`.
 
